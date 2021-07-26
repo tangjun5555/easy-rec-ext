@@ -4,17 +4,34 @@
 # desc:
 
 import logging
-from collections import namedtuple
+from typing import List
 from easy_rec_ext.utils.load_class import load_by_path
 import tensorflow as tf
 
 if tf.__version__ >= '2.0':
   tf = tf.compat.v1
 
-DNNConfig = namedtuple(
-  typename="DNNConfig",
-  field_names=["hidden_units", "activation", "use_bn", "dropout_ratio"],
-)
+
+class DNNConfig(object):
+  def __init__(self, hidden_units: List[int], activation: str = "tf.nn.relu", use_bn: bool = False, dropout_ratio=None):
+    self.hidden_units = hidden_units
+    self.activation = activation
+    self.use_bn = use_bn
+    self.dropout_ratio = dropout_ratio
+
+  @staticmethod
+  def handle(data):
+    res = DNNConfig(data["hidden_units"])
+    if "activation" in data:
+      res.activation = data["activation"]
+    if "use_bn" in data:
+      res.use_bn = data["use_bn"]
+    if "dropout_ratio" in data:
+      res.dropout_ratio = data["dropout_ratio"]
+    return res
+
+  def __str__(self):
+    return str(self.__dict__)
 
 
 class DNN(object):
