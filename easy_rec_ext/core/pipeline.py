@@ -14,7 +14,7 @@ class BaseConfig(object):
 
 
 class InputField(BaseConfig):
-    def __init__(self, input_name: str, input_type: str = "int"):
+    def __init__(self, input_name: str, input_type: str):
         self.input_name = input_name
         self.input_type = input_type
         assert self.input_name, "input_name must not be empty"
@@ -22,24 +22,24 @@ class InputField(BaseConfig):
 
     @staticmethod
     def handle(data):
-        res = InputField(data["input_name"])
-        if "input_type" in data:
-            res.input_type = data["input_type"]
+        res = InputField(data["input_name"], data["input_type"])
         return res
 
 
 class InputConfig(BaseConfig):
     def __init__(self,
-                 input_fields: List[InputField], label_fields: List[str] = None,
+                 input_fields: List[InputField], label_fields: List[str],
                  input_type: str = "csv",
                  train_input_path: str = None, eval_input_path: str = None,
                  num_epochs: int = 2, batch_size: int = 256
                  ):
         self.input_fields = input_fields
         self.label_fields = label_fields
+
         self.input_type = input_type
         self.train_input_path = train_input_path
         self.eval_input_path = eval_input_path
+
         self.num_epochs = num_epochs
         self.batch_size = batch_size
 
@@ -49,16 +49,19 @@ class InputConfig(BaseConfig):
         for input_field in data["input_fields"]:
             input_fields.append(InputField.handle(input_field))
         res = InputConfig(input_fields, data["label_fields"])
+
         if "input_type" in data:
             res.input_type = data["input_type"]
         if "train_input_path" in data:
             res.train_input_path = data["train_input_path"]
         if "eval_input_path" in data:
             res.eval_input_path = data["eval_input_path"]
+
         if "num_epochs" in data:
             res.num_epochs = data["num_epochs"]
         if "batch_size" in data:
             res.batch_size = data["batch_size"]
+
         return res
 
 
@@ -69,7 +72,9 @@ class FeatureField(BaseConfig):
                  ):
         self.input_name = input_name
         self.feature_type = feature_type
+
         self.raw_input_dim = raw_input_dim
+
         self.embedding_name = embedding_name
         self.embedding_dim = embedding_dim
         self.num_buckets = num_buckets
@@ -95,9 +100,61 @@ class FeatureGroup(BaseConfig):
         self.feature_names = feature_names
 
 
+class ConstantLearningRate(BaseConfig):
+    def __init__(self, learning_rate=0.01):
+        self.learning_rate = learning_rate
+
+
+class ExponentialDecayLearningRate(BaseConfig):
+    def __init__(self, initial_learning_rate=0.01, decay_steps=20000, decay_factor=0.95, min_learning_rate=0.0):
+        self.initial_learning_rate = initial_learning_rate
+        self.decay_steps = decay_steps
+        self.decay_factor = decay_factor
+        self.min_learning_rate = min_learning_rate
+
+
+class LearningRate(BaseConfig):
+    def __init__(self, learning_rate_type="exponential_decay_learning_rate",
+                 constant_learning_rate=ConstantLearningRate(),
+                 exponential_decay_learning_rate=ExponentialDecayLearningRate()
+                 ):
+        self.learning_rate_type = learning_rate_type
+        self.constant_learning_rate = constant_learning_rate
+        self.exponential_decay_learning_rate = exponential_decay_learning_rate
+
+
+class SgdOptimizer(BaseConfig):
+    def __init__(self, learning_rate=LearningRate()):
+        self.learning_rate = learning_rate
+
+
+class AdagradOptimizer(BaseConfig):
+    def __init__(self, learning_rate=LearningRate()):
+        self.learning_rate = learning_rate
+
+
+class AdamOptimizer(BaseConfig):
+    def __init__(self, learning_rate=LearningRate(), beta1=0.9, beta2=0.999):
+        self.learning_rate = learning_rate
+        self.beta1 = beta1
+        self.beta2 = beta2
+
+
+class Optimizer(BaseConfig):
+    def __init__(self, optimizer_type="sgd_optimizer",
+                 sgd_optimizer=SgdOptimizer(),
+                 adagrad_optimizer=AdagradOptimizer(),
+                 adam_optimizer=AdamOptimizer()
+                 ):
+        self.optimizer_type = optimizer_type
+        self.sgd_optimizer = sgd_optimizer
+        self.adagrad_optimizer = adagrad_optimizer
+        self.adam_optimizer = adam_optimizer
+
+
 class TrainConfig(BaseConfig):
-    def __init__(self):
-        pass
+    def __init__(self, optimizer_config):
+        self.optimizer_config = optimizer_config
 
 
 class EvalConfig(BaseConfig):
