@@ -32,7 +32,7 @@ class RankModel(object):
 
     @abstractmethod
     def build_predict_graph(self):
-        pass
+        return self._prediction_dict
 
     def build_loss_graph(self):
         self._loss_dict["cross_entropy_loss"] = tf.losses.log_loss(

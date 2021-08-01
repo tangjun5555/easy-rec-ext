@@ -11,6 +11,7 @@ from easy_rec_ext.model.din import DIN
 from easy_rec_ext.builders import optimizer_builder
 
 import tensorflow as tf
+from tensorflow.python.saved_model import signature_constants
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
@@ -216,11 +217,11 @@ class RankEstimator(tf.estimator.Estimator):
             global_step=tf.train.get_global_step(),
         )
 
-        # predict_dict = model.build_predict_graph()
+        predict_dict = model.build_predict_graph()
         return tf.estimator.EstimatorSpec(
             mode=tf.estimator.ModeKeys.TRAIN,
             loss=loss,
-            # predictions=predict_dict,
+            predictions=predict_dict,
             train_op=train_op,
             # scaffold=scaffold,
             # training_chief_hooks=chief_hooks,
@@ -259,8 +260,55 @@ class RankEstimator(tf.estimator.Estimator):
             eval_metric_ops=metric_dict
         )
 
-    def _export_model_fn(self):
-        pass
+    def _export_model_fn(self, features):
+        model = self._rank_model(
+            self._pipeline_config.model_config,
+            self._pipeline_config.feature_configs,
+            features,
+            None,
+            is_training=False
+        )
+        predict_dict = model.build_predict_graph()
+
+        # add output info to estimator spec
+        outputs = {}
+        output_list = ["probs"]
+        for out in output_list:
+            assert out in predict_dict, \
+                "output node %s not in prediction_dict, can not be exported" % out
+            outputs[out] = predict_dict[out]
+            logging.info(
+                "output %s shape: %s type: %s" %
+                (out, outputs[out].get_shape().as_list(), outputs[out].dtype))
+        export_outputs = {
+            signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY:
+                tf.estimator.export.PredictOutput(outputs)
+        }
+
+        # save train pipeline.config for debug purpose
+        pipeline_path = os.path.join(self._model_dir, "pipeline.config")
+        if tf.gfile.Exists(pipeline_path):
+            tf.add_to_collection(
+                tf.GraphKeys.ASSET_FILEPATHS,
+                tf.constant(pipeline_path, dtype=tf.string, name="pipeline.config")
+            )
+        else:
+            print("train pipeline_path(%s) does not exist" % pipeline_path)
+
+        # # add more asset files
+        # if "asset_files" in params:
+        #     for asset_file in params["asset_files"].split(","):
+        #         _, asset_name = os.path.split(asset_file)
+        #         tf.add_to_collection(
+        #             tf.GraphKeys.ASSET_FILEPATHS,
+        #             tf.constant(asset_file, dtype=tf.string, name=asset_name))
+
+        return tf.estimator.EstimatorSpec(
+            mode=tf.estimator.ModeKeys.PREDICT,
+            loss=None,
+            predictions=outputs,
+            export_outputs=export_outputs
+        )
 
     def _model_fn(self, features, labels, mode, config, params):
         os.environ["tf.estimator.mode"] = mode
@@ -270,6 +318,6 @@ class RankEstimator(tf.estimator.Estimator):
         elif mode == tf.estimator.ModeKeys.EVAL:
             return self._eval_model_fn(features, labels)
         elif mode == tf.estimator.ModeKeys.PREDICT:
-            return self._export_model_fn()
+            return self._export_model_fn(features)
         else:
             raise ValueError("Mode:%s not supported." % mode)
