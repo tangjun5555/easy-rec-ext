@@ -74,17 +74,71 @@ class RankModel(object):
                 metric_dict["pcopc"] = metrics_lib.pcopc(label, self._prediction_dict["probs"])
         return metric_dict
 
-    def build_dnn_input_layer(self, feature_config, feature_group):
+    def build_input_layer(self, feature_config, feature_group):
         feature_fields_dict = {
             feature_field.input_name: feature_field
             for feature_field in feature_config.feature_fields
         }
+
         if feature_group.seq_att_map:
             outputs = {}
+
             key_feature_field = feature_fields_dict[feature_group.seq_att_map.key]
             assert key_feature_field.feature_type == "IdFeature"
-            outputs[feature_group.seq_att_map.key] = embedding_ops
+            key_embedding_weights = embedding_ops.get_embedding_variable(
+                key_feature_field.embedding_name,
+                key_feature_field.embedding_dim
+            )
+            outputs[feature_group.seq_att_map.key] = embedding_ops.safe_embedding_lookup(
+                key_embedding_weights, self._feature_dict[key_feature_field.input_name],
+            )
+
+            seq_feature_field = feature_fields_dict[feature_group.seq_att_map.hist_seq]
+            assert seq_feature_field.feature_type == "SequenceFeature"
+            seq_embedding_weights = embedding_ops.get_embedding_variable(
+                seq_feature_field.embedding_name,
+                seq_feature_field.embedding_dim
+            )
+            outputs[feature_group.seq_att_map.hist_seq] = embedding_ops.safe_embedding_lookup(
+                seq_embedding_weights, self._feature_dict[seq_feature_field.input_name],
+            )
         else:
             outputs = []
-            # feature_fields_num =
+            feature_fields_num = len(feature_group.feature_names) if feature_group.feature_names else 0
+
+            for i in range(feature_fields_num):
+                feature_field = feature_fields_dict[feature_group.feature_names[i]]
+                if feature_field.feature_type == "IdFeature":
+                    embedding_weights = embedding_ops.get_embedding_variable(
+                        feature_field.embedding_name,
+                        feature_field.embedding_dim
+                    )
+                    outputs.append(
+                        embedding_ops.safe_embedding_lookup(
+                            embedding_weights, self._feature_dict[feature_field.input_name],
+                        )
+                    )
+                elif feature_field.feature_type == "RawFeature":
+                    outputs.append(
+                        self._feature_dict[feature_field.input_name]
+                    )
+                elif feature_field.feature_type == "SequenceFeature":
+                    embedding_weights = embedding_ops.get_embedding_variable(
+                        feature_field.embedding_name,
+                        feature_field.embedding_dim
+                    )
+                    outputs.append(
+                        embedding_ops.safe_embedding_lookup(
+                            embedding_weights, self._feature_dict[feature_field.input_name],
+                            combiner=feature_field.combiner
+                        )
+                    )
+                else:
+                    continue
+            outputs = tf.concat(outputs, axis=-1)
         return outputs
+
+    def build_bias_input_layer(self, feature_config, feature_group):
+        outputs = []
+        feature_fields_num = len(feature_group.feature_names) if feature_group.feature_names else 0
+        return tf.concat(outputs, axis=-1)

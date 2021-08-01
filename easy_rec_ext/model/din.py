@@ -6,6 +6,7 @@
 import logging
 
 import tensorflow as tf
+from easy_rec_ext.layers import dnn
 from easy_rec_ext.model.rank_model import RankModel
 
 if tf.__version__ >= "2.0":
@@ -21,41 +22,43 @@ class DIN(RankModel):
                  is_training=False):
         super(RankModel, self).__init__(model_config, feature_config, features, labels, is_training)
 
-        self._dnn_tower_features = []
         self._dnn_tower_num = len(self._model_config.dnn_towers) if self._model_config.dnn_towers else 0
+
+        self._dnn_tower_features = []
         for tower_id in range(self._dnn_tower_num):
             tower = self._model_config.dnn_towers[tower_id]
+            tower_feature = self.build_input_layer(self._feature_config, tower.input_group)
+            self._dnn_tower_features.append(tower_feature)
 
-#         self._seq_input_layer = seq_input_layer.SeqInputLayer(
-#             feature_configs, model_config.seq_att_groups)
-#         assert self._model_config.WhichOneof("model") == "multi_tower", \
-#             "invalid model config: %s" % self._model_config.WhichOneof("model")
-#         self._model_config = self._model_config.multi_tower
-#         assert isinstance(self._model_config, MultiTowerConfig)
-#
-#         self._tower_features = []
-#         self._tower_num = len(self._model_config.towers)
-#         for tower_id in range(self._tower_num):
-#             tower = self._model_config.towers[tower_id]
-#             tower_feature, _ = self._input_layer(self._feature_dict, tower.input)
-#             self._tower_features.append(tower_feature)
-#
-#         self._din_tower_features = []
-#         self._din_tower_num = len(self._model_config.din_towers)
-#
-#         logging.info("all tower num: {0}".format(self._tower_num +
-#                                                  self._din_tower_num))
-#         logging.info("din tower num: {0}".format(self._din_tower_num))
-#
-#         for tower_id in range(self._din_tower_num):
-#             tower = self._model_config.din_towers[tower_id]
-#             tower_feature = self._seq_input_layer(self._feature_dict, tower.input)
-#             regularizers.apply_regularization(
-#                 self._emb_reg, weights_list=[tower_feature["key"]])
-#             regularizers.apply_regularization(
-#                 self._emb_reg, weights_list=[tower_feature["hist_seq_emb"]])
-#             self._din_tower_features.append(tower_feature)
-#
+        #         self._seq_input_layer = seq_input_layer.SeqInputLayer(
+        #             feature_configs, model_config.seq_att_groups)
+        #         assert self._model_config.WhichOneof("model") == "multi_tower", \
+        #             "invalid model config: %s" % self._model_config.WhichOneof("model")
+        #         self._model_config = self._model_config.multi_tower
+        #         assert isinstance(self._model_config, MultiTowerConfig)
+        #
+        #         self._tower_features = []
+        #         self._tower_num = len(self._model_config.towers)
+        #         for tower_id in range(self._tower_num):
+        #             tower = self._model_config.towers[tower_id]
+        #             tower_feature, _ = self._input_layer(self._feature_dict, tower.input)
+        #             self._tower_features.append(tower_feature)
+        #
+        self._din_tower_num = len(self._model_config.din_towers)
+        logging.info("all tower num: {0}".format(self._dnn_tower_num + self._din_tower_num))
+        logging.info("din tower num: {0}".format(self._din_tower_num))
+        logging.info("dnn tower num: {0}".format(self._dnn_tower_num))
+
+        self._din_tower_features = []
+        for tower_id in range(self._din_tower_num):
+            tower = self._model_config.din_towers[tower_id]
+            tower_feature = self.build_input_layer(self._feature_config, tower.input_group)
+            # regularizers.apply_regularization(
+            #     self._emb_reg, weights_list=[tower_feature["key"]])
+            # regularizers.apply_regularization(
+            #     self._emb_reg, weights_list=[tower_feature["hist_seq_emb"]])
+            self._din_tower_features.append(tower_feature)
+
     def din(self, dnn_config, deep_fea, name):
         cur_id, hist_id_col, seq_len = deep_fea["key"], deep_fea[
             "hist_seq_emb"], deep_fea["hist_seq_len"]
