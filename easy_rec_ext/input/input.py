@@ -183,7 +183,3 @@ class Input(object):
                 return tf.estimator.export.ServingInputReceiver(features, inputs)
 
         return _input_fn
-
-# def create_input_obj(input_type):
-#     if "csv" == input_type:
-#         return

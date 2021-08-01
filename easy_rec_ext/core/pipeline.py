@@ -152,8 +152,15 @@ class Optimizer(BaseConfig):
 
 
 class TrainConfig(BaseConfig):
-    def __init__(self, optimizer_config):
+    def __init__(self, optimizer_config,
+                 log_step_count_steps=1000,
+                 save_checkpoints_steps=20000,
+                 keep_checkpoint_max=3
+                 ):
         self.optimizer_config = optimizer_config
+        self.log_step_count_steps = log_step_count_steps
+        self.save_checkpoints_steps = save_checkpoints_steps
+        self.keep_checkpoint_max = keep_checkpoint_max
 
 
 class EvalMetric(BaseConfig):
