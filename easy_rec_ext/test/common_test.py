@@ -11,8 +11,13 @@ if tf.__version__ >= "2.0":
 line_sep = "\n" + "##" * 20 + "\n"
 
 
+def test_05():
+    pass
+
+
 def test_04():
     tf.enable_eager_execution()
+    # tf.disable_eager_execution()
 
     input_tensor = tf.constant(
         value=[
@@ -25,37 +30,15 @@ def test_04():
     )
     num_buckets = 100
 
-    # condition = input_tensor == ""
-    # t1 = tf.string_to_hash_bucket(input_tensor, num_buckets)
-    # t2 = tf.zeros_like(t1) - 1
-    # t3 = tf.where(
-    #     condition,
-    #     t2,
-    #     t1
-    # )
-    # print(line_sep)
-    # print(condition)
-    # print(line_sep)
-    # print(t1)
-    # print(line_sep)
-    # print(t2)
-    # print(line_sep)
-    # print(t3)
-
-    tf.disable_eager_execution()
-
     from easy_rec_ext.utils.string_ops import string_to_hash_bucket
-    t2 = string_to_hash_bucket(input_tensor, num_buckets)
-
-    with tf.Session() as sess:
-        # print(line_sep)
-        # print(sess.run(condition))
-        print(line_sep)
-        print(sess.run(input_tensor))
-        print(line_sep)
-        print(sess.run(t2))
-        # print(line_sep)
-        # print(sess.run(t3))
+    res = string_to_hash_bucket(input_tensor, num_buckets)
+    print(line_sep)
+    print(res)
+    # with tf.Session() as sess:
+    #     print(line_sep)
+    #     print(sess.run(input_tensor))
+    #     print(line_sep)
+    #     print(sess.run(res))
 
 
 def test_03():

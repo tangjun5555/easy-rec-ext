@@ -5,6 +5,7 @@
 
 from abc import abstractmethod
 from collections import OrderedDict
+from easy_rec_ext.utils import string_ops
 from easy_rec_ext.core.pipeline import InputConfig, FeatureConfig
 
 import tensorflow as tf
@@ -80,55 +81,50 @@ class Input(object):
               such as input tensors of tag features and lookup features
         """
         parsed_dict = {}
-
         for fc in self._feature_config.feature_fields:
-            feature_type = fc.feature_type
-            input_0 = fc.input_name
-
-            if feature_type == "SequenceFeature":
-                field = field_dict[input_0]
-                parsed_dict[input_0] = tf.strings.split(field, "|")
+            if fc.feature_type == "SequenceFeature":
+                field = field_dict[fc.input_name]
+                parsed_dict[fc.input_name] = tf.strings.split(field, "|")
                 if fc.num_buckets > 0:
-                    parsed_dict[input_0] = tf.sparse.SparseTensor(
-                        parsed_dict[input_0].indices,
-                        tf.string_to_number(parsed_dict[input_0].values, tf.int64,
-                                            name="sequence_str_2_int_%s" % input_0),
-                        parsed_dict[input_0].dense_shape
+                    parsed_dict[fc.input_name] = tf.sparse.SparseTensor(
+                        parsed_dict[fc.input_name].indices,
+                        tf.string_to_number(parsed_dict[fc.input_name].values, tf.int64,
+                                            name="sequence_str_2_int_%s" % fc.input_name),
+                        parsed_dict[fc.input_name].dense_shape
                     )
                 else:
-                    # raise Exception("%s.num_buckets must larger than 0" % fc.input_name)
-                    parsed_dict[input_0] = tf.sparse.SparseTensor(
-                        parsed_dict[input_0].indices,
-                        tf.string_to_hash_bucket_strong(parsed_dict[input_0].values, tf.int64,
-                                                        name="sequence_str_2_int_%s" % input_0),
-                        parsed_dict[input_0].dense_shape
+                    parsed_dict[fc.input_name] = tf.sparse.SparseTensor(
+                        parsed_dict[fc.input_name].indices,
+                        string_ops.string_to_hash_bucket(parsed_dict[fc.input_name].values, fc.hash_bucket_size),
+                        parsed_dict[fc.input_name].dense_shape
                     )
 
-            elif feature_type == "RawFeature":
-                if field_dict[input_0].dtype == tf.string:
+            elif fc.feature_type == "RawFeature":
+                if field_dict[fc.input_name].dtype == tf.string:
                     if fc.raw_input_dim > 1:
-                        tmp_fea = tf.string_split(field_dict[input_0], "|")
+                        tmp_fea = tf.string_split(field_dict[fc.input_name], "|")
                         tmp_vals = tf.string_to_number(tmp_fea.values, tf.float32,
-                                                       name="multi_raw_fea_to_flt_%s" % input_0)
-                        parsed_dict[input_0] = tf.sparse_to_dense(
+                                                       name="multi_raw_fea_to_flt_%s" % fc.input_name)
+                        parsed_dict[fc.input_name] = tf.sparse_to_dense(
                             tmp_fea.indices,
-                            [tf.shape(field_dict[input_0])[0], fc.raw_input_dim],
+                            [tf.shape(field_dict[fc.input_name])[0], fc.raw_input_dim],
                             tmp_vals,
                             default_value=0,
                         )
                     else:
-                        parsed_dict[input_0] = tf.string_to_number(field_dict[input_0], tf.float32)
+                        parsed_dict[fc.input_name] = tf.string_to_number(field_dict[fc.input_name], tf.float32)
                 else:
-                    parsed_dict[input_0] = tf.to_float(field_dict[input_0])
+                    parsed_dict[fc.input_name] = tf.to_float(field_dict[fc.input_name])
 
-            elif feature_type == "IdFeature":
-                parsed_dict[input_0] = field_dict[input_0]
+            elif fc.feature_type == "IdFeature":
+                parsed_dict[fc.input_name] = field_dict[fc.input_name]
                 if fc.num_buckets > 0:
-                    if parsed_dict[input_0].dtype == tf.string:
-                        parsed_dict[input_0] = tf.string_to_number(parsed_dict[input_0], tf.dtypes.int64,
-                                                                   name="%s_str_2_int" % input_0)
+                    if parsed_dict[fc.input_name].dtype == tf.string:
+                        parsed_dict[fc.input_name] = tf.string_to_number(parsed_dict[fc.input_name], tf.dtypes.int64,
+                                                                         name="%s_str_2_int" % fc.input_name)
                 else:
-                    raise Exception("%s.num_buckets must larger than 0" % fc.input_name)
+                    parsed_dict[fc.input_name] = string_ops.string_to_hash_bucket(parsed_dict[fc.input_name].values,
+                                                                                  fc.hash_bucket_size),
 
             else:
                 parsed_dict[fc.input_name] = field_dict[fc.input_name]
