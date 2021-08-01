@@ -1,5 +1,8 @@
-# -*- encoding:utf-8 -*-
-# Copyright (c) Alibaba, Inc. and its affiliates.
+# -*- coding: utf-8 -*-
+# author: tangj 1844250138@qq.com
+# time: 2021/7/27 12:19 下午
+# desc:
+
 from collections import defaultdict
 
 import numpy as np

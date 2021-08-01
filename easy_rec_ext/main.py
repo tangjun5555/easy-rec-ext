@@ -18,9 +18,9 @@ logging.basicConfig(
 )
 
 if tf.__version__ >= "2.0":
-  gfile = tf.compat.v1.gfile
+    gfile = tf.compat.v1.gfile
 else:
-  gfile = tf.gfile
+    gfile = tf.gfile
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--pipeline_config_path", type=str, required=True)
@@ -65,6 +65,80 @@ def get_input_fn(input_config, feature_configs, input_path=None, export_config=N
     return input_fn
 
 
+def _create_eval_export_spec(pipeline_config, eval_data):
+    # data_config = pipeline_config.data_config
+    # feature_configs = pipeline_config.feature_configs
+    # eval_config = pipeline_config.eval_config
+    # export_config = pipeline_config.export_config
+
+    # if eval_config.num_examples > 0:
+    #     eval_steps = int(
+    #         math.ceil(float(eval_config.num_examples) / data_config.batch_size))
+    #     logging.info('eval_steps = %d' % eval_steps)
+    # else:
+    #     eval_steps = None
+    # create eval input
+
+    export_input_fn = get_input_fn(pipeline_config.input_config,
+                                   pipeline_config.feature_config,
+                                   None,
+                                   pipeline_config.export_config
+                                   )
+    exporters = [
+        FinalExporter(name='final', serving_input_receiver_fn=export_input_fn)
+    ]
+
+    # if export_config.exporter_type == 'final':
+    #     exporters = [
+    #         FinalExporter(name='final', serving_input_receiver_fn=export_input_fn)
+    #     ]
+    # elif export_config.exporter_type == 'latest':
+    #     exporters = [
+    #         LatestExporter(
+    #             name='latest',
+    #             serving_input_receiver_fn=export_input_fn,
+    #             exports_to_keep=export_config.exports_to_keep)
+    #     ]
+    # elif export_config.exporter_type == 'best':
+    #     logging.info(
+    #         'will use BestExporter, metric is %s, the bigger the better: %d' %
+    #         (export_config.best_exporter_metric, export_config.metric_bigger))
+    #
+    #     def _metric_cmp_fn(best_eval_result, current_eval_result):
+    #         logging.info('metric: best = %s current = %s' %
+    #                      (str(best_eval_result), str(current_eval_result)))
+    #         if export_config.metric_bigger:
+    #             return (best_eval_result[export_config.best_exporter_metric] <
+    #                     current_eval_result[export_config.best_exporter_metric])
+    #         else:
+    #             return (best_eval_result[export_config.best_exporter_metric] >
+    #                     current_eval_result[export_config.best_exporter_metric])
+    #
+    #     exporters = [
+    #         BestExporter(
+    #             name='best',
+    #             serving_input_receiver_fn=export_input_fn,
+    #             compare_fn=_metric_cmp_fn,
+    #             exports_to_keep=export_config.exports_to_keep)
+    #     ]
+    # elif export_config.exporter_type == 'none':
+    #     exporters = []
+    # else:
+    #     raise ValueError('Unknown exporter type %s' % export_config.exporter_type)
+
+    # set throttle_secs to a small number, so that we can control evaluation
+    # interval steps by checkpoint saving steps
+    eval_input_fn = get_input_fn(pipeline_config.input_config, pipeline_config.feature_config, eval_data)
+    eval_spec = tf.estimator.EvalSpec(
+        name='val',
+        input_fn=eval_input_fn,
+        steps=None,
+        throttle_secs=10,
+        exporters=exporters
+    )
+    return eval_spec
+
+
 def train_and_evaluate(pipeline_config: PipelineConfig):
     """
     
@@ -74,9 +148,12 @@ def train_and_evaluate(pipeline_config: PipelineConfig):
     Returns:
 
     """
-    input_config = pipeline_config.input_config
-    feature_config = pipeline_config.feature_config
-    train_config = pipeline_config.train_config
+    train_input_fn = get_input_fn(pipeline_config.input_config,
+                                  pipeline_config.feature_config,
+                                  pipeline_config.input_config.train_input_path
+                                  )
+    train_spec = tf.estimator.TrainSpec(input_fn=train_input_fn)
+    eval_spec = _create_eval_export_spec(pipeline_config, pipeline_config.input_config.eval_input_path)
 
 
 def evaluate(pipeline_config, eval_result_filename="eval_result.txt"):
