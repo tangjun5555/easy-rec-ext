@@ -4,8 +4,6 @@
 # desc:
 
 from typing import List
-from easy_rec_ext.layers.dnn import DNNConfig
-from easy_rec_ext.model.din import DINConfig
 
 
 class BaseConfig(object):
@@ -98,6 +96,7 @@ class FeatureGroup(BaseConfig):
     def __init__(self, group_name: str, feature_names: List[str] = None, seq_att_map: SeqAttMap = None):
         self.group_name = group_name
         self.feature_names = feature_names
+        self.seq_att_map = seq_att_map
 
 
 class ConstantLearningRate(BaseConfig):
@@ -157,9 +156,50 @@ class TrainConfig(BaseConfig):
         self.optimizer_config = optimizer_config
 
 
-class EvalConfig(BaseConfig):
+class EvalMetric(BaseConfig):
+    def __init__(self, name):
+        self.name = name
+
+
+class AUC(EvalMetric):
     def __init__(self):
-        pass
+        super(AUC, self).__init__("auc")
+
+
+class GroupAUC(EvalMetric):
+    def __init__(self, gid_field: str, reduction="mean_by_sample_num"):
+        """
+        Args:
+            gid_field: group ids, A int or string `Tensor` whose shape matches `predictions`.
+            reduction: reduction method for auc of different users
+                * "mean": simple mean of different users
+                * "mean_by_sample_num": weighted mean with sample num of different users
+                * "mean_by_positive_num": weighted mean with positive sample num of different users
+        """
+        super(GroupAUC, self).__init__("gauc")
+        self.gid_field = gid_field
+        self.reduction = reduction
+
+
+class PCOPC(EvalMetric):
+    def __init__(self):
+        super(PCOPC, self).__init__("pcopc")
+
+
+class EvalConfig(BaseConfig):
+    def __init__(self,
+                 auc: AUC = None,
+                 gauc: GroupAUC = None,
+                 pcopc: PCOPC = None
+                 ):
+        metric_set = []
+        if auc:
+            metric_set.append(auc)
+        if gauc and gauc.gid_field:
+            metric_set.append(gauc)
+        if pcopc:
+            metric_set.append(pcopc)
+        self.metric_set = metric_set
 
 
 class ExportConfig(BaseConfig):
@@ -167,10 +207,43 @@ class ExportConfig(BaseConfig):
         self.export_dir = export_dir
 
 
+class DNNConfig(BaseConfig):
+    def __init__(self, hidden_units: List[int],
+                 activation: str = "tf.nn.relu",
+                 use_bn: bool = False,
+                 dropout_ratio=None
+                 ):
+        self.hidden_units = hidden_units
+        self.activation = activation
+        self.use_bn = use_bn
+        self.dropout_ratio = dropout_ratio
+
+    @staticmethod
+    def handle(data):
+        res = DNNConfig(data["hidden_units"])
+        if "activation" in data:
+            res.activation = data["activation"]
+        if "use_bn" in data:
+            res.use_bn = data["use_bn"]
+        if "dropout_ratio" in data:
+            res.dropout_ratio = data["dropout_ratio"]
+        return res
+
+
 class DNNTower(BaseConfig):
     def __init__(self, input_group: str, dnn_config: DNNConfig):
         self.input_group = input_group
         self.dnn_config = dnn_config
+
+
+class DINConfig(DNNConfig):
+    def __init__(self, hidden_units: List[int],
+                 activation: str = "tf.nn.relu",
+                 use_bn: bool = False,
+                 dropout_ratio=None
+                 ):
+        assert hidden_units and hidden_units[-1] == 1
+        super(DINConfig, self).__init__(hidden_units, activation, use_bn, dropout_ratio)
 
 
 class DINTower(BaseConfig):
@@ -187,10 +260,10 @@ class BiasTower(BaseConfig):
 class ModelConfig(BaseConfig):
     def __init__(self, model_class: str,
                  feature_groups: List[str],
-                 dnn_towers: List[DNNTower],
-                 din_towers: List[DINTower],
-                 final_dnn: DNNTower,
-                 bias_tower: BiasTower,
+                 dnn_towers: List[DNNTower] = None,
+                 din_towers: List[DINTower] = None,
+                 final_dnn: DNNTower = None,
+                 bias_tower: BiasTower = None,
                  ):
         self.model_class = model_class
         self.feature_groups = feature_groups
@@ -202,20 +275,20 @@ class ModelConfig(BaseConfig):
 
 class PipelineConfig(BaseConfig):
     def __init__(self, model_dir: str, input_config: InputConfig, feature_config: FeatureConfig
+                 , model_config: ModelConfig
                  , train_config: TrainConfig = None, eval_config: EvalConfig = None, export_config: ExportConfig = None
-                 , model_config: ModelConfig = None
                  ):
         self.model_dir = model_dir
         self.input_config = input_config
         self.feature_config = feature_config
+        self.model_config = model_config
         self.train_config = train_config
         self.eval_config = eval_config
         self.export_config = export_config
-        self.model_config = model_config
 
     @staticmethod
     def handle(data):
-        res = PipelineConfig(data["model_dir"], data["input_config"], data["feature_config"])
+        res = PipelineConfig(data["model_dir"], data["input_config"], data["feature_config"], data["model_config"])
         if "train_config" in data:
             res.train_config = data["train_config"]
         if "eval_config" in data:
