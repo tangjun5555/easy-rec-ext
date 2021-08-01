@@ -74,6 +74,25 @@ def _prune_invalid_weights(sparse_ids, sparse_weights=None):
     return sparse_ids, sparse_weights
 
 
+def safe_embedding_lookup(params,
+                          ids,
+                          combiner="mean",
+                          default_id=None,
+                          name=None,
+                          partition_strategy="div",
+                          max_norm=None):
+    return safe_embedding_lookup_sparse(
+        params,
+        sparse_ops.from_dense(ids),
+        None,
+        combiner,
+        default_id,
+        name,
+        partition_strategy,
+        max_norm
+    )
+
+
 def safe_embedding_lookup_sparse(embedding_weights,
                                  sparse_ids,
                                  sparse_weights=None,

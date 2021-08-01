@@ -4,8 +4,9 @@
 # desc:
 
 from abc import abstractmethod
-import easy_rec_ext.core.metrics as metrics_lib
 from easy_rec_ext.core.pipeline import EvalConfig
+import easy_rec_ext.core.metrics as metrics_lib
+from easy_rec_ext.core import embedding_ops
 
 import tensorflow as tf
 
@@ -21,6 +22,9 @@ class RankModel(object):
                  labels=None,
                  is_training=False,
                  ):
+        self._model_config = model_config
+        self._feature_config = feature_config
+
         self._feature_dict = features
 
         self._labels = labels
@@ -69,3 +73,18 @@ class RankModel(object):
                 label = tf.to_float(self._labels[self._label_name])
                 metric_dict["pcopc"] = metrics_lib.pcopc(label, self._prediction_dict["probs"])
         return metric_dict
+
+    def build_dnn_input_layer(self, feature_config, feature_group):
+        feature_fields_dict = {
+            feature_field.input_name: feature_field
+            for feature_field in feature_config.feature_fields
+        }
+        if feature_group.seq_att_map:
+            outputs = {}
+            key_feature_field = feature_fields_dict[feature_group.seq_att_map.key]
+            assert key_feature_field.feature_type == "IdFeature"
+            outputs[feature_group.seq_att_map.key] = embedding_ops
+        else:
+            outputs = []
+            # feature_fields_num =
+        return outputs

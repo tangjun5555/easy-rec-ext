@@ -15,6 +15,37 @@ import tensorflow_recommenders_addons as tfra
 line_sep = "\n" + "##" * 20 + "\n"
 
 
+def test_04():
+    tf.disable_eager_execution()
+
+    weights = tfra.dynamic_embedding.get_variable(
+        name="w1",
+        key_dtype=tf.dtypes.string,
+        dim=4,
+        initializer=tf.random_normal_initializer(0, 0.1),
+        init_size=1,
+    )
+
+    ids = tf.SparseTensor(
+        indices=[(0, 0), (1, 0), (2, 0), (3, 0)],
+        values=tf.constant(value=["431645d82843f859", "431645d82843f859", "", ""], dtype=tf.dtypes.string),
+        dense_shape=[5, 1]
+    )
+    values = tfra.dynamic_embedding.safe_embedding_lookup_sparse(
+        embedding_weights=weights,
+        sparse_ids=ids
+    )
+
+    with tf.Session() as sess:
+        print(line_sep)
+        print(sess.run(tf.sparse_tensor_to_dense(ids)))
+        print(line_sep)
+        print(sess.run(values))
+
+        # print(line_sep)
+        # print(sess.run(ops.convert_to_tensor(weights)))
+
+
 def test_03():
     tf.disable_eager_execution()
 
@@ -80,8 +111,8 @@ def test_02():
         print(sess.run(v2))
         print(line_sep)
         print(sess.run(v3))
-        print(line_sep)
-        print(sess.run(tf.convert_to_tensor(w1)))
+        # print(line_sep)
+        # print(sess.run(tf.convert_to_tensor(w1)))
 
 
 def test_01():

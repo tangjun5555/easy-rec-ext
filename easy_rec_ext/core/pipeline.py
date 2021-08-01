@@ -66,7 +66,8 @@ class InputConfig(BaseConfig):
 class FeatureField(BaseConfig):
     def __init__(self, input_name: str, feature_type: str,
                  raw_input_dim=1,
-                 embedding_name: str = None, embedding_dim: int = 32, num_buckets: int = 1000000, combiner: str = "sum",
+                 embedding_name: str = None, embedding_dim: int = 32, combiner: str = "sum",
+                 num_buckets: int = 1000000, hash_bucket_size: int = 1000000
                  ):
         self.input_name = input_name
         self.feature_type = feature_type
@@ -75,8 +76,9 @@ class FeatureField(BaseConfig):
 
         self.embedding_name = embedding_name
         self.embedding_dim = embedding_dim
-        self.num_buckets = num_buckets
         self.combiner = combiner
+        self.num_buckets = num_buckets
+        self.hash_bucket_size = hash_bucket_size
 
         assert self.feature_type in ["IdFeature", "RawFeature", "SequenceFeature"]
 
@@ -266,7 +268,7 @@ class BiasTower(BaseConfig):
 
 class ModelConfig(BaseConfig):
     def __init__(self, model_class: str,
-                 feature_groups: List[str],
+                 feature_groups: List[FeatureGroup],
                  dnn_towers: List[DNNTower] = None,
                  din_towers: List[DINTower] = None,
                  final_dnn: DNNTower = None,

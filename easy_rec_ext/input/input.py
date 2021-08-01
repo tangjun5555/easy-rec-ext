@@ -96,7 +96,13 @@ class Input(object):
                         parsed_dict[input_0].dense_shape
                     )
                 else:
-                    raise Exception("%s.num_buckets must larger than 0" % fc.input_name)
+                    # raise Exception("%s.num_buckets must larger than 0" % fc.input_name)
+                    parsed_dict[input_0] = tf.sparse.SparseTensor(
+                        parsed_dict[input_0].indices,
+                        tf.string_to_hash_bucket_strong(parsed_dict[input_0].values, tf.int64,
+                                                        name="sequence_str_2_int_%s" % input_0),
+                        parsed_dict[input_0].dense_shape
+                    )
 
             elif feature_type == "RawFeature":
                 if field_dict[input_0].dtype == tf.string:
@@ -112,10 +118,8 @@ class Input(object):
                         )
                     else:
                         parsed_dict[input_0] = tf.string_to_number(field_dict[input_0], tf.float32)
-                elif field_dict[input_0].dtype in [tf.int32, tf.int64, tf.double, tf.float32]:
-                    parsed_dict[input_0] = tf.to_float(field_dict[input_0])
                 else:
-                    assert False, "invalid dtype[%s] for raw feature" % str(field_dict[input_0].dtype)
+                    parsed_dict[input_0] = tf.to_float(field_dict[input_0])
 
             elif feature_type == "IdFeature":
                 parsed_dict[input_0] = field_dict[input_0]
