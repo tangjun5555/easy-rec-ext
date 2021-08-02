@@ -40,7 +40,7 @@ class BST(RankModel):
         self._bst_tower_features = []
         for tower_id in range(self._bst_tower_num):
             tower = self._model_config.bst_towers[tower_id]
-            tower_feature = self.build_input_layer(self._feature_config, tower.input_group)
+            tower_feature = self.build_seq_att_input_layer(self._feature_config, tower.input_group)
             regularizers.apply_regularization(self._emb_reg, weights_list=[tower_feature["key"]])
             regularizers.apply_regularization(self._emb_reg, weights_list=[tower_feature["hist_seq_emb"]])
             self._bst_tower_features.append(tower_feature)
@@ -101,8 +101,7 @@ class BST(RankModel):
         return net
 
     def bst(self, bst_fea, seq_size, head_count, name):
-        cur_id, hist_id_col, seq_len = bst_fea["key"], bst_fea[
-            "hist_seq_emb"], bst_fea["hist_seq_len"]
+        cur_id, hist_id_col, seq_len = bst_fea["key"], bst_fea["hist_seq_emb"], bst_fea["hist_seq_len"]
 
         cur_batch_max_seq_len = tf.shape(hist_id_col)[1]
 
@@ -130,14 +129,14 @@ class BST(RankModel):
         tower_fea_arr = []
         for tower_id in range(self._dnn_tower_num):
             tower_fea = self._dnn_tower_features[tower_id]
-            tower = self._model_config.towers[tower_id]
+            tower = self._model_config.dnn_towers[tower_id]
             tower_name = tower.input
             tower_fea = tf.layers.batch_normalization(
                 tower_fea,
                 training=self._is_training,
                 trainable=True,
                 name="%s_fea_bn" % tower_name)
-            tower_dnn = dnn.DNN(tower.dnn, self._l2_reg, "%s_dnn" % tower_name,
+            tower_dnn = dnn.DNN(tower.dnn_config, self._l2_reg, "%s_dnn" % tower_name,
                                 self._is_training)
             tower_fea = tower_dnn(tower_fea)
             tower_fea_arr.append(tower_fea)
@@ -146,8 +145,8 @@ class BST(RankModel):
             tower_fea = self._bst_tower_features[tower_id]
             tower = self._model_config.bst_towers[tower_id]
             tower_name = tower.input
-            tower_seq_len = tower.seq_len
-            tower_multi_head_size = tower.multi_head_size
+            tower_seq_len = tower.bst_config.seq_len
+            tower_multi_head_size = tower.bst_config.multi_head_size
             tower_fea = self.bst(
                 tower_fea,
                 seq_size=tower_seq_len,

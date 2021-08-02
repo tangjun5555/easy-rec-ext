@@ -4,7 +4,6 @@
 # desc:
 
 from abc import abstractmethod
-from easy_rec_ext.core.pipeline import EvalConfig
 from easy_rec_ext.core import embedding_ops
 from easy_rec_ext.core import regularizers
 import easy_rec_ext.core.metrics as metrics_lib
@@ -64,7 +63,7 @@ class RankModel(object):
 
         return self._loss_dict
 
-    def build_metric_graph(self, eval_config: EvalConfig):
+    def build_metric_graph(self, eval_config):
         metric_dict = {}
         for metric in eval_config.metric_set:
             if "auc" == metric.name:
@@ -88,79 +87,82 @@ class RankModel(object):
             feature_field.input_name: feature_field
             for feature_field in feature_config.feature_fields
         }
+        outputs = []
 
-        if feature_group.seq_att_map:
-            outputs = {}
-
-            key_feature_field = feature_fields_dict[feature_group.seq_att_map.key]
-            assert key_feature_field.feature_type == "IdFeature"
-            key_embedding_weights = embedding_ops.get_embedding_variable(
-                key_feature_field.embedding_name,
-                key_feature_field.embedding_dim
-            )
-            outputs["key"] = embedding_ops.safe_embedding_lookup(
-                key_embedding_weights, self._feature_dict[key_feature_field.input_name],
-            )
-
-            seq_feature_field = feature_fields_dict[feature_group.seq_att_map.hist_seq]
-            assert seq_feature_field.feature_type == "SequenceFeature"
-
-            hist_seq = self._feature_dict[seq_feature_field.input_name]
-
-            seq_embedding_weights = embedding_ops.get_embedding_variable(
-                seq_feature_field.embedding_name,
-                seq_feature_field.embedding_dim
-            )
-            outputs["hist_seq_emb"] = embedding_ops.safe_embedding_lookup(
-                seq_embedding_weights, hist_seq
-            )
-
-            hist_seq_len = tf.where(tf.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
-            hist_seq_len = tf.reduce_sum(hist_seq_len, axis=1, keep_dims=False)
-            outputs["hist_seq_len"] = hist_seq_len
-        else:
-            outputs = []
-            feature_fields_num = len(feature_group.feature_names) if feature_group.feature_names else 0
-
-            for i in range(feature_fields_num):
-                feature_field = feature_fields_dict[feature_group.feature_names[i]]
-                if feature_field.feature_type == "IdFeature":
-                    embedding_weights = embedding_ops.get_embedding_variable(
-                        feature_field.embedding_name,
-                        feature_field.embedding_dim
+        feature_fields_num = len(feature_group.feature_names) if feature_group.feature_names else 0
+        for i in range(feature_fields_num):
+            feature_field = feature_fields_dict[feature_group.feature_names[i]]
+            if feature_field.feature_type == "IdFeature":
+                embedding_weights = embedding_ops.get_embedding_variable(
+                    feature_field.embedding_name,
+                    feature_field.embedding_dim
+                )
+                outputs.append(
+                    embedding_ops.safe_embedding_lookup(
+                        embedding_weights, self._feature_dict[feature_field.input_name],
                     )
-                    outputs.append(
-                        embedding_ops.safe_embedding_lookup(
-                            embedding_weights, self._feature_dict[feature_field.input_name],
-                        )
+                )
+            elif feature_field.feature_type == "RawFeature":
+                outputs.append(
+                    self._feature_dict[feature_field.input_name]
+                )
+            elif feature_field.feature_type == "SequenceFeature":
+                embedding_weights = embedding_ops.get_embedding_variable(
+                    feature_field.embedding_name,
+                    feature_field.embedding_dim
+                )
+                outputs.append(
+                    embedding_ops.safe_embedding_lookup(
+                        embedding_weights, self._feature_dict[feature_field.input_name],
+                        combiner=feature_field.combiner
                     )
-                elif feature_field.feature_type == "RawFeature":
-                    outputs.append(
-                        self._feature_dict[feature_field.input_name]
-                    )
-                elif feature_field.feature_type == "SequenceFeature":
-                    embedding_weights = embedding_ops.get_embedding_variable(
-                        feature_field.embedding_name,
-                        feature_field.embedding_dim
-                    )
-                    outputs.append(
-                        embedding_ops.safe_embedding_lookup(
-                            embedding_weights, self._feature_dict[feature_field.input_name],
-                            combiner=feature_field.combiner
-                        )
-                    )
-                else:
-                    continue
-            outputs = tf.concat(outputs, axis=1)
+                )
+            else:
+                continue
+        outputs = tf.concat(outputs, axis=1)
         return outputs
+
+    def build_seq_att_input_layer(self, feature_config, feature_group):
+        feature_fields_dict = {
+            feature_field.input_name: feature_field
+            for feature_field in feature_config.feature_fields
+        }
+        outputs = {}
+
+        key_feature_field = feature_fields_dict[feature_group.seq_att_map.key]
+        assert key_feature_field.feature_type == "IdFeature"
+        key_embedding_weights = embedding_ops.get_embedding_variable(
+            key_feature_field.embedding_name,
+            key_feature_field.embedding_dim
+        )
+        outputs["key"] = embedding_ops.safe_embedding_lookup(
+            key_embedding_weights, self._feature_dict[key_feature_field.input_name],
+        )
+
+        seq_feature_field = feature_fields_dict[feature_group.seq_att_map.hist_seq]
+        assert seq_feature_field.feature_type == "SequenceFeature"
+
+        hist_seq = self._feature_dict[seq_feature_field.input_name]
+
+        seq_embedding_weights = embedding_ops.get_embedding_variable(
+            seq_feature_field.embedding_name,
+            seq_feature_field.embedding_dim
+        )
+        outputs["hist_seq_emb"] = embedding_ops.safe_embedding_lookup(
+            seq_embedding_weights, hist_seq
+        )
+
+        hist_seq_len = tf.where(tf.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
+        hist_seq_len = tf.reduce_sum(hist_seq_len, axis=1, keep_dims=False)
+        outputs["hist_seq_len"] = hist_seq_len
 
     def build_bias_input_layer(self, feature_config, feature_group):
         feature_fields_dict = {
             feature_field.input_name: feature_field
             for feature_field in feature_config.feature_fields
         }
-
         outputs = []
+
         feature_fields_num = len(feature_group.feature_names) if feature_group.feature_names else 0
         for i in range(feature_fields_num):
             feature_field = feature_fields_dict[feature_group.feature_names[i]]

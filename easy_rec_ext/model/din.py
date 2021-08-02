@@ -39,7 +39,7 @@ class DIN(RankModel):
         self._din_tower_features = []
         for tower_id in range(self._din_tower_num):
             tower = self._model_config.din_towers[tower_id]
-            tower_feature = self.build_input_layer(self._feature_config, tower.input_group)
+            tower_feature = self.build_seq_att_input_layer(self._feature_config, tower.input_group)
             regularizers.apply_regularization(self._emb_reg, weights_list=[tower_feature["key"]])
             regularizers.apply_regularization(self._emb_reg, weights_list=[tower_feature["hist_seq_emb"]])
             self._din_tower_features.append(tower_feature)
@@ -82,7 +82,7 @@ class DIN(RankModel):
         for tower_id in range(self._dnn_tower_num):
             tower_fea = self._dnn_tower_features[tower_id]
             tower = self._model_config.towers[tower_id]
-            tower_name = tower.input
+            tower_name = tower.input_group
             tower_fea = tf.layers.batch_normalization(
                 tower_fea,
                 training=self._is_training,
@@ -96,8 +96,8 @@ class DIN(RankModel):
         for tower_id in range(self._din_tower_num):
             tower_fea = self._din_tower_features[tower_id]
             tower = self._model_config.din_towers[tower_id]
-            tower_name = tower.input
-            tower_fea = self.din(tower.dnn, tower_fea, name="%s_dnn" % tower_name)
+            tower_name = tower.input_group
+            tower_fea = self.din(tower.din_config, tower_fea, name="%s_dnn" % tower_name)
             tower_fea_arr.append(tower_fea)
 
         all_fea = tf.concat(tower_fea_arr, axis=1)

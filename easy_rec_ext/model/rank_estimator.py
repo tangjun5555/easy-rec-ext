@@ -7,7 +7,7 @@ import os
 import time
 import logging
 from collections import OrderedDict
-from easy_rec_ext.model.din import DIN
+from easy_rec_ext.model import DIN, BST, AITM
 from easy_rec_ext.builders import optimizer_builder
 
 import tensorflow as tf
@@ -32,10 +32,10 @@ class RankEstimator(tf.estimator.Estimator):
     def _rank_model(self):
         if self._pipeline_config.model_config.model_class == "din":
             model = DIN
-            # elif self._pipeline_config.model_config.model_class == "bst":
-            #     pass
-            # elif self._pipeline_config.model_config.model_class == "aitm":
-            #     pass
+        elif self._pipeline_config.model_config.model_class == "bst":
+            model = BST
+        elif self._pipeline_config.model_config.model_class == "aitm":
+            model = AITM
         else:
             raise ValueError("model_class:%s not supported." % self._pipeline_config.model_config.model_class)
         return model

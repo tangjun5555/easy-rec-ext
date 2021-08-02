@@ -261,11 +261,32 @@ class DINTower(BaseConfig):
         self.din_config = din_config
 
 
-class BSTTower(BaseConfig):
-    def __init__(self, input_group, seq_len: int, multi_head_size: int = 2):
-        self.input_group = input_group
+class BSTConfig(BaseConfig):
+    def __init__(self, seq_len: int, multi_head_size: int = 2):
         self.seq_len = seq_len
         self.multi_head_size = multi_head_size
+
+
+class BSTTower(BaseConfig):
+    def __init__(self, input_group, bst_config: BSTConfig):
+        self.input_group = input_group
+        self.bst_config = bst_config
+
+
+class AITMModel(BaseConfig):
+    def __init__(self, ctr_dnn_config: DNNConfig, ctcvr_dnn_config: DNNConfig,
+                 ctr_label_name="ctr_label", ctcvr_label_name="ctcvr_label",
+                 attention_k=32,
+                 ctr_loss_weight=1.0, ctcvr_loss_weight=1.0, label_constraint_loss_weight=1.0
+                 ):
+        self.ctr_dnn_config = ctr_dnn_config
+        self.ctcvr_dnn_config = ctcvr_dnn_config
+        self.ctr_label_name = ctr_label_name
+        self.ctcvr_label_name = ctcvr_label_name
+        self.attention_k = attention_k
+        self.ctr_loss_weight = ctr_loss_weight
+        self.ctcvr_loss_weight = ctcvr_loss_weight
+        self.label_constraint_loss_weight = label_constraint_loss_weight
 
 
 class BiasTower(BaseConfig):
@@ -280,6 +301,7 @@ class ModelConfig(BaseConfig):
                  din_towers: List[DINTower] = None,
                  bst_towers: List[BSTTower] = None,
                  final_dnn: DNNTower = None,
+                 aitm_model: AITMModel = None,
                  bias_tower: BiasTower = None,
                  embedding_regularization: float = 0.0,
                  l2_regularization: float = 0.0001,
@@ -290,6 +312,7 @@ class ModelConfig(BaseConfig):
         self.din_towers = din_towers
         self.bst_towers = bst_towers
         self.final_dnn = final_dnn
+        self.aitm_model = aitm_model
         self.bias_tower = bias_tower
         self.embedding_regularization = embedding_regularization
         self.l2_regularization = l2_regularization
