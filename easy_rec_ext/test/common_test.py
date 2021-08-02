@@ -11,6 +11,23 @@ if tf.__version__ >= "2.0":
 line_sep = "\n" + "##" * 20 + "\n"
 
 
+def test_06():
+    tf.enable_eager_execution()
+    from tensorflow.python.ops import sparse_ops
+    t1 = tf.constant(
+        value=[
+            [-1],
+            [0],
+            [1]
+        ]
+    )
+    t2 = sparse_ops.from_dense(t1)
+    print(line_sep)
+    print(t1)
+    print(line_sep)
+    print(t2)
+
+
 def test_05():
     tf.enable_eager_execution()
     t1 = tf.constant(

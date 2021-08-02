@@ -27,6 +27,15 @@ def get_embedding_variable(name, dim):
     )
 
 
+def _to_sparse_ids(input_tensor):
+    indices = array_ops.where_v2(
+        math_ops.greater_equal(input_tensor, array_ops.zeros_like(input_tensor))
+    )
+    values = array_ops.gather_nd(input_tensor, indices)
+    shape = array_ops.shape(input_tensor, out_type=dtypes.int64)
+    return sparse_tensor.SparseTensor(indices, values, shape)
+
+
 def _prune_invalid_ids(sparse_ids, sparse_weights=None):
     """
     Prune invalid IDs (< 0) from the input ids and weights.
@@ -83,7 +92,7 @@ def safe_embedding_lookup(params,
                           max_norm=None):
     return safe_embedding_lookup_sparse(
         params,
-        sparse_ops.from_dense(ids),
+        _to_sparse_ids(ids),
         None,
         combiner,
         default_id,
@@ -147,15 +156,17 @@ def safe_embedding_lookup_sparse(embedding_weights,
     if embedding_weights is None:
         raise ValueError("Missing embedding_weights %s." % embedding_weights)
 
-    embed_tensors = [ops.convert_to_tensor(embedding_weights)]
+    # embed_tensors = [ops.convert_to_tensor(embedding_weights)]
+    embed_tensors = [embedding_weights]
     with ops.name_scope(name, default_name="embedding_lookup",
                         values=embed_tensors + [sparse_ids, sparse_weights]) as scope:
         # Reshape higher-rank sparse ids and weights to linear segment ids.
         original_shape = sparse_ids.dense_shape
         original_rank_dim = sparse_ids.dense_shape.get_shape()[0]
-        original_rank = (
-            array_ops.size(original_shape)
-            if original_rank_dim.value is None else original_rank_dim.value)
+        # original_rank = (
+        #     array_ops.size(original_shape)
+        #     if original_rank_dim.value is None else original_rank_dim.value)
+        original_rank = array_ops.size(original_shape)
         sparse_ids = sparse_ops.sparse_reshape(sparse_ids, [
             math_ops.reduce_prod(
                 array_ops.slice(original_shape, [0], [original_rank - 1])),
@@ -200,7 +211,7 @@ def safe_embedding_lookup_sparse(embedding_weights,
             sparse_weights,
             combiner=combiner,
             partition_strategy=partition_strategy,
-            name=None if default_id is None else scope,
+            # name=None,
             max_norm=max_norm
         )
 
@@ -225,5 +236,5 @@ def safe_embedding_lookup_sparse(embedding_weights,
             ], 0))
         final_result.set_shape(
             tensor_shape.unknown_shape(
-                (original_rank_dim - 1).value).concatenate(result.get_shape()[1:]))
+                (original_rank_dim - 1)).concatenate(result.get_shape()[1:]))
         return final_result
