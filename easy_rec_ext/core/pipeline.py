@@ -67,7 +67,7 @@ class FeatureField(BaseConfig):
     def __init__(self, input_name: str, feature_type: str,
                  raw_input_dim=1,
                  embedding_name: str = None, embedding_dim: int = 32, combiner: str = "sum",
-                 num_buckets: int = 1000000, hash_bucket_size: int = 1000000
+                 num_buckets: int = 0, hash_bucket_size: int = 0
                  ):
         self.input_name = input_name
         self.feature_type = feature_type

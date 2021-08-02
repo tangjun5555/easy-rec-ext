@@ -12,7 +12,19 @@ line_sep = "\n" + "##" * 20 + "\n"
 
 
 def test_05():
-    pass
+    tf.enable_eager_execution()
+    t1 = tf.constant(
+        value=[
+            [-1],
+            [0],
+            [1]
+        ]
+    )
+    t2 = tf.one_hot(t1, 5)
+    print(line_sep)
+    print(t1)
+    print(line_sep)
+    print(t2)
 
 
 def test_04():

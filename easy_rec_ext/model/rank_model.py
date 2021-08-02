@@ -139,6 +139,22 @@ class RankModel(object):
         return outputs
 
     def build_bias_input_layer(self, feature_config, feature_group):
+        feature_fields_dict = {
+            feature_field.input_name: feature_field
+            for feature_field in feature_config.feature_fields
+        }
+
         outputs = []
         feature_fields_num = len(feature_group.feature_names) if feature_group.feature_names else 0
+        for i in range(feature_fields_num):
+            feature_field = feature_fields_dict[feature_group.feature_names[i]]
+            assert feature_field.feature_type == "IdFeature"
+            if feature_field.num_buckets > 0:
+                outputs.append(
+                    tf.one_hot(self._feature_dict[feature_field.input_name], feature_field.num_buckets)
+                )
+            else:
+                outputs.append(
+                    tf.one_hot(self._feature_dict[feature_field.input_name], feature_field.hash_bucket_size)
+                )
         return tf.concat(outputs, axis=-1)
