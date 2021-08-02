@@ -104,13 +104,20 @@ class RankModel(object):
 
             seq_feature_field = feature_fields_dict[feature_group.seq_att_map.hist_seq]
             assert seq_feature_field.feature_type == "SequenceFeature"
+
+            hist_seq = self._feature_dict[seq_feature_field.input_name]
+
             seq_embedding_weights = embedding_ops.get_embedding_variable(
                 seq_feature_field.embedding_name,
                 seq_feature_field.embedding_dim
             )
             outputs["hist_seq_emb"] = embedding_ops.safe_embedding_lookup(
-                seq_embedding_weights, self._feature_dict[seq_feature_field.input_name],
+                seq_embedding_weights, hist_seq
             )
+
+            hist_seq_len = tf.where(tf.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
+            hist_seq_len = tf.reduce_sum(hist_seq_len, axis=1, keep_dims=False)
+            outputs["hist_seq_len"] = hist_seq_len
         else:
             outputs = []
             feature_fields_num = len(feature_group.feature_names) if feature_group.feature_names else 0

@@ -261,6 +261,13 @@ class DINTower(BaseConfig):
         self.din_config = din_config
 
 
+class BSTTower(BaseConfig):
+    def __init__(self, input_group, seq_len: int, multi_head_size: int = 2):
+        self.input_group = input_group
+        self.seq_len = seq_len
+        self.multi_head_size = multi_head_size
+
+
 class BiasTower(BaseConfig):
     def __init__(self, input_group):
         self.input_group = input_group
@@ -271,6 +278,7 @@ class ModelConfig(BaseConfig):
                  feature_groups: List[FeatureGroup],
                  dnn_towers: List[DNNTower] = None,
                  din_towers: List[DINTower] = None,
+                 bst_towers: List[BSTTower] = None,
                  final_dnn: DNNTower = None,
                  bias_tower: BiasTower = None,
                  embedding_regularization: float = 0.0,
@@ -280,6 +288,7 @@ class ModelConfig(BaseConfig):
         self.feature_groups = feature_groups
         self.dnn_towers = dnn_towers
         self.din_towers = din_towers
+        self.bst_towers = bst_towers
         self.final_dnn = final_dnn
         self.bias_tower = bias_tower
         self.embedding_regularization = embedding_regularization
