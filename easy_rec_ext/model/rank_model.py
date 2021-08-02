@@ -5,8 +5,9 @@
 
 from abc import abstractmethod
 from easy_rec_ext.core.pipeline import EvalConfig
-import easy_rec_ext.core.metrics as metrics_lib
 from easy_rec_ext.core import embedding_ops
+from easy_rec_ext.core import regularizers
+import easy_rec_ext.core.metrics as metrics_lib
 
 import tensorflow as tf
 
@@ -31,8 +32,16 @@ class RankModel(object):
         if self._labels is not None:
             self._label_name = list(self._labels.keys())[0]
 
+        self._is_training = is_training
+
+        self._emb_reg = regularizers.l2_regularizer(self._model_config.embedding_regularization)
+        self._l2_reg = regularizers.l2_regularizer(self._model_config.l2_regularization)
+
         self._prediction_dict = {}
         self._loss_dict = {}
+
+    def _add_to_prediction_dict(self, output):
+        self._prediction_dict.update(output)
 
     @abstractmethod
     def build_predict_graph(self):
@@ -89,7 +98,7 @@ class RankModel(object):
                 key_feature_field.embedding_name,
                 key_feature_field.embedding_dim
             )
-            outputs[feature_group.seq_att_map.key] = embedding_ops.safe_embedding_lookup(
+            outputs["key"] = embedding_ops.safe_embedding_lookup(
                 key_embedding_weights, self._feature_dict[key_feature_field.input_name],
             )
 
@@ -99,7 +108,7 @@ class RankModel(object):
                 seq_feature_field.embedding_name,
                 seq_feature_field.embedding_dim
             )
-            outputs[feature_group.seq_att_map.hist_seq] = embedding_ops.safe_embedding_lookup(
+            outputs["hist_seq_emb"] = embedding_ops.safe_embedding_lookup(
                 seq_embedding_weights, self._feature_dict[seq_feature_field.input_name],
             )
         else:
@@ -135,7 +144,7 @@ class RankModel(object):
                     )
                 else:
                     continue
-            outputs = tf.concat(outputs, axis=-1)
+            outputs = tf.concat(outputs, axis=1)
         return outputs
 
     def build_bias_input_layer(self, feature_config, feature_group):
@@ -157,4 +166,4 @@ class RankModel(object):
                 outputs.append(
                     tf.one_hot(self._feature_dict[feature_field.input_name], feature_field.hash_bucket_size)
                 )
-        return tf.concat(outputs, axis=-1)
+        return tf.concat(outputs, axis=1)

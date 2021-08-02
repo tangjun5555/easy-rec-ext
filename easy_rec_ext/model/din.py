@@ -7,6 +7,7 @@ import logging
 
 import tensorflow as tf
 from easy_rec_ext.layers import dnn
+from easy_rec_ext.core import regularizers
 from easy_rec_ext.model.rank_model import RankModel
 
 if tf.__version__ >= "2.0":
@@ -30,49 +31,35 @@ class DIN(RankModel):
             tower_feature = self.build_input_layer(self._feature_config, tower.input_group)
             self._dnn_tower_features.append(tower_feature)
 
-        #         self._seq_input_layer = seq_input_layer.SeqInputLayer(
-        #             feature_configs, model_config.seq_att_groups)
-        #         assert self._model_config.WhichOneof("model") == "multi_tower", \
-        #             "invalid model config: %s" % self._model_config.WhichOneof("model")
-        #         self._model_config = self._model_config.multi_tower
-        #         assert isinstance(self._model_config, MultiTowerConfig)
-        #
-        #         self._tower_features = []
-        #         self._tower_num = len(self._model_config.towers)
-        #         for tower_id in range(self._tower_num):
-        #             tower = self._model_config.towers[tower_id]
-        #             tower_feature, _ = self._input_layer(self._feature_dict, tower.input)
-        #             self._tower_features.append(tower_feature)
-        #
         self._din_tower_num = len(self._model_config.din_towers)
         logging.info("all tower num: {0}".format(self._dnn_tower_num + self._din_tower_num))
-        logging.info("din tower num: {0}".format(self._din_tower_num))
         logging.info("dnn tower num: {0}".format(self._dnn_tower_num))
+        logging.info("din tower num: {0}".format(self._din_tower_num))
 
         self._din_tower_features = []
         for tower_id in range(self._din_tower_num):
             tower = self._model_config.din_towers[tower_id]
             tower_feature = self.build_input_layer(self._feature_config, tower.input_group)
-            # regularizers.apply_regularization(
-            #     self._emb_reg, weights_list=[tower_feature["key"]])
-            # regularizers.apply_regularization(
-            #     self._emb_reg, weights_list=[tower_feature["hist_seq_emb"]])
+            regularizers.apply_regularization(self._emb_reg, weights_list=[tower_feature["key"]])
+            regularizers.apply_regularization(self._emb_reg, weights_list=[tower_feature["hist_seq_emb"]])
             self._din_tower_features.append(tower_feature)
 
     def din(self, dnn_config, deep_fea, name):
-        cur_id, hist_id_col, seq_len = deep_fea["key"], deep_fea[
-            "hist_seq_emb"], deep_fea["hist_seq_len"]
+        cur_id, hist_id_col, seq_len = deep_fea["key"], deep_fea["hist_seq_emb"], deep_fea["hist_seq_len"]
 
         seq_max_len = tf.shape(hist_id_col)[1]
         emb_dim = hist_id_col.shape[2]
 
         cur_ids = tf.tile(cur_id, [1, seq_max_len])
-        cur_ids = tf.reshape(cur_ids,
-                             tf.shape(hist_id_col))  # (B, seq_max_len, emb_dim)
+        cur_ids = tf.reshape(
+            cur_ids,
+            tf.shape(hist_id_col)
+        )  # (B, seq_max_len, emb_dim)
 
         din_net = tf.concat(
             [cur_ids, hist_id_col, cur_ids - hist_id_col, cur_ids * hist_id_col],
-            axis=-1)  # (B, seq_max_len, emb_dim*4)
+            axis=-1
+        )  # (B, seq_max_len, emb_dim*4)
 
         din_layer = dnn.DNN(dnn_config, self._l2_reg, name, self._is_training)
         din_net = din_layer(din_net)
@@ -92,8 +79,8 @@ class DIN(RankModel):
 
     def build_predict_graph(self):
         tower_fea_arr = []
-        for tower_id in range(self._tower_num):
-            tower_fea = self._tower_features[tower_id]
+        for tower_id in range(self._dnn_tower_num):
+            tower_fea = self._dnn_tower_features[tower_id]
             tower = self._model_config.towers[tower_id]
             tower_name = tower.input
             tower_fea = tf.layers.batch_normalization(
@@ -114,10 +101,17 @@ class DIN(RankModel):
             tower_fea_arr.append(tower_fea)
 
         all_fea = tf.concat(tower_fea_arr, axis=1)
-        final_dnn_layer = dnn.DNN(self._model_config.final_dnn, self._l2_reg,
-                                  "final_dnn", self._is_training)
+        final_dnn_layer = dnn.DNN(self._model_config.final_dnn, self._l2_reg, "final_dnn", self._is_training)
         all_fea = final_dnn_layer(all_fea)
-        output = tf.layers.dense(all_fea, self._num_class, name="output")
 
-        self._add_to_prediction_dict(output)
+        if self._model_config.bias_tower:
+            bias_fea = self.build_bias_input_layer(self._feature_config, self._model_config.bias_tower.input_group)
+            all_fea = tf.concat([all_fea, bias_fea], axis=1)
+        logits = tf.layers.dense(all_fea, 1, name="logits")
+        probs = tf.sigmoid(logits, name="probs")
+
+        prediction_dict = dict()
+        prediction_dict["logits"] = logits
+        prediction_dict["probs"] = probs
+        self._add_to_prediction_dict(prediction_dict)
         return self._prediction_dict

@@ -273,6 +273,8 @@ class ModelConfig(BaseConfig):
                  din_towers: List[DINTower] = None,
                  final_dnn: DNNTower = None,
                  bias_tower: BiasTower = None,
+                 embedding_regularization: float = 0.0,
+                 l2_regularization: float = 0.0001,
                  ):
         self.model_class = model_class
         self.feature_groups = feature_groups
@@ -280,6 +282,8 @@ class ModelConfig(BaseConfig):
         self.din_towers = din_towers
         self.final_dnn = final_dnn
         self.bias_tower = bias_tower
+        self.embedding_regularization = embedding_regularization
+        self.l2_regularization = l2_regularization
 
 
 class PipelineConfig(BaseConfig):
