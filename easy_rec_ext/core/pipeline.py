@@ -268,7 +268,7 @@ class Optimizer(BaseConfig):
 
 
 class TrainConfig(BaseConfig):
-    def __init__(self, optimizer_config,
+    def __init__(self, optimizer_config: Optimizer,
                  log_step_count_steps=1000,
                  save_checkpoints_steps=20000,
                  keep_checkpoint_max=3
