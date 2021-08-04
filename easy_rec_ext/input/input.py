@@ -128,6 +128,7 @@ class Input(object):
                 else:
                     parsed_dict[fc.input_name] = string_ops.string_to_hash_bucket(parsed_dict[fc.input_name],
                                                                                   fc.hash_bucket_size)
+                    parsed_dict[fc.input_name] = tf.expand_dims(parsed_dict[fc.input_name], axis=1)
 
             else:
                 parsed_dict[fc.input_name] = field_dict[fc.input_name]
