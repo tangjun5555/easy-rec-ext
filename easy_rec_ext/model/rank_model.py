@@ -117,12 +117,12 @@ class RankModel(object):
                     feature_field.embedding_name,
                     feature_field.embedding_dim
                 )
-                outputs.append(
-                    embedding_ops.safe_embedding_lookup(
-                        embedding_weights, self._feature_dict[feature_field.input_name],
-                        combiner=feature_field.combiner
-                    )
+                values = embedding_ops.safe_embedding_lookup(
+                    embedding_weights, self._feature_dict[feature_field.input_name],
                 )
+                # TODO 支持其它的combiner
+                values = tf.reduce_sum(values, axis=-1, keepdims=False)
+                outputs.append(values)
             else:
                 continue
         outputs = tf.concat(outputs, axis=1)
