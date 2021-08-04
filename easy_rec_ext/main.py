@@ -46,7 +46,8 @@ else:
 
 def get_pipeline_config_from_file(pipeline_config_path) -> PipelineConfig:
     with open(pipeline_config_path, "r") as f:
-        res = json.load(f, object_hook=PipelineConfig.handle)
+        res = json.load(f)
+        res = PipelineConfig.handle(res)
     if args.model_dir:
         logging.info("use args, model_dir:" + str(args.model_dir))
         res.model_dir = args.model_dir
