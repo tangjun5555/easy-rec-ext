@@ -3,6 +3,7 @@
 # time: 2021/7/25 9:37 下午
 # desc:
 
+import logging
 from typing import List
 
 
@@ -82,16 +83,50 @@ class FeatureField(BaseConfig):
 
         assert self.feature_type in ["IdFeature", "RawFeature", "SequenceFeature"]
 
+    @staticmethod
+    def handle(data):
+        res = FeatureField(data["input_name"], data["feature_type"])
+
+        if "raw_input_dim" in data:
+            res.raw_input_dim = data["raw_input_dim"]
+
+        if "embedding_name" in data:
+            res.embedding_name = data["embedding_name"]
+        if "embedding_dim" in data:
+            res.embedding_dim = data["embedding_dim"]
+        if "combiner" in data:
+            res.combiner = data["combiner"]
+
+        if "num_buckets" in data:
+            res.num_buckets = data["num_buckets"]
+        if "hash_bucket_size" in data:
+            res.hash_bucket_size = data["hash_bucket_size"]
+
+        return res
+
 
 class FeatureConfig(BaseConfig):
     def __init__(self, feature_fields: List[FeatureField]):
         self.feature_fields = feature_fields
+
+    @staticmethod
+    def handle(data):
+        feature_fields = []
+        for feature_field in data["feature_fields"]:
+            feature_fields.append(FeatureField.handle(feature_field))
+        res = FeatureConfig(feature_fields)
+        return res
 
 
 class SeqAttMap(BaseConfig):
     def __init__(self, key: str, hist_seq: str):
         self.key = key
         self.hist_seq = hist_seq
+
+    @staticmethod
+    def handle(data):
+        res = SeqAttMap(data["key"], data["hist_seq"])
+        return res
 
 
 class FeatureGroup(BaseConfig):
@@ -100,18 +135,47 @@ class FeatureGroup(BaseConfig):
         self.feature_names = feature_names
         self.seq_att_map = seq_att_map
 
+    @staticmethod
+    def handle(data):
+        res = FeatureGroup(data["group_name"])
+        if "feature_names" in data:
+            res.feature_names = data["feature_names"]
+        if "seq_att_map" in data:
+            res.seq_att_map = SeqAttMap.handle(data["seq_att_map"])
+        return res
+
 
 class ConstantLearningRate(BaseConfig):
     def __init__(self, learning_rate=0.01):
         self.learning_rate = learning_rate
 
+    @staticmethod
+    def handle(data):
+        res = ConstantLearningRate()
+        if "learning_rate" in data:
+            res.learning_rate = data["learning_rate"]
+        return res
+
 
 class ExponentialDecayLearningRate(BaseConfig):
-    def __init__(self, initial_learning_rate=0.01, decay_steps=20000, decay_factor=0.95, min_learning_rate=0.0):
+    def __init__(self, initial_learning_rate=0.01, decay_steps=20000, decay_factor=0.95, min_learning_rate=0.0001):
         self.initial_learning_rate = initial_learning_rate
         self.decay_steps = decay_steps
         self.decay_factor = decay_factor
         self.min_learning_rate = min_learning_rate
+
+    @staticmethod
+    def handle(data):
+        res = ExponentialDecayLearningRate()
+        if "initial_learning_rate" in data:
+            res.initial_learning_rate = data["initial_learning_rate"]
+        if "decay_steps" in data:
+            res.decay_steps = data["decay_steps"]
+        if "decay_factor" in data:
+            res.decay_factor = data["decay_factor"]
+        if "min_learning_rate" in data:
+            res.min_learning_rate = data["min_learning_rate"]
+        return res
 
 
 class LearningRate(BaseConfig):
@@ -123,15 +187,41 @@ class LearningRate(BaseConfig):
         self.constant_learning_rate = constant_learning_rate
         self.exponential_decay_learning_rate = exponential_decay_learning_rate
 
+    @staticmethod
+    def handle(data):
+        res = LearningRate()
+        if "learning_rate_type" in data:
+            res.learning_rate_type = data["learning_rate_type"]
+        if "constant_learning_rate" in data:
+            res.constant_learning_rate = ConstantLearningRate.handle(data["constant_learning_rate"])
+        if "exponential_decay_learning_rate" in data:
+            res.exponential_decay_learning_rate = ExponentialDecayLearningRate.handle(
+                data["exponential_decay_learning_rate"])
+        return res
+
 
 class SgdOptimizer(BaseConfig):
     def __init__(self, learning_rate=LearningRate()):
         self.learning_rate = learning_rate
 
+    @staticmethod
+    def handle(data):
+        res = SgdOptimizer()
+        if "learning_rate" in data:
+            res.learning_rate = LearningRate.handle(data["learning_rate"])
+        return res
+
 
 class AdagradOptimizer(BaseConfig):
     def __init__(self, learning_rate=LearningRate()):
         self.learning_rate = learning_rate
+
+    @staticmethod
+    def handle(data):
+        res = AdagradOptimizer()
+        if "learning_rate" in data:
+            res.learning_rate = LearningRate.handle(data["learning_rate"])
+        return res
 
 
 class AdamOptimizer(BaseConfig):
@@ -139,6 +229,17 @@ class AdamOptimizer(BaseConfig):
         self.learning_rate = learning_rate
         self.beta1 = beta1
         self.beta2 = beta2
+
+    @staticmethod
+    def handle(data):
+        res = AdamOptimizer()
+        if "learning_rate" in data:
+            res.learning_rate = LearningRate.handle(data["learning_rate"])
+        if "beta1" in data:
+            res.beta1 = data["beta1"]
+        if "beta2" in data:
+            res.beta2 = data["beta2"]
+        return res
 
 
 class Optimizer(BaseConfig):
@@ -152,6 +253,19 @@ class Optimizer(BaseConfig):
         self.adagrad_optimizer = adagrad_optimizer
         self.adam_optimizer = adam_optimizer
 
+    @staticmethod
+    def handle(data):
+        res = Optimizer()
+        if "optimizer_type" in data:
+            res.optimizer_type = data["optimizer_type"]
+        if "sgd_optimizer" in data:
+            res.sgd_optimizer = SgdOptimizer.handle(data["sgd_optimizer"])
+        if "adagrad_optimizer" in data:
+            res.adagrad_optimizer = AdagradOptimizer.handle(data["adagrad_optimizer"])
+        if "adam_optimizer" in data:
+            res.adam_optimizer = AdamOptimizer.handle(data["adam_optimizer"])
+        return res
+
 
 class TrainConfig(BaseConfig):
     def __init__(self, optimizer_config,
@@ -164,6 +278,17 @@ class TrainConfig(BaseConfig):
         self.save_checkpoints_steps = save_checkpoints_steps
         self.keep_checkpoint_max = keep_checkpoint_max
 
+    @staticmethod
+    def handle(data):
+        res = TrainConfig(Optimizer.handle(data["optimizer_config"]))
+        if "log_step_count_steps" in data:
+            res.log_step_count_steps = data["log_step_count_steps"]
+        if "save_checkpoints_steps" in data:
+            res.save_checkpoints_steps = data["save_checkpoints_steps"]
+        if "keep_checkpoint_max" in data:
+            res.keep_checkpoint_max = data["keep_checkpoint_max"]
+        return res
+
 
 class EvalMetric(BaseConfig):
     def __init__(self, name):
@@ -173,6 +298,11 @@ class EvalMetric(BaseConfig):
 class AUC(EvalMetric):
     def __init__(self):
         super(AUC, self).__init__("auc")
+
+    @staticmethod
+    def handle(data):
+        res = AUC()
+        return res
 
 
 class GroupAUC(EvalMetric):
@@ -189,10 +319,22 @@ class GroupAUC(EvalMetric):
         self.gid_field = gid_field
         self.reduction = reduction
 
+    @staticmethod
+    def handle(data):
+        res = GroupAUC(data["gid_field"])
+        if "reduction" in data:
+            res.reduction = data["reduction"]
+        return res
+
 
 class PCOPC(EvalMetric):
     def __init__(self):
         super(PCOPC, self).__init__("pcopc")
+
+    @staticmethod
+    def handle(data):
+        res = PCOPC()
+        return res
 
 
 class EvalConfig(BaseConfig):
@@ -210,10 +352,32 @@ class EvalConfig(BaseConfig):
             metric_set.append(pcopc)
         self.metric_set = metric_set
 
+    @staticmethod
+    def handle(data):
+        if "auc" in data:
+            auc = AUC.handle(data["auc"])
+        else:
+            auc = None
+        if "gauc" in data:
+            gauc = GroupAUC.handle(data["gauc"])
+        else:
+            gauc = None
+        if "pcopc" in data:
+            pcopc = PCOPC.handle(data["pcopc"])
+        else:
+            pcopc = None
+        res = EvalConfig(auc, gauc, pcopc)
+        return res
+
 
 class ExportConfig(BaseConfig):
     def __init__(self, export_dir):
         self.export_dir = export_dir
+
+    @staticmethod
+    def handle(data):
+        res = ExportConfig(data["export_dir"])
+        return res
 
 
 class DNNConfig(BaseConfig):
@@ -244,6 +408,12 @@ class DNNTower(BaseConfig):
         self.input_group = input_group
         self.dnn_config = dnn_config
 
+    @staticmethod
+    def handle(data):
+        dnn_config = DNNConfig.handle(data["DNNConfig"])
+        res = DNNTower(data["input_group"], dnn_config)
+        return res
+
 
 class DINConfig(DNNConfig):
     def __init__(self, hidden_units: List[int],
@@ -254,11 +424,28 @@ class DINConfig(DNNConfig):
         assert hidden_units and hidden_units[-1] == 1
         super(DINConfig, self).__init__(hidden_units, activation, use_bn, dropout_ratio)
 
+    @staticmethod
+    def handle(data):
+        res = DINConfig(data["hidden_units"])
+        if "activation" in data:
+            res.activation = data["activation"]
+        if "use_bn" in data:
+            res.use_bn = data["use_bn"]
+        if "dropout_ratio" in data:
+            res.dropout_ratio = data["dropout_ratio"]
+        return res
+
 
 class DINTower(BaseConfig):
     def __init__(self, input_group, din_config: DINConfig):
         self.input_group = input_group
         self.din_config = din_config
+
+    @staticmethod
+    def handle(data):
+        din_config = DINConfig.handle(data["din_config"])
+        res = DINTower(data["input_group"], din_config)
+        return res
 
 
 class BSTConfig(BaseConfig):
@@ -266,11 +453,24 @@ class BSTConfig(BaseConfig):
         self.seq_len = seq_len
         self.multi_head_size = multi_head_size
 
+    @staticmethod
+    def handle(data):
+        res = BSTConfig(data["seq_len"])
+        if "multi_head_size" in data["multi_head_size"]:
+            res.multi_head_size = data["multi_head_size"]
+        return res
+
 
 class BSTTower(BaseConfig):
     def __init__(self, input_group, bst_config: BSTConfig):
         self.input_group = input_group
         self.bst_config = bst_config
+
+    @staticmethod
+    def handle(data):
+        bst_config = BSTConfig.handle(data["bst_config"])
+        res = BSTTower(data["input_group"], bst_config)
+        return res
 
 
 class AITMModel(BaseConfig):
@@ -288,10 +488,34 @@ class AITMModel(BaseConfig):
         self.ctcvr_loss_weight = ctcvr_loss_weight
         self.label_constraint_loss_weight = label_constraint_loss_weight
 
+    @staticmethod
+    def handle(data):
+        ctr_dnn_config = DNNConfig.handle(data["ctr_dnn_config"])
+        ctcvr_dnn_config = DNNConfig.handle(data["ctcvr_dnn_config"])
+        res = AITMModel(ctr_dnn_config, ctcvr_dnn_config)
+        if "ctr_label_name" in data:
+            res.ctr_label_name = data["ctr_label_name"]
+        if "ctcvr_label_name" in data:
+            res.ctcvr_label_name = data["ctcvr_label_name"]
+        if "attention_k" in data:
+            res.attention_k = data["attention_k"]
+        if "ctr_loss_weight" in data:
+            res.ctr_loss_weight = data["ctr_loss_weight"]
+        if "ctcvr_loss_weight" in data:
+            res.ctcvr_loss_weight = data["ctcvr_loss_weight"]
+        if "label_constraint_loss_weight" in data:
+            res.label_constraint_loss_weight = data["label_constraint_loss_weight"]
+        return res
+
 
 class BiasTower(BaseConfig):
     def __init__(self, input_group):
         self.input_group = input_group
+
+    @staticmethod
+    def handle(data):
+        res = BiasTower(data["input_group"])
+        return res
 
 
 class ModelConfig(BaseConfig):
@@ -300,7 +524,7 @@ class ModelConfig(BaseConfig):
                  dnn_towers: List[DNNTower] = None,
                  din_towers: List[DINTower] = None,
                  bst_towers: List[BSTTower] = None,
-                 final_dnn: DNNTower = None,
+                 final_dnn: DNNConfig = None,
                  aitm_model: AITMModel = None,
                  bias_tower: BiasTower = None,
                  embedding_regularization: float = 0.0,
@@ -316,6 +540,39 @@ class ModelConfig(BaseConfig):
         self.bias_tower = bias_tower
         self.embedding_regularization = embedding_regularization
         self.l2_regularization = l2_regularization
+
+    @staticmethod
+    def handle(data):
+        feature_groups = []
+        for feature_group in data["feature_groups"]:
+            feature_groups.append(FeatureGroup.handle(feature_group))
+        res = ModelConfig(data["model_class"], feature_groups)
+        if "dnn_towers" in data:
+            dnn_towers = []
+            for dnn_tower in data["dnn_towers"]:
+                dnn_towers.append(DNNTower.handle(dnn_tower))
+            res.dnn_towers = dnn_towers
+        if "din_towers" in data:
+            din_towers = []
+            for din_tower in data["din_towers"]:
+                din_towers.append(DINTower.handle(din_tower))
+            res.din_towers = din_towers
+        if "bst_towers" in data:
+            bst_towers = []
+            for bst_tower in data["bst_towers"]:
+                bst_towers.append(BSTTower.handle(bst_tower))
+            res.bst_towers = bst_towers
+        if "final_dnn" in data:
+            res.final_dnn = DNNConfig.handle(data["final_dnn"])
+        if "aitm_model" in data:
+            res.aitm_model = AITMModel.handle(data["aitm_model"])
+        if "bias_tower" in data:
+            res.bias_tower = BiasTower.handle(data["bias_tower"])
+        if "embedding_regularization" in data:
+            res.embedding_regularization = data["embedding_regularization"]
+        if "l2_regularization" in data:
+            res.l2_regularization = data["l2_regularization"]
+        return res
 
 
 class PipelineConfig(BaseConfig):
@@ -333,11 +590,15 @@ class PipelineConfig(BaseConfig):
 
     @staticmethod
     def handle(data):
-        res = PipelineConfig(data["model_dir"], data["input_config"], data["feature_config"], data["model_config"])
+        res = PipelineConfig(data["model_dir"],
+                             InputConfig.handle(data["input_config"]),
+                             FeatureConfig.handle(data["feature_config"]),
+                             ModelConfig.handle(data["model_config"]),
+                             )
         if "train_config" in data:
-            res.train_config = data["train_config"]
+            res.train_config = TrainConfig.handle(data["train_config"])
         if "eval_config" in data:
-            res.eval_config = data["eval_config"]
+            res.eval_config = EvalConfig.handle(data["eval_config"])
         if "export_config" in data:
-            res.export_config = data["export_config"]
+            res.export_config = ExportConfig.handle(data["export_config"])
         return res
