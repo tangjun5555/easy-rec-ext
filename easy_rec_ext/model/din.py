@@ -28,7 +28,7 @@ class DIN(RankModel):
         self._dnn_tower_features = []
         for tower_id in range(self._dnn_tower_num):
             tower = self._model_config.dnn_towers[tower_id]
-            tower_feature = self.build_input_layer(self._feature_config, tower.input_group)
+            tower_feature = self.build_input_layer(tower.input_group)
             self._dnn_tower_features.append(tower_feature)
 
         self._din_tower_num = len(self._model_config.din_towers)
@@ -39,7 +39,7 @@ class DIN(RankModel):
         self._din_tower_features = []
         for tower_id in range(self._din_tower_num):
             tower = self._model_config.din_towers[tower_id]
-            tower_feature = self.build_seq_att_input_layer(self._feature_config, tower.input_group)
+            tower_feature = self.build_seq_att_input_layer(tower.input_group)
             regularizers.apply_regularization(self._emb_reg, weights_list=[tower_feature["key"]])
             regularizers.apply_regularization(self._emb_reg, weights_list=[tower_feature["hist_seq_emb"]])
             self._din_tower_features.append(tower_feature)
@@ -105,7 +105,7 @@ class DIN(RankModel):
         all_fea = final_dnn_layer(all_fea)
 
         if self._model_config.bias_tower:
-            bias_fea = self.build_bias_input_layer(self._feature_config, self._model_config.bias_tower.input_group)
+            bias_fea = self.build_bias_input_layer(self._model_config.bias_tower.input_group)
             all_fea = tf.concat([all_fea, bias_fea], axis=1)
         logits = tf.layers.dense(all_fea, 1, name="logits")
         probs = tf.sigmoid(logits, name="probs")

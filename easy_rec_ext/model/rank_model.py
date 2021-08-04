@@ -39,6 +39,15 @@ class RankModel(object):
         self._prediction_dict = {}
         self._loss_dict = {}
 
+        self._feature_groups_dict = {
+            feature_group.group_name: feature_group
+            for feature_group in self._model_config.feature_groups
+        }
+        self._feature_fields_dict = {
+            feature_field.input_name: feature_field
+            for feature_field in self._feature_config.feature_fields
+        }
+
     def _add_to_prediction_dict(self, output):
         self._prediction_dict.update(output)
 
@@ -82,16 +91,13 @@ class RankModel(object):
                 metric_dict["pcopc"] = metrics_lib.pcopc(label, self._prediction_dict["probs"])
         return metric_dict
 
-    def build_input_layer(self, feature_config, feature_group):
-        feature_fields_dict = {
-            feature_field.input_name: feature_field
-            for feature_field in feature_config.feature_fields
-        }
+    def build_input_layer(self, feature_group):
+        feature_group = self._feature_groups_dict[feature_group]
         outputs = []
 
         feature_fields_num = len(feature_group.feature_names) if feature_group.feature_names else 0
         for i in range(feature_fields_num):
-            feature_field = feature_fields_dict[feature_group.feature_names[i]]
+            feature_field = self._feature_fields_dict[feature_group.feature_names[i]]
             if feature_field.feature_type == "IdFeature":
                 embedding_weights = embedding_ops.get_embedding_variable(
                     feature_field.embedding_name,
@@ -122,14 +128,10 @@ class RankModel(object):
         outputs = tf.concat(outputs, axis=1)
         return outputs
 
-    def build_seq_att_input_layer(self, feature_config, feature_group):
-        feature_fields_dict = {
-            feature_field.input_name: feature_field
-            for feature_field in feature_config.feature_fields
-        }
+    def build_seq_att_input_layer(self, feature_group):
+        feature_group = self._feature_groups_dict[feature_group]
         outputs = {}
-
-        key_feature_field = feature_fields_dict[feature_group.seq_att_map.key]
+        key_feature_field = self._feature_fields_dict[feature_group.seq_att_map.key]
         assert key_feature_field.feature_type == "IdFeature"
         key_embedding_weights = embedding_ops.get_embedding_variable(
             key_feature_field.embedding_name,
@@ -139,7 +141,7 @@ class RankModel(object):
             key_embedding_weights, self._feature_dict[key_feature_field.input_name],
         )
 
-        seq_feature_field = feature_fields_dict[feature_group.seq_att_map.hist_seq]
+        seq_feature_field = self._feature_fields_dict[feature_group.seq_att_map.hist_seq]
         assert seq_feature_field.feature_type == "SequenceFeature"
 
         hist_seq = self._feature_dict[seq_feature_field.input_name]
@@ -156,16 +158,12 @@ class RankModel(object):
         hist_seq_len = tf.reduce_sum(hist_seq_len, axis=1, keep_dims=False)
         outputs["hist_seq_len"] = hist_seq_len
 
-    def build_bias_input_layer(self, feature_config, feature_group):
-        feature_fields_dict = {
-            feature_field.input_name: feature_field
-            for feature_field in feature_config.feature_fields
-        }
+    def build_bias_input_layer(self, feature_group):
+        feature_group = self._feature_groups_dict[feature_group]
         outputs = []
-
         feature_fields_num = len(feature_group.feature_names) if feature_group.feature_names else 0
         for i in range(feature_fields_num):
-            feature_field = feature_fields_dict[feature_group.feature_names[i]]
+            feature_field = self._feature_fields_dict[feature_group.feature_names[i]]
             assert feature_field.feature_type == "IdFeature"
             if feature_field.hash_bucket_size <= 0:
                 outputs.append(

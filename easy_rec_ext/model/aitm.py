@@ -30,7 +30,7 @@ class AITM(RankModel):
         all_fea = []
         for feature_group in self._model_config.feature_groups:
             all_fea.append(
-                self.build_input_layer(self._feature_config, feature_group)
+                self.build_input_layer(feature_group)
             )
         self.all_fea = tf.concat(all_fea, axis=1)
 
