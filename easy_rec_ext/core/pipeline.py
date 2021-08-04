@@ -383,7 +383,7 @@ class ExportConfig(BaseConfig):
 class DNNConfig(BaseConfig):
     def __init__(self, hidden_units: List[int],
                  activation: str = "tf.nn.relu",
-                 use_bn: bool = False,
+                 use_bn: bool = True,
                  dropout_ratio=None
                  ):
         self.hidden_units = hidden_units
@@ -418,11 +418,11 @@ class DNNTower(BaseConfig):
 class DINConfig(DNNConfig):
     def __init__(self, hidden_units: List[int],
                  activation: str = "tf.nn.relu",
-                 use_bn: bool = False,
+                 use_bn: bool = True,
                  dropout_ratio=None
                  ):
-        assert hidden_units and hidden_units[-1] == 1
         super(DINConfig, self).__init__(hidden_units, activation, use_bn, dropout_ratio)
+        assert hidden_units and hidden_units[-1] == 1
 
     @staticmethod
     def handle(data):
