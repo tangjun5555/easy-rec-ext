@@ -98,6 +98,7 @@ class Input(object):
                         string_ops.string_to_hash_bucket(parsed_dict[fc.input_name].values, fc.hash_bucket_size),
                         parsed_dict[fc.input_name].dense_shape
                     )
+                parsed_dict[fc.input_name] = tf.sparse.to_dense(parsed_dict[fc.input_name])
 
             elif fc.feature_type == "RawFeature":
                 if field_dict[fc.input_name].dtype == tf.string:
