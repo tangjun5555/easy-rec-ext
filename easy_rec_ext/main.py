@@ -48,12 +48,16 @@ def get_pipeline_config_from_file(pipeline_config_path) -> PipelineConfig:
     with open(pipeline_config_path, "r") as f:
         res = json.load(f, object_hook=PipelineConfig.handle)
     if args.model_dir:
+        logging.info("use args, model_dir:" + str(args.model_dir))
         res.model_dir = args.model_dir
     if args.train_input_path:
+        logging.info("use args, train_input_path:" + str(args.train_input_path))
         res.input_config.train_input_path = args.train_input_path
     if args.eval_input_path:
+        logging.info("use args, eval_input_path:" + str(args.eval_input_path))
         res.input_config.eval_input_path = args.eval_input_path
     if args.export_dir:
+        logging.info("use args, export_dir:" + str(args.export_dir))
         res.export_config.export_dir = args.export_dir
     logging.info("main get_pipeline_config_from_file, pipeline_config:" + str(res))
     return res
