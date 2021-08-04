@@ -51,7 +51,8 @@ class DNN(object):
                     name="%s/dnn_%d/bn" % (self._name, i))
             deep_fea = self.activation(
                 deep_fea, name="%s/dnn_%d/act" % (self._name, i))
-            if len(self.dropout_ratio) > 0 and self._is_training:
+            if self.dropout_ratio and isinstance(self.dropout_ratio, list) and \
+                len(self.dropout_ratio) > 0 and self._is_training:
                 assert self.dropout_ratio[
                            i] < 1, "invalid dropout_ratio: %.3f" % self.dropout_ratio[i]
                 deep_fea = tf.nn.dropout(
