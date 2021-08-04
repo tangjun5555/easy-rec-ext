@@ -48,7 +48,7 @@ class RankEstimator(tf.estimator.Estimator):
             labels,
             is_training=True
         )
-
+        predict_dict = model.build_predict_graph()
         loss_dict = model.build_loss_graph()
 
         # regularization_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
@@ -217,7 +217,6 @@ class RankEstimator(tf.estimator.Estimator):
             global_step=tf.train.get_global_step(),
         )
 
-        predict_dict = model.build_predict_graph()
         return tf.estimator.EstimatorSpec(
             mode=tf.estimator.ModeKeys.TRAIN,
             loss=loss,
