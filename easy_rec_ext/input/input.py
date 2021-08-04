@@ -85,7 +85,7 @@ class Input(object):
             if fc.feature_type == "SequenceFeature":
                 field = field_dict[fc.input_name]
                 parsed_dict[fc.input_name] = tf.strings.split(field, "|")
-                if fc.num_buckets > 0:
+                if fc.hash_bucket_size <= 0:
                     parsed_dict[fc.input_name] = tf.sparse.SparseTensor(
                         parsed_dict[fc.input_name].indices,
                         tf.string_to_number(parsed_dict[fc.input_name].values, tf.int64,
@@ -118,7 +118,7 @@ class Input(object):
 
             elif fc.feature_type == "IdFeature":
                 parsed_dict[fc.input_name] = field_dict[fc.input_name]
-                if fc.num_buckets > 0:
+                if fc.hash_bucket_size <= 0:
                     if parsed_dict[fc.input_name].dtype == tf.string:
                         parsed_dict[fc.input_name] = tf.string_to_number(parsed_dict[fc.input_name], tf.dtypes.int64,
                                                                          name="%s_str_2_int" % fc.input_name)

@@ -167,7 +167,7 @@ class RankModel(object):
         for i in range(feature_fields_num):
             feature_field = feature_fields_dict[feature_group.feature_names[i]]
             assert feature_field.feature_type == "IdFeature"
-            if feature_field.num_buckets > 0:
+            if feature_field.hash_bucket_size <= 0:
                 outputs.append(
                     tf.one_hot(self._feature_dict[feature_field.input_name], feature_field.num_buckets)
                 )
