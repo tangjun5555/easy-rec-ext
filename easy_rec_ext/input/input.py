@@ -113,9 +113,10 @@ class Input(object):
                         )
                     else:
                         parsed_dict[fc.input_name] = tf.string_to_number(field_dict[fc.input_name], tf.float32)
+                        parsed_dict[fc.input_name] = tf.expand_dims(parsed_dict[fc.input_name], axis=1)
                 else:
                     parsed_dict[fc.input_name] = tf.to_float(field_dict[fc.input_name])
-                parsed_dict[fc.input_name] = tf.expand_dims(parsed_dict[fc.input_name])
+                    parsed_dict[fc.input_name] = tf.expand_dims(parsed_dict[fc.input_name], axis=1)
 
             elif fc.feature_type == "IdFeature":
                 parsed_dict[fc.input_name] = field_dict[fc.input_name]
