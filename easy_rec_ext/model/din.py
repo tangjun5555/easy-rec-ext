@@ -21,7 +21,7 @@ class DIN(RankModel):
                  features,
                  labels=None,
                  is_training=False):
-        super(RankModel, self).__init__(model_config, feature_config, features, labels, is_training)
+        super(DIN, self).__init__(model_config, feature_config, features, labels, is_training)
 
         self._dnn_tower_num = len(self._model_config.dnn_towers) if self._model_config.dnn_towers else 0
 
