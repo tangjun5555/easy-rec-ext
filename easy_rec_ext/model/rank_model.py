@@ -174,5 +174,6 @@ class RankModel(object):
                 outputs.append(
                     tf.one_hot(self._feature_dict[feature_field.input_name], feature_field.hash_bucket_size)
                 )
-        outputs = tf.concat(outputs, axis=1)
+        outputs = tf.concat(outputs, axis=-1)
+        outputs = tf.squeeze(outputs)
         return outputs
