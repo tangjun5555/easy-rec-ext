@@ -9,17 +9,12 @@ line_sep = "##" * 10 + "\n"
 
 
 def test_01():
-  print(line_sep)
-  from easy_rec_ext.core.pipeline import InputConfig
-  with open("input_config.json", "r") as f:
-    tmp = json.load(f)
-    res = InputConfig.handle(tmp)
-    print(type(tmp))
-    print(type(tmp["input_fields"]))
-    print(type(tmp["input_fields"][0]))
-    print(res)
-
-  # print(line_sep)
-  # with open("input_config.json", "r") as f:
-  #   res = json.load(f, object_hook=InputConfig.handle)
-  #   print(res)
+    print(line_sep)
+    from easy_rec_ext.core.pipeline import PipelineConfig
+    with open("cvr_v1_din_v1.json", "r") as f:
+        tmp = json.load(f)
+        res = PipelineConfig.handle(tmp)
+        # print(type(tmp))
+        # print(type(tmp["input_fields"]))
+        # print(type(tmp["input_fields"][0]))
+        print(res)

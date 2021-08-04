@@ -13,12 +13,6 @@ from easy_rec_ext.core.exporter import FinalExporter
 from easy_rec_ext.input import CSVInput, TFRecordInput
 from easy_rec_ext.model.rank_estimator import RankEstimator
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s %(name)s %(levelname)s %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S %a",
-)
-
 if tf.__version__ >= "2.0":
     gfile = tf.compat.v1.gfile
 else:
@@ -32,8 +26,22 @@ parser.add_argument("--model_dir", type=str, required=False)
 parser.add_argument("--train_input_path", type=str, required=False)
 parser.add_argument("--eval_input_path", type=str, required=False)
 parser.add_argument("--export_dir", type=str, required=False)
+parser.add_argument("--log_level", type=str, required=False, default="info", choices=["debug", "info"])
 args = parser.parse_args()
 print("Run params:" + str(args))
+
+if args.log_level == "dubug":
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s %(name)s %(levelname)s %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S %a",
+    )
+else:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(name)s %(levelname)s %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S %a",
+    )
 
 
 def get_pipeline_config_from_file(pipeline_config_path) -> PipelineConfig:
@@ -47,6 +55,7 @@ def get_pipeline_config_from_file(pipeline_config_path) -> PipelineConfig:
         res.input_config.eval_input_path = args.eval_input_path
     if args.export_dir:
         res.export_config.export_dir = args.export_dir
+    logging.info("main get_pipeline_config_from_file, pipeline_config:" + str(res))
     return res
 
 

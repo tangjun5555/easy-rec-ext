@@ -3,7 +3,6 @@
 # time: 2021/7/25 9:37 下午
 # desc:
 
-import logging
 from typing import List
 
 
@@ -410,7 +409,7 @@ class DNNTower(BaseConfig):
 
     @staticmethod
     def handle(data):
-        dnn_config = DNNConfig.handle(data["DNNConfig"])
+        dnn_config = DNNConfig.handle(data["dnn_config"])
         res = DNNTower(data["input_group"], dnn_config)
         return res
 
