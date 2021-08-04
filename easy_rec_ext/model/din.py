@@ -81,7 +81,7 @@ class DIN(RankModel):
         tower_fea_arr = []
         for tower_id in range(self._dnn_tower_num):
             tower_fea = self._dnn_tower_features[tower_id]
-            tower = self._model_config.towers[tower_id]
+            tower = self._model_config.dnn_towers[tower_id]
             tower_name = tower.input_group
             tower_fea = tf.layers.batch_normalization(
                 tower_fea,
