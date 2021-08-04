@@ -18,10 +18,16 @@ def test_07():
         dtype=tf.dtypes.float32
     )
     t2 = tf.expand_dims(t1, axis=1)
+    t3 = tf.concat([t2, t2], axis=1)
+    t4 = tf.concat([t3, t2, t1], axis=1)
     print(line_sep)
     print(t1)
     print(line_sep)
     print(t2)
+    print(line_sep)
+    print(t3)
+    print(line_sep)
+    print(t4)
 
 
 def test_06():

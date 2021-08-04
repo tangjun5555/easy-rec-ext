@@ -3,6 +3,7 @@
 # time: 2021/7/30 4:41 下午
 # desc:
 
+import logging
 from abc import abstractmethod
 from easy_rec_ext.core import embedding_ops
 from easy_rec_ext.core import regularizers
@@ -103,15 +104,11 @@ class RankModel(object):
                     feature_field.embedding_name,
                     feature_field.embedding_dim
                 )
-                outputs.append(
-                    embedding_ops.safe_embedding_lookup(
-                        embedding_weights, self._feature_dict[feature_field.input_name],
-                    )
+                values = embedding_ops.safe_embedding_lookup(
+                    embedding_weights, self._feature_dict[feature_field.input_name],
                 )
             elif feature_field.feature_type == "RawFeature":
-                outputs.append(
-                    self._feature_dict[feature_field.input_name]
-                )
+                values = self._feature_dict[feature_field.input_name]
             elif feature_field.feature_type == "SequenceFeature":
                 embedding_weights = embedding_ops.get_embedding_variable(
                     feature_field.embedding_name,
@@ -122,9 +119,11 @@ class RankModel(object):
                 )
                 # TODO 支持其它的combiner
                 values = tf.reduce_sum(values, axis=-1, keepdims=False)
-                outputs.append(values)
             else:
                 continue
+            outputs.append(values)
+            logging.debug("build_input_layer, name:" + str(feature_field.input_name) + ", shape:" + str(
+                values.get_shape().as_list()))
         outputs = tf.concat(outputs, axis=1)
         return outputs
 
