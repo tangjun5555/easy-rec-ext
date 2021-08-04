@@ -177,7 +177,7 @@ class RankEstimator(tf.estimator.Estimator):
                 stats.append("%s = %s" % (k, tensor_value))
             return ",".join(stats)
 
-        log_step_count_steps = self.train_config.log_step_count_steps
+        log_step_count_steps = self._pipeline_config.train_config.log_step_count_steps
 
         logging_hook = tf.train.LoggingTensorHook(
             logging_dict, every_n_iter=log_step_count_steps, formatter=format_fn)
