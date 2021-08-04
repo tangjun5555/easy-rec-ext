@@ -116,9 +116,8 @@ class RankModel(object):
                 )
                 values = embedding_ops.safe_embedding_lookup(
                     embedding_weights, self._feature_dict[feature_field.input_name],
+                    combiner=feature_field.combiner
                 )
-                # TODO 支持其它的combiner
-                values = tf.reduce_sum(values, axis=-1, keepdims=False)
             else:
                 continue
             outputs.append(values)
@@ -130,8 +129,10 @@ class RankModel(object):
     def build_seq_att_input_layer(self, feature_group):
         feature_group = self._feature_groups_dict[feature_group]
         outputs = {}
+
         key_feature_field = self._feature_fields_dict[feature_group.seq_att_map.key]
         assert key_feature_field.feature_type == "IdFeature"
+
         key_embedding_weights = embedding_ops.get_embedding_variable(
             key_feature_field.embedding_name,
             key_feature_field.embedding_dim
@@ -144,14 +145,14 @@ class RankModel(object):
         assert seq_feature_field.feature_type == "SequenceFeature"
 
         hist_seq = self._feature_dict[seq_feature_field.input_name]
-
         seq_embedding_weights = embedding_ops.get_embedding_variable(
             seq_feature_field.embedding_name,
             seq_feature_field.embedding_dim
         )
-        outputs["hist_seq_emb"] = embedding_ops.safe_embedding_lookup(
-            seq_embedding_weights, hist_seq
+        hist_seq_emb = embedding_ops.safe_embedding_lookup(
+            seq_embedding_weights, tf.expand_dims(hist_seq, -1)
         )
+        outputs["hist_seq_emb"] = hist_seq_emb
 
         hist_seq_len = tf.where(tf.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
         hist_seq_len = tf.reduce_sum(hist_seq_len, axis=1, keep_dims=False)

@@ -16,6 +16,26 @@ from easy_rec_ext.core import embedding_ops
 line_sep = "\n" + "##" * 20 + "\n"
 
 
+def test_06():
+    tf.enable_eager_execution()
+    weights = embedding_ops.get_embedding_variable(
+        "weights", 4
+    )
+    ids = tf.constant(
+        value=[
+            [1, 2, 3],
+            [4, -1, 0]
+        ],
+        dtype=tf.dtypes.int64,
+    )
+    ids = tf.expand_dims(ids, -1)
+    values = embedding_ops.safe_embedding_lookup(weights, ids)
+    print(line_sep)
+    print(ids)
+    print(line_sep)
+    print(values)
+
+
 def test_05():
     tf.enable_eager_execution()
     weights = embedding_ops.get_embedding_variable(
@@ -30,11 +50,11 @@ def test_05():
         dtype=tf.dtypes.int64,
     )
 
-    sparse_ids = embedding_ops._to_sparse_ids(ids)
-    original_shape = sparse_ids.dense_shape
-    original_rank_dim = sparse_ids.dense_shape.get_shape()[0]
-    print(original_shape)
-    print(original_rank_dim)
+    # sparse_ids = embedding_ops._to_sparse_ids(ids)
+    # original_shape = sparse_ids.dense_shape
+    # original_rank_dim = sparse_ids.dense_shape.get_shape()[0]
+    # print(original_shape)
+    # print(original_rank_dim)
 
     # print(line_sep)
     # print(embedding_ops._to_sparse_ids(ids))
