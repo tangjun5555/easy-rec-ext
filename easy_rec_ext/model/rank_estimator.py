@@ -43,7 +43,7 @@ class RankEstimator(tf.estimator.Estimator):
     def _train_model_fn(self, features, labels):
         model = self._rank_model(
             self._pipeline_config.model_config,
-            self._pipeline_config.feature_configs,
+            self._pipeline_config.feature_config,
             features,
             labels,
             is_training=True
@@ -232,7 +232,7 @@ class RankEstimator(tf.estimator.Estimator):
         start = time.time()
         model = self._rank_model(
             self._pipeline_config.model_config,
-            self._pipeline_config.feature_configs,
+            self._pipeline_config.feature_config,
             features,
             labels,
             is_training=True
@@ -263,7 +263,7 @@ class RankEstimator(tf.estimator.Estimator):
     def _export_model_fn(self, features):
         model = self._rank_model(
             self._pipeline_config.model_config,
-            self._pipeline_config.feature_configs,
+            self._pipeline_config.feature_config,
             features,
             None,
             is_training=False
