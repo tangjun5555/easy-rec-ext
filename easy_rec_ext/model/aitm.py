@@ -41,9 +41,9 @@ class AITM(RankModel):
         attention_k = self._model_config.aitm_model.attention_k
 
         # (N,L,K)*(K,K)->(N,L,K), L=2, K=32 in this.
-        attention_w1 = variable_util.get_normal_variable("attention", "w1", [attention_k, attention_k])
-        attention_w2 = variable_util.get_normal_variable("attention", "w2", [attention_k, attention_k])
-        attention_w3 = variable_util.get_normal_variable("attention", "w3", [attention_k, attention_k])
+        attention_w1 = variable_util.get_normal_variable("AITM", "w1", [attention_k, attention_k])
+        attention_w2 = variable_util.get_normal_variable("AITM", "w2", [attention_k, attention_k])
+        attention_w3 = variable_util.get_normal_variable("AITM", "w3", [attention_k, attention_k])
         Q = tf.tensordot(inputs, attention_w1, axes=1)
         K = tf.tensordot(inputs, attention_w2, axes=1)
         V = tf.tensordot(inputs, attention_w3, axes=1)

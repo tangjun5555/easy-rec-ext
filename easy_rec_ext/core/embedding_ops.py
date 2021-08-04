@@ -14,17 +14,23 @@ from tensorflow.python.ops import init_ops
 
 import tensorflow_recommenders_addons as tfra
 
+import tensorflow as tf
+
+if tf.__version__ >= "2.0":
+    tf = tf.compat.v1
+
 
 def get_embedding_variable(name, dim):
     assert name
     assert isinstance(dim, int) and dim > 0
-    return tfra.dynamic_embedding.get_variable(
-        name=name,
-        key_dtype=dtypes.int64,
-        value_dtype=dtypes.float32,
-        dim=dim,
-        initializer=init_ops.random_normal_initializer(mean=0.0, stddev=0.1),
-    )
+    with tf.variable_scope("embedding", reuse=tf.AUTO_REUSE):
+        return tfra.dynamic_embedding.get_variable(
+            name=name,
+            key_dtype=dtypes.int64,
+            value_dtype=dtypes.float32,
+            dim=dim,
+            initializer=init_ops.random_normal_initializer(mean=0.0, stddev=0.1),
+        )
 
 
 def _to_sparse_ids(input_tensor):
