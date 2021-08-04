@@ -88,7 +88,7 @@ class DIN(RankModel):
                 training=self._is_training,
                 trainable=True,
                 name="%s_fea_bn" % tower_name)
-            dnn_layer = dnn.DNN(tower.dnn, self._l2_reg, "%s_dnn" % tower_name,
+            dnn_layer = dnn.DNN(tower.dnn_config, self._l2_reg, "%s_dnn" % tower_name,
                                 self._is_training)
             tower_fea = dnn_layer(tower_fea)
             tower_fea_arr.append(tower_fea)
