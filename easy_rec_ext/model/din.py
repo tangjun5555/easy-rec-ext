@@ -66,7 +66,7 @@ class DIN(RankModel):
         scores = tf.reshape(din_net, [-1, 1, seq_max_len])  # (B, 1, ?)
 
         seq_len = tf.expand_dims(seq_len, 1)
-        mask = tf.sequence_mask(seq_len)
+        mask = tf.sequence_mask(seq_len, seq_max_len)
         padding = tf.ones_like(scores) * (-2 ** 32 + 1)
         scores = tf.where(mask, scores, padding)  # [B, 1, seq_max_len]
 
