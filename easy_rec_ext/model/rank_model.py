@@ -84,7 +84,7 @@ class RankModel(object):
                 metric_dict["gauc"] = metrics_lib.gauc(
                     label,
                     self._prediction_dict["probs"],
-                    uids=self._feature_dict[metric.gid_field],
+                    gids=self._feature_dict[metric.gid_field],
                     reduction=metric.reduction
                 )
             elif "pcopc" == metric.name:
