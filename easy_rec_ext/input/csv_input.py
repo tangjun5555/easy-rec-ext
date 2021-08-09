@@ -52,7 +52,7 @@ class CSVInput(Input):
             parallel_num = min(num_parallel_calls, len(file_paths))
             dataset = dataset.interleave(tf.data.TextLineDataset, cycle_length=parallel_num,
                                          num_parallel_calls=parallel_num)
-            dataset = dataset.shuffle(32, seed=2020, reshuffle_each_iteration=True)
+            dataset = dataset.shuffle(32, seed=555, reshuffle_each_iteration=True)
             dataset = dataset.repeat(self._input_config.num_epochs)
         else:
             logging.info("eval files[%d]: %s" % (len(file_paths), ",".join(file_paths)))

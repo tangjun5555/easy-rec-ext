@@ -27,7 +27,7 @@ class InputField(BaseConfig):
 class InputConfig(BaseConfig):
     def __init__(self,
                  input_fields: List[InputField], label_fields: List[str],
-                 input_type: str = "csv",
+                 input_type: str = "csv", input_medium="local",
                  train_input_path: str = None, eval_input_path: str = None,
                  num_epochs: int = 2, batch_size: int = 256
                  ):
@@ -35,6 +35,9 @@ class InputConfig(BaseConfig):
         self.label_fields = label_fields
 
         self.input_type = input_type
+        self.input_medium = input_medium
+        assert self.input_medium in ["local", "hdfs", "oss", "kafka"]
+
         self.train_input_path = train_input_path
         self.eval_input_path = eval_input_path
 
