@@ -110,7 +110,7 @@ class DIN(RankModel):
             all_fea = tf.concat([all_fea, bias_fea], axis=1)
             logging.info("din build_predict_graph, logits.shape:%s" % (str(all_fea.shape)))
         logits = tf.layers.dense(all_fea, 1, name="logits")
-        logits = tf.reshape(logits, (-1,))
+        # logits = tf.reshape(logits, (-1,))
         probs = tf.sigmoid(logits, name="probs")
 
         prediction_dict = dict()
