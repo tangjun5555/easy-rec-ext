@@ -135,6 +135,7 @@ class Input(object):
 
             else:
                 parsed_dict[fc.input_name] = field_dict[fc.input_name]
+                parsed_dict[fc.input_name] = tf.expand_dims(parsed_dict[fc.input_name], axis=1)
 
         for input_id, input_name in enumerate(self._label_fields):
             if input_name not in field_dict:
