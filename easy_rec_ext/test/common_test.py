@@ -11,6 +11,27 @@ if tf.__version__ >= "2.0":
 line_sep = "\n" + "##" * 20 + "\n"
 
 
+def test_08():
+    tf.disable_eager_execution()
+    from tensorflow.python.client import timeline
+
+    x = tf.random_normal([1000, 1000])
+    y = tf.random_normal([1000, 1000])
+    res = tf.matmul(x, y)
+
+    # Run the graph with full trace option
+    with tf.Session() as sess:
+        run_options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+        run_metadata = tf.RunMetadata()
+        sess.run(res, options=run_options, run_metadata=run_metadata)
+
+        # Create the Timeline object, and write it to a json
+        tl = timeline.Timeline(run_metadata.step_stats)
+        ctf = tl.generate_chrome_trace_format()
+        with open("timeline.json", "w") as f:
+            f.write(ctf)
+
+
 def test_07():
     tf.enable_eager_execution()
     t1 = tf.constant(
