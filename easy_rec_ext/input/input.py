@@ -58,8 +58,11 @@ class Input(object):
 
     def _get_labels(self, fields):
         return OrderedDict([
-            (x, tf.squeeze(fields[x], axis=1) if len(fields[x].get_shape()) == 2 and
-                                                 fields[x].get_shape()[1] == 1 else fields[x])
+            (x,
+             tf.squeeze(fields[x], axis=1)
+             if len(fields[x].get_shape()) == 2 and fields[x].get_shape()[1] == 1
+             else fields[x]
+             )
             for x in self._label_fields
         ])
 
@@ -135,7 +138,6 @@ class Input(object):
 
             else:
                 parsed_dict[fc.input_name] = field_dict[fc.input_name]
-                parsed_dict[fc.input_name] = tf.expand_dims(parsed_dict[fc.input_name], axis=1)
 
         for input_id, input_name in enumerate(self._label_fields):
             if input_name not in field_dict:

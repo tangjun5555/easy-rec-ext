@@ -81,10 +81,11 @@ class RankModel(object):
                 metric_dict["auc"] = tf.metrics.auc(label, self._prediction_dict["probs"])
             elif "gauc" == metric.name:
                 label = tf.to_int64(self._labels[self._label_name])
+                gids = tf.squeeze(self._feature_dict[metric.gid_field], axis=1)
                 metric_dict["gauc"] = metrics_lib.gauc(
                     label,
                     self._prediction_dict["probs"],
-                    gids=self._feature_dict[metric.gid_field],
+                    gids=gids,
                     reduction=metric.reduction
                 )
             elif "pcopc" == metric.name:
