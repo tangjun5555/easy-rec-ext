@@ -15,26 +15,6 @@ if tf.__version__ >= "2.0":
 class CSVInput(Input):
     def __init__(self, input_config, feature_config, input_path):
         super(CSVInput, self).__init__(input_config, feature_config, input_path)
-        self._record_defaults = [self.get_type_defaults(t) for t in self._input_field_types]
-
-    def _parse_csv(self, line):
-        def _check_data(line):
-            sep = ","
-            if type(sep) != type(str):
-                sep = sep.encode("utf-8")
-            field_num = len(line[0].split(sep))
-            assert field_num == len(self._record_defaults), \
-                "sep[%s] maybe invalid: field_num=%d, required_num=%d" % (sep, field_num, len(self._record_defaults))
-            return True
-
-        check_op = tf.py_func(_check_data, [line], Tout=tf.bool)
-        with tf.control_dependencies([check_op]):
-            fields = tf.decode_csv(line, record_defaults=self._record_defaults, field_delim=",", name="decode_csv")
-
-        inputs = {self._input_fields[x]: fields[x] for x in self._effective_fids}
-        for x in self._label_fids:
-            inputs[self._input_fields[x]] = fields[x]
-        return inputs
 
     def _build(self, mode):
         file_paths = []

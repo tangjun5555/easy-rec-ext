@@ -32,6 +32,7 @@ class Input(object):
         self._label_fields = list(self._input_config.label_fields)
         self._label_fids = [self._input_fields.index(x) for x in self._label_fields]
 
+        self._input_field_defaults = [self.get_type_defaults(t) for t in self._input_field_types]
         self._prefetch_size = 32
 
     def get_tf_type(self, field_type):
@@ -51,6 +52,25 @@ class Input(object):
         }
         assert field_type in type_defaults, "invalid type: %s" % field_type
         return type_defaults[field_type]
+
+    def _parse_csv(self, line):
+        def _check_data(line):
+            sep = ","
+            if type(sep) != type(str):
+                sep = sep.encode("utf-8")
+            field_num = len(line[0].split(sep))
+            assert field_num == len(self._input_field_defaults), \
+                "sep[%s] maybe invalid: field_num=%d, required_num=%d" % (sep, field_num, len(self._input_field_defaults))
+            return True
+
+        check_op = tf.py_func(_check_data, [line], Tout=tf.bool)
+        with tf.control_dependencies([check_op]):
+            fields = tf.decode_csv(line, record_defaults=self._input_field_defaults, field_delim=",", name="decode_csv")
+
+        inputs = {self._input_fields[x]: fields[x] for x in self._effective_fids}
+        for x in self._label_fids:
+            inputs[self._input_fields[x]] = fields[x]
+        return inputs
 
     def _get_features(self, fields):
         field_dict = {x: fields[x] for x in self._effective_fields if x in fields}

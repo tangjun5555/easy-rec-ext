@@ -11,6 +11,19 @@ if tf.__version__ >= "2.0":
 line_sep = "\n" + "##" * 20 + "\n"
 
 
+def test_09():
+    import oss2
+    auth = oss2.Auth("LTAI4G3GfJSTZwsi8ySkYv4Z", "0EW3RLRUV7zWwxtxHiuQztl2dbAVNr")
+    bucket = oss2.Bucket(auth, "http://oss-cn-hangzhou.aliyuncs.com", "shihuo-bigdata-oss")
+    object_stream = bucket.get_object("tangjun0612/data/ShouyeFeedRankCvrDeepV1Data/20210711/part-00000")
+    # object_stream.read()
+    # print(object_stream.read(1000))
+    index = 1
+    while index <= 10:
+        tmp = object_stream.read(1024)
+
+        print("第%d行:%s" % (index, ))
+
 def test_08():
     tf.disable_eager_execution()
     from tensorflow.python.client import timeline

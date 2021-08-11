@@ -15,7 +15,6 @@ if tf.__version__ >= "2.0":
 class TFRecordInput(Input):
     def __init__(self, input_config, feature_config, input_path):
         super(TFRecordInput, self).__init__(input_config, feature_config, input_path)
-        self._input_field_defaults = [self.get_type_defaults(t) for t in self._input_field_types]
 
         self.feature_desc = {}
         for x, t, d in zip(self._input_fields, self._input_field_types, self._input_field_defaults):
