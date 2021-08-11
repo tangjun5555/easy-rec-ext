@@ -5,4 +5,5 @@
 
 from .csv_input import CSVInput
 from .tfrecord_input import TFRecordInput
+from .oss_input import OSSInput
 

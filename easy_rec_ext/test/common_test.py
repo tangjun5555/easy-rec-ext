@@ -11,18 +11,69 @@ if tf.__version__ >= "2.0":
 line_sep = "\n" + "##" * 20 + "\n"
 
 
-def test_09():
+def test_10():
+    print(line_sep)
     import oss2
     auth = oss2.Auth("LTAI4G3GfJSTZwsi8ySkYv4Z", "0EW3RLRUV7zWwxtxHiuQztl2dbAVNr")
     bucket = oss2.Bucket(auth, "http://oss-cn-hangzhou.aliyuncs.com", "shihuo-bigdata-oss")
-    object_stream = bucket.get_object("tangjun0612/data/ShouyeFeedRankCvrDeepV1Data/20210711/part-00000")
-    # object_stream.read()
-    # print(object_stream.read(1000))
-    index = 1
-    while index <= 10:
-        tmp = object_stream.read(1024)
 
-        print("第%d行:%s" % (index, ))
+    for obj in oss2.ObjectIterator(bucket, prefix='tangjun0612/data/ShouyeFeedRankCvrDeepV1V2Data/20210810', delimiter='/'):
+        # 通过is_prefix方法判断obj是否为文件夹。
+        if obj.is_prefix():  # 判断obj为文件夹。
+            print('directory: ' + obj.key)
+        else:  # 判断obj为文件。
+            print('file: ' + obj.key)
+
+
+def test_09():
+    print(line_sep)
+
+    import time
+    import oss2
+    auth = oss2.Auth("LTAI4G3GfJSTZwsi8ySkYv4Z", "0EW3RLRUV7zWwxtxHiuQztl2dbAVNr")
+    bucket = oss2.Bucket(auth, "http://oss-cn-hangzhou.aliyuncs.com", "shihuo-bigdata-oss")
+
+    # object_stream = bucket.get_object("tangjun0612/data/ShouyeFeedRankCvrDeepV1V2Data/20210810/part-00000")
+
+    def generator_fn():
+        index = 0
+        for path in ["tangjun0612/data/ShouyeFeedRankCvrDeepV1V2Data/20210810/part-00000_50"]:
+            object_stream = bucket.get_object(path)
+            buffer = ""
+            while True:
+                tmp = str(object_stream.read(1024), encoding="utf-8")
+                if not tmp:
+                    break
+                buffer += tmp
+                if "\n" in buffer:
+                    split = buffer.split("\n")
+                    for i in range(len(split) - 1):
+                        line = split[i]
+                        index += 1
+                        # print("第%d行:%s" % (index, line))
+                        print("第%d行" % (index))
+                        yield line
+                    buffer = split[-1]
+
+    for x in generator_fn():
+        print(x)
+
+    # buffer = ""
+    # index = 0
+    # while True:
+    #     tmp = str(object_stream.read(1024), encoding="utf-8")
+    #     if not tmp:
+    #         break
+    #     buffer += tmp
+    #     if "\n" in buffer:
+    #         split = buffer.split("\n")
+    #         for i in range(len(split) - 1):
+    #             line = split[i]
+    #             index += 1
+    #             print("第%d行:%s" % (index, line))
+    #         buffer = split[-1]
+    #         time.sleep(0.1)
+
 
 def test_08():
     tf.disable_eager_execution()
@@ -176,3 +227,7 @@ def test_01():
     print(t1)
     print(line_sep)
     print(t2)
+
+
+if __name__ == '__main__':
+    test_09()

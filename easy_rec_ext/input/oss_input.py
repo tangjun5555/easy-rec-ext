@@ -4,9 +4,9 @@
 # desc:
 
 
+import oss2
 import logging
 from easy_rec_ext.input.input import Input
-
 import tensorflow as tf
 
 if tf.__version__ >= "2.0":
@@ -16,4 +16,74 @@ if tf.__version__ >= "2.0":
 class OSSInput(Input):
     def __init__(self, input_config, feature_config, input_path):
         super(OSSInput, self).__init__(input_config, feature_config, input_path)
-        # TODO
+
+    def _get_oss_bucket(self):
+        auth = oss2.Auth(self._input_config.oss_config.access_key_id, self._input_config.oss_config.access_key_secret)
+        bucket = oss2.Bucket(auth, self._input_config.oss_config.endpoint, self._input_config.oss_config.bucket_name)
+        return bucket
+
+    def _get_oss_stream(self, path):
+        bucket = self._get_oss_bucket()
+        return bucket.get_object(path)
+
+    def _get_file_list(self, root_path):
+        bucket = self._get_oss_bucket()
+        res = []
+        for obj in oss2.ObjectIterator(bucket, prefix=root_path, delimiter="/"):
+            if not obj.is_prefix():
+                res.append(obj.key)
+        return res
+
+    def _build(self, mode):
+        file_paths = []
+        for x in self._input_path.split(","):
+            file_paths.extend(self._get_file_list(x))
+
+        def generator_fn():
+            for path in file_paths:
+                object_stream = self._get_oss_stream(path)
+                buffer = ""
+                while True:
+                    tmp = str(object_stream.read(1024), encoding="utf-8")
+                    if not tmp:
+                        break
+                    buffer += tmp
+                    if "\n" in buffer:
+                        split = buffer.split("\n")
+                        for i in range(len(split) - 1):
+                            line = split[i]
+                            yield line
+                        buffer = split[-1]
+
+        if mode == tf.estimator.ModeKeys.TRAIN:
+            logging.info("train files[%d]: %s" % (len(file_paths), ",".join(file_paths)))
+            dataset = tf.data.Dataset.from_generator(
+                generator=generator_fn,
+                output_types=tf.dtypes.string,
+                output_shapes=tf.TensorShape([]),
+            )
+            dataset = dataset.shuffle(len(file_paths))
+            # too many readers read the same file will cause performance issues
+            # as the same data will be read multiple times
+            parallel_num = min(self._num_parallel_calls, len(file_paths))
+            dataset = dataset.interleave(tf.data.TextLineDataset, cycle_length=parallel_num,
+                                         num_parallel_calls=parallel_num)
+            dataset = dataset.shuffle(self._shuffle_buffer_size, seed=555, reshuffle_each_iteration=True)
+            dataset = dataset.repeat(self._input_config.num_epochs)
+        else:
+            logging.info("eval files[%d]: %s" % (len(file_paths), ",".join(file_paths)))
+            dataset = tf.data.TextLineDataset(file_paths)
+            dataset = dataset.repeat(1)
+
+        dataset = dataset.batch(self._input_config.batch_size)
+        dataset = dataset.map(self._parse_csv, num_parallel_calls=self._num_parallel_calls)
+        dataset = dataset.prefetch(buffer_size=self._prefetch_size)
+        dataset = dataset.map(map_func=self._preprocess, num_parallel_calls=self._num_parallel_calls)
+        dataset = dataset.prefetch(buffer_size=self._prefetch_size)
+
+        if mode != tf.estimator.ModeKeys.PREDICT:
+            dataset = dataset.map(lambda x:
+                                  (self._get_features(x), self._get_labels(x)))
+        else:
+            dataset = dataset.map(lambda x: (self._get_features(x)))
+        return dataset

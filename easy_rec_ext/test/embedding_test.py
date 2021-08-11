@@ -106,6 +106,7 @@ def test_03():
         key_dtype=tf.dtypes.int64,
         dim=4,
         initializer=tf.random_normal_initializer(0, 0.1),
+        init_size=2,
     )
 
     ids2 = tf.SparseTensor(

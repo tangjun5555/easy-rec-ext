@@ -24,10 +24,26 @@ class InputField(BaseConfig):
         return res
 
 
+class OSSConfig(BaseConfig):
+    def __init__(self, access_key_id, access_key_secret, endpoint, bucket_name):
+        self.access_key_id = access_key_id
+        self.access_key_secret = access_key_secret
+        self.endpoint = endpoint
+        self.bucket_name = bucket_name
+
+    @staticmethod
+    def handle(data):
+        res = OSSConfig(
+            data["access_key_id"], data["access_key_secret"],
+            data["endpoint"], data["bucket_name"]
+        )
+        return res
+
+
 class InputConfig(BaseConfig):
     def __init__(self,
                  input_fields: List[InputField], label_fields: List[str],
-                 input_type: str = "csv", input_medium="local",
+                 input_type: str = "csv", oss_config: OSSConfig = None,
                  train_input_path: str = None, eval_input_path: str = None,
                  num_epochs: int = 2, batch_size: int = 256
                  ):
@@ -35,8 +51,7 @@ class InputConfig(BaseConfig):
         self.label_fields = label_fields
 
         self.input_type = input_type
-        self.input_medium = input_medium
-        assert self.input_medium in ["local", "hdfs", "oss", "kafka"]
+        self.oss_config = oss_config
 
         self.train_input_path = train_input_path
         self.eval_input_path = eval_input_path
@@ -53,6 +68,9 @@ class InputConfig(BaseConfig):
 
         if "input_type" in data:
             res.input_type = data["input_type"]
+        if "oss_config" in data:
+            res.oss_config = OSSConfig.handle(data["oss_config"])
+
         if "train_input_path" in data:
             res.train_input_path = data["train_input_path"]
         if "eval_input_path" in data:

@@ -33,7 +33,10 @@ class Input(object):
         self._label_fids = [self._input_fields.index(x) for x in self._label_fields]
 
         self._input_field_defaults = [self.get_type_defaults(t) for t in self._input_field_types]
+
+        self._num_parallel_calls = 8
         self._prefetch_size = 32
+        self._shuffle_buffer_size = 32
 
     def get_tf_type(self, field_type):
         type_map = {
