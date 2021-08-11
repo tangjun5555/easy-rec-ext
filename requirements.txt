@@ -1,3 +1,4 @@
+six==1.15.0
 numpy==1.19.5
 scikit-learn==0.24.2
 oss2==2.15.0
