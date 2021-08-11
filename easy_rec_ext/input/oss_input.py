@@ -64,12 +64,14 @@ class OSSInput(Input):
                 # output_signature=None
                 output_signature=tf.TensorSpec(shape=(), dtype=tf.dtypes.string)
             )
-            dataset = dataset.shuffle(len(file_paths))
+
+            # dataset = dataset.shuffle(len(file_paths))
             # too many readers read the same file will cause performance issues
             # as the same data will be read multiple times
-            parallel_num = min(self._num_parallel_calls, len(file_paths))
-            dataset = dataset.interleave(tf.data.TextLineDataset, cycle_length=parallel_num,
-                                         num_parallel_calls=parallel_num)
+            # parallel_num = min(self._num_parallel_calls, len(file_paths))
+            # dataset = dataset.interleave(tf.data.TextLineDataset, cycle_length=parallel_num,
+            #                              num_parallel_calls=parallel_num)
+
             dataset = dataset.shuffle(self._shuffle_buffer_size, seed=555, reshuffle_each_iteration=True)
             dataset = dataset.repeat(self._input_config.num_epochs)
         else:
