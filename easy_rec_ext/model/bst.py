@@ -163,6 +163,7 @@ class BST(RankModel):
             bias_fea = self.build_bias_input_layer(self._model_config.bias_tower.input_group)
             all_fea = tf.concat([all_fea, bias_fea], axis=1)
         logits = tf.layers.dense(all_fea, 1, name="logits")
+        logits = tf.reshape(logits, (-1,))
         probs = tf.sigmoid(logits, name="probs")
 
         prediction_dict = dict()
