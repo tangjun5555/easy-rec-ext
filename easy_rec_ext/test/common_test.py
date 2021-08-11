@@ -17,7 +17,7 @@ def test_10():
     auth = oss2.Auth("LTAI4G3GfJSTZwsi8ySkYv4Z", "0EW3RLRUV7zWwxtxHiuQztl2dbAVNr")
     bucket = oss2.Bucket(auth, "http://oss-cn-hangzhou.aliyuncs.com", "shihuo-bigdata-oss")
 
-    for obj in oss2.ObjectIterator(bucket, prefix='tangjun0612/data/ShouyeFeedRankCvrDeepV1V2Data/20210810', delimiter='/'):
+    for obj in oss2.ObjectIterator(bucket, prefix='tangjun0612/data/ShouyeFeedRankCvrDeepV1V2Data/20210810/part', delimiter='/'):
         # 通过is_prefix方法判断obj是否为文件夹。
         if obj.is_prefix():  # 判断obj为文件夹。
             print('directory: ' + obj.key)
