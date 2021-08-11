@@ -1,8 +1,11 @@
-# -*- encoding: utf-8 -*-
-# Copyright (c) Alibaba, Inc. and its affiliates.
+# -*- coding: utf-8 -*-
+# author: tangj 1844250138@qq.com
+# time: 2021/8/4 2:31 下午
+# desc:
+
 import tensorflow as tf
 
-if tf.__version__ >= '2.0':
+if tf.__version__ >= "2.0":
     tf = tf.compat.v1
 
 
@@ -14,22 +17,22 @@ class LayerNormalization(tf.layers.Layer):
     def __init__(self, hidden_size, params={}):
         super(LayerNormalization, self).__init__()
         self.hidden_size = hidden_size
-        self.norm_type = params.get('type', 'layernorm_L2')
-        self.epsilon = params.get('epsilon', 1e-6)
+        self.norm_type = params.get("type", "layernorm_L2")
+        self.epsilon = params.get("epsilon", 1e-6)
 
     def build(self, _):
         self.scale = tf.get_variable(
-            'layer_norm_scale', [self.hidden_size],
+            "layer_norm_scale", [self.hidden_size],
             initializer=tf.keras.initializers.Ones(),
             dtype=tf.float32)
         self.bias = tf.get_variable(
-            'layer_norm_bias', [self.hidden_size],
+            "layer_norm_bias", [self.hidden_size],
             initializer=tf.keras.initializers.Zeros(),
             dtype=tf.float32)
         self.built = True
 
     def call(self, x):
-        if self.norm_type == 'layernorm_L2':
+        if self.norm_type == "layernorm_L2":
             epsilon = self.epsilon
             dtype = x.dtype
             x = tf.cast(x=x, dtype=tf.float32)
