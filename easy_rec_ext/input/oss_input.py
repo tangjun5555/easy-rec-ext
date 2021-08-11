@@ -44,7 +44,7 @@ class OSSInput(Input):
                 object_stream = self._get_oss_stream(path)
                 buffer = ""
                 while True:
-                    tmp = str(object_stream.read(1024), encoding="utf-8")
+                    tmp = str(object_stream.read(16 * 1024), encoding="utf-8")
                     if not tmp:
                         break
                     buffer += tmp
