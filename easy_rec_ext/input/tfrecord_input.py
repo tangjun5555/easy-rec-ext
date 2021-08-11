@@ -37,10 +37,7 @@ class TFRecordInput(Input):
             dataset = dataset.shuffle(len(file_paths))
             parallel_num = min(self._num_parallel_calls, len(file_paths))
             dataset = dataset.interleave(
-                lambda x: tf.data.TFRecordDataset(
-                    x,
-                    compression_type=None
-                ),
+                lambda x: tf.data.TFRecordDataset(x, compression_type=None),
                 cycle_length=parallel_num,
                 num_parallel_calls=parallel_num
             )
@@ -54,9 +51,7 @@ class TFRecordInput(Input):
         else:
             logging.info("eval files[%d]: %s" % (len(file_paths), ",".join(file_paths)))
 
-            dataset = tf.data.TFRecordDataset(
-                file_paths, compression_type=None
-            )
+            dataset = tf.data.TFRecordDataset(file_paths, compression_type=None)
             dataset = dataset.repeat(1)
 
         dataset = dataset.map(self._parse_tfrecord, num_parallel_calls=self._num_parallel_calls)

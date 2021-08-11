@@ -61,12 +61,14 @@ class OSSInput(Input):
                 generator=generator_fn,
                 output_signature=tf.TensorSpec(shape=(), dtype=tf.dtypes.string)
             )
-
             dataset = dataset.shuffle(self._shuffle_buffer_size, seed=555, reshuffle_each_iteration=True)
             dataset = dataset.repeat(self._input_config.num_epochs)
         else:
             logging.info("eval files[%d]: %s" % (len(file_paths), ",".join(file_paths)))
-            dataset = tf.data.TextLineDataset(file_paths)
+            dataset = tf.data.Dataset.from_generator(
+                generator=generator_fn,
+                output_signature=tf.TensorSpec(shape=(), dtype=tf.dtypes.string)
+            )
             dataset = dataset.repeat(1)
 
         dataset = dataset.batch(self._input_config.batch_size)
