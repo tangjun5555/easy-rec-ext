@@ -50,10 +50,10 @@ class OSSInput(Input):
                     buffer += tmp
                     if "\n" in buffer:
                         split = buffer.split("\n")
+                        buffer = split[-1]
                         for i in range(len(split) - 1):
                             line = split[i]
                             yield line
-                        buffer = split[-1]
 
         if mode == tf.estimator.ModeKeys.TRAIN:
             logging.info("train files[%d]: %s" % (len(file_paths), ",".join(file_paths)))
