@@ -10,7 +10,7 @@ import argparse
 import tensorflow as tf
 from easy_rec_ext.core.pipeline import PipelineConfig
 from easy_rec_ext.core.exporter import FinalExporter
-from easy_rec_ext.input import CSVInput, TFRecordInput
+from easy_rec_ext.input import CSVInput, TFRecordInput, OSSInput
 from easy_rec_ext.model.rank_estimator import RankEstimator
 
 if tf.__version__ >= "2.0":
@@ -79,8 +79,10 @@ def get_input_fn(input_config, feature_config, input_path=None, export_config=No
     """
     if input_config.input_type == "csv":
         input_obj = CSVInput(input_config, feature_config, input_path)
-    elif input_config.input_type == "csv":
+    elif input_config.input_type == "tfrecord":
         input_obj = TFRecordInput(input_config, feature_config, input_path)
+    elif input_config.input_type == "oss":
+        input_obj = OSSInput(input_config, feature_config, input_path)
     else:
         raise ValueError("input_type:%s not supported." % input_config.input_type)
     input_fn = input_obj.create_input(export_config)
