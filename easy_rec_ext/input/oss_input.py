@@ -59,7 +59,7 @@ class OSSInput(Input):
             logging.info("train files[%d]: %s" % (len(file_paths), ",".join(file_paths)))
             dataset = tf.data.Dataset.from_generator(
                 generator=generator_fn,
-                # output_types=tf.dtypes.string,
+                output_types=tf.dtypes.string,
                 # output_shapes=tf.TensorShape([]),
                 # output_signature=None
             )
