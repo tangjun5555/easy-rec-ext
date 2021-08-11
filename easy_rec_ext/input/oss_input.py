@@ -57,10 +57,11 @@ class OSSInput(Input):
 
         if mode == tf.estimator.ModeKeys.TRAIN:
             logging.info("train files[%d]: %s" % (len(file_paths), ",".join(file_paths)))
-            dataset = tf.data.TextLineDataset.from_generator(
+            dataset = tf.data.Dataset.from_generator(
                 generator=generator_fn,
-                output_types=tf.dtypes.string,
-                output_shapes=tf.TensorShape([]),
+                # output_types=tf.dtypes.string,
+                # output_shapes=tf.TensorShape([]),
+                # output_signature=None
             )
             dataset = dataset.shuffle(len(file_paths))
             # too many readers read the same file will cause performance issues
