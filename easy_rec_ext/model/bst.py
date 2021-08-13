@@ -133,7 +133,7 @@ class BST(RankModel, BSTLayer):
         for tower_id in range(self._dnn_tower_num):
             tower_fea = self._dnn_tower_features[tower_id]
             tower = self._model_config.dnn_towers[tower_id]
-            tower_name = tower.input
+            tower_name = tower.input_group
             tower_fea = tf.layers.batch_normalization(
                 tower_fea,
                 training=self._is_training,
@@ -147,7 +147,7 @@ class BST(RankModel, BSTLayer):
         for tower_id in range(self._bst_tower_num):
             tower_fea = self._bst_tower_features[tower_id]
             tower = self._model_config.bst_towers[tower_id]
-            tower_name = tower.input
+            tower_name = tower.input_group
             tower_seq_len = tower.bst_config.seq_len
             tower_multi_head_size = tower.bst_config.multi_head_size
             tower_fea = self.bst(
