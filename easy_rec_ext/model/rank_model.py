@@ -101,12 +101,21 @@ class RankModel(object):
         for i in range(feature_fields_num):
             feature_field = self._feature_fields_dict[feature_group.feature_names[i]]
             if feature_field.feature_type == "IdFeature":
-                embedding_weights = embedding_ops.get_embedding_variable(
-                    feature_field.embedding_name,
-                    feature_field.embedding_dim
-                )
+                ids = self._feature_dict[feature_field.input_name]
+                if ids.dtype == tf.dtypes.string:
+                    embedding_weights = embedding_ops.get_embedding_variable(
+                        feature_field.embedding_name,
+                        feature_field.embedding_dim,
+                        True
+                    )
+                else:
+                    embedding_weights = embedding_ops.get_embedding_variable(
+                        feature_field.embedding_name,
+                        feature_field.embedding_dim,
+                        False
+                    )
                 values = embedding_ops.safe_embedding_lookup(
-                    embedding_weights, self._feature_dict[feature_field.input_name],
+                    embedding_weights, ids
                 )
             elif feature_field.feature_type == "RawFeature":
                 values = self._feature_dict[feature_field.input_name]
