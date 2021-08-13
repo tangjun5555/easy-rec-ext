@@ -480,7 +480,7 @@ class BSTConfig(BaseConfig):
     @staticmethod
     def handle(data):
         res = BSTConfig(data["seq_len"])
-        if "multi_head_size" in data["multi_head_size"]:
+        if "multi_head_size" in data:
             res.multi_head_size = data["multi_head_size"]
         return res
 
