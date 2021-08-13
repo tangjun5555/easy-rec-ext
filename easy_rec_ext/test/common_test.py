@@ -11,6 +11,14 @@ if tf.__version__ >= "2.0":
 line_sep = "\n" + "##" * 20 + "\n"
 
 
+def test_11():
+    t1 = tf.constant(
+        value=[1, 2],
+        dtype=tf.dtypes.int64,
+    )
+    print(t1.get_shape().as_list())
+
+
 def test_10():
     print(line_sep)
     import oss2

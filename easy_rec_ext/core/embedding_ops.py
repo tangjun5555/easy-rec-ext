@@ -20,17 +20,26 @@ if tf.__version__ >= "2.0":
     tf = tf.compat.v1
 
 
-def get_embedding_variable(name, dim):
+def get_embedding_variable(name, dim, key_is_string=False):
     assert name
     assert isinstance(dim, int) and dim > 0
     with tf.variable_scope("embedding", reuse=tf.AUTO_REUSE):
-        return tfra.dynamic_embedding.get_variable(
-            name=name,
-            key_dtype=dtypes.int64,
-            value_dtype=dtypes.float32,
-            dim=dim,
-            initializer=init_ops.random_normal_initializer(mean=0.0, stddev=0.1),
-        )
+        if key_is_string:
+            return tfra.dynamic_embedding.get_variable(
+                name=name,
+                key_dtype=dtypes.string,
+                value_dtype=dtypes.float32,
+                dim=dim,
+                initializer=init_ops.random_normal_initializer(mean=0.0, stddev=0.1),
+            )
+        else:
+            return tfra.dynamic_embedding.get_variable(
+                name=name,
+                key_dtype=dtypes.int64,
+                value_dtype=dtypes.float32,
+                dim=dim,
+                initializer=init_ops.random_normal_initializer(mean=0.0, stddev=0.1),
+            )
 
 
 def _to_sparse_ids(input_tensor):
@@ -96,16 +105,32 @@ def safe_embedding_lookup(params,
                           name=None,
                           partition_strategy="div",
                           max_norm=None):
-    return safe_embedding_lookup_sparse(
-        params,
-        _to_sparse_ids(ids),
-        None,
-        combiner,
-        default_id,
-        name,
-        partition_strategy,
-        max_norm
-    )
+    if ids.dtype == tf.dtypes.string:
+        assert len(ids.get_shape().as_list()) == 2 and ids.get_shape().as_list()[-1] == 1
+        condition = tf.math.equal(ids, "")
+        values = tfra.dynamic_embedding.embedding_lookup_unique(
+            params,
+            ids
+        )
+        values = tf.squeeze(values, axis=1)
+        condition = tf.concat([condition] * values.get_shape().as_list()[-1], axis=1)
+        zeros = tf.zeros_like(values)
+        return tf.where(
+            condition,
+            zeros,
+            values
+        )
+    else:
+        return safe_embedding_lookup_sparse(
+            params,
+            _to_sparse_ids(ids),
+            None,
+            combiner,
+            default_id,
+            name,
+            partition_strategy,
+            max_norm
+        )
 
 
 def safe_embedding_lookup_sparse(embedding_weights,

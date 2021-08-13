@@ -153,12 +153,13 @@ class Input(object):
                     if parsed_dict[fc.input_name].dtype == tf.string:
                         parsed_dict[fc.input_name] = tf.string_to_number(parsed_dict[fc.input_name], tf.dtypes.int64,
                                                                          name="%s_str_2_int" % fc.input_name)
-                    parsed_dict[fc.input_name] = tf.expand_dims(parsed_dict[fc.input_name], axis=1)
+                    # parsed_dict[fc.input_name] = tf.expand_dims(parsed_dict[fc.input_name], axis=1)
                 else:
-                    parsed_dict[fc.input_name] = string_ops.string_to_hash_bucket(parsed_dict[fc.input_name],
-                                                                                  fc.hash_bucket_size)
-                    parsed_dict[fc.input_name] = tf.expand_dims(parsed_dict[fc.input_name], axis=1)
-
+                    # parsed_dict[fc.input_name] = string_ops.string_to_hash_bucket(parsed_dict[fc.input_name],
+                    #                                                               fc.hash_bucket_size)
+                    parsed_dict[fc.input_name] = field_dict[fc.input_name]
+                    # parsed_dict[fc.input_name] = tf.expand_dims(parsed_dict[fc.input_name], axis=1)
+                parsed_dict[fc.input_name] = tf.expand_dims(parsed_dict[fc.input_name], axis=1)
             else:
                 parsed_dict[fc.input_name] = field_dict[fc.input_name]
 
