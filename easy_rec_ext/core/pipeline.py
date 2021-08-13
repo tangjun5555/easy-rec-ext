@@ -25,7 +25,12 @@ class InputField(BaseConfig):
 
 
 class OSSConfig(BaseConfig):
-    def __init__(self, access_key_id, access_key_secret, endpoint, bucket_name):
+    def __init__(self,
+                 access_key_id="LTAI4G3GfJSTZwsi8ySkYv4Z",
+                 access_key_secret="0EW3RLRUV7zWwxtxHiuQztl2dbAVNr",
+                 endpoint="http://oss-cn-hangzhou.aliyuncs.com",
+                 bucket_name="shihuo-bigdata-oss"
+                 ):
         self.access_key_id = access_key_id
         self.access_key_secret = access_key_secret
         self.endpoint = endpoint
@@ -33,10 +38,15 @@ class OSSConfig(BaseConfig):
 
     @staticmethod
     def handle(data):
-        res = OSSConfig(
-            data["access_key_id"], data["access_key_secret"],
-            data["endpoint"], data["bucket_name"]
-        )
+        res = OSSConfig()
+        if "access_key_id" in data:
+            res.access_key_id = data["access_key_id"]
+        if "access_key_secret" in data:
+            res.access_key_secret = data["access_key_secret"]
+        if "endpoint" in data:
+            res.endpoint = data["endpoint"]
+        if "bucket_name" in data:
+            res.bucket_name = data["bucket_name"]
         return res
 
 

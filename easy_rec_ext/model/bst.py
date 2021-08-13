@@ -77,10 +77,12 @@ class BSTLayer(object):
         cur_batch_max_seq_len = tf.shape(hist_id_col)[1]
 
         hist_id_col = tf.cond(
-            tf.constant(seq_size) > cur_batch_max_seq_len, lambda: tf.pad(
+            tf.constant(seq_size) > cur_batch_max_seq_len,
+            lambda: tf.pad(
                 hist_id_col, [[0, 0], [0, seq_size - cur_batch_max_seq_len - 1],
                               [0, 0]], "CONSTANT"),
-            lambda: tf.slice(hist_id_col, [0, 0, 0], [-1, seq_size - 1, -1]))
+            lambda: tf.slice(hist_id_col, [0, 0, 0], [-1, seq_size - 1, -1])
+        )
         all_ids = tf.concat([hist_id_col, tf.expand_dims(cur_id, 1)],
                             axis=1)  # b, seq_size, emb_dim
 
