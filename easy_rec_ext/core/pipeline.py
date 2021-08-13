@@ -408,7 +408,7 @@ class DNNConfig(BaseConfig):
     def __init__(self, hidden_units: List[int],
                  activation: str = "tf.nn.relu",
                  use_bn: bool = True,
-                 dropout_ratio=None
+                 dropout_ratio: List[float] = None
                  ):
         self.hidden_units = hidden_units
         self.activation = activation

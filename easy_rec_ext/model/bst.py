@@ -14,42 +14,13 @@ if tf.__version__ >= "2.0":
     tf = tf.compat.v1
 
 
-class BST(RankModel):
-    def __init__(self,
-                 model_config,
-                 feature_config,
-                 features,
-                 labels=None,
-                 is_training=False,
-                 ):
-        super(BST, self).__init__(model_config, feature_config, features, labels, is_training)
-
-        self._dnn_tower_num = len(self._model_config.dnn_towers) if self._model_config.dnn_towers else 0
-
-        self._dnn_tower_features = []
-        for tower_id in range(self._dnn_tower_num):
-            tower = self._model_config.dnn_towers[tower_id]
-            tower_feature = self.build_input_layer(tower.input_group)
-            self._dnn_tower_features.append(tower_feature)
-
-        self._bst_tower_num = len(self._model_config.bst_towers) if self._model_config.bst_towers else 0
-        logging.info("all tower num: {0}".format(self._dnn_tower_num + self._bst_tower_num))
-        logging.info("dnn tower num: {0}".format(self._dnn_tower_num))
-        logging.info("bst tower num: {0}".format(self._bst_tower_num))
-
-        self._bst_tower_features = []
-        for tower_id in range(self._bst_tower_num):
-            tower = self._model_config.bst_towers[tower_id]
-            tower_feature = self.build_seq_att_input_layer(tower.input_group)
-            regularizers.apply_regularization(self._emb_reg, weights_list=[tower_feature["key"]])
-            regularizers.apply_regularization(self._emb_reg, weights_list=[tower_feature["hist_seq_emb"]])
-            self._bst_tower_features.append(tower_feature)
-
+class BSTLayer(object):
     def dnn_net(self, net, dnn_units, name):
         with tf.variable_scope(name_or_scope=name, reuse=tf.AUTO_REUSE):
             for idx, units in enumerate(dnn_units):
                 net = tf.layers.dense(
-                    net, units=units, activation=tf.nn.relu, name="%s_%d" % (name, idx))
+                    net, units=units, activation=tf.nn.relu, name="%s_%d" % (name, idx)
+                )
         return net
 
     def attention_net(self, net, dim, cur_seq_len, seq_size, name):
@@ -125,8 +96,40 @@ class BST(RankModel):
         bst_output = tf.reshape(net, [-1, seq_size * emb_dim])
         return bst_output
 
+
+class BST(RankModel, BSTLayer):
+    def __init__(self,
+                 model_config,
+                 feature_config,
+                 features,
+                 labels=None,
+                 is_training=False,
+                 ):
+        super(BST, self).__init__(model_config, feature_config, features, labels, is_training)
+
+        self._dnn_tower_num = len(self._model_config.dnn_towers) if self._model_config.dnn_towers else 0
+        self._dnn_tower_features = []
+        for tower_id in range(self._dnn_tower_num):
+            tower = self._model_config.dnn_towers[tower_id]
+            tower_feature = self.build_input_layer(tower.input_group)
+            self._dnn_tower_features.append(tower_feature)
+
+        self._bst_tower_num = len(self._model_config.bst_towers) if self._model_config.bst_towers else 0
+        self._bst_tower_features = []
+        for tower_id in range(self._bst_tower_num):
+            tower = self._model_config.bst_towers[tower_id]
+            tower_feature = self.build_seq_att_input_layer(tower.input_group)
+            regularizers.apply_regularization(self._emb_reg, weights_list=[tower_feature["key"]])
+            regularizers.apply_regularization(self._emb_reg, weights_list=[tower_feature["hist_seq_emb"]])
+            self._bst_tower_features.append(tower_feature)
+
+        logging.info("all tower num: {0}".format(self._dnn_tower_num + self._bst_tower_num))
+        logging.info("dnn tower num: {0}".format(self._dnn_tower_num))
+        logging.info("bst tower num: {0}".format(self._bst_tower_num))
+
     def build_predict_graph(self):
         tower_fea_arr = []
+
         for tower_id in range(self._dnn_tower_num):
             tower_fea = self._dnn_tower_features[tower_id]
             tower = self._model_config.dnn_towers[tower_id]
@@ -158,10 +161,12 @@ class BST(RankModel):
         final_dnn = dnn.DNN(self._model_config.final_dnn, self._l2_reg, "final_dnn",
                             self._is_training)
         all_fea = final_dnn(all_fea)
+        logging.info("build_predict_graph, logits.shape:%s" % (str(all_fea.shape)))
 
         if self._model_config.bias_tower:
             bias_fea = self.build_bias_input_layer(self._model_config.bias_tower.input_group)
             all_fea = tf.concat([all_fea, bias_fea], axis=1)
+            logging.info("build_predict_graph, logits.shape:%s" % (str(all_fea.shape)))
         logits = tf.layers.dense(all_fea, 1, name="logits")
         logits = tf.reshape(logits, (-1,))
         probs = tf.sigmoid(logits, name="probs")
