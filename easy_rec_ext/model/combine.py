@@ -49,7 +49,7 @@ class Combine(RankModel):
             regularizers.apply_regularization(self._emb_reg, weights_list=[tower_feature["hist_seq_emb"]])
             self._bst_tower_features.append(tower_feature)
 
-        logging.info("all tower num: {0}".format(self._dnn_tower_num + self._din_tower_num))
+        logging.info("all tower num: {0}".format(self._dnn_tower_num + self._din_tower_num + self._bst_tower_num))
         logging.info("dnn tower num: {0}".format(self._dnn_tower_num))
         logging.info("din tower num: {0}".format(self._din_tower_num))
         logging.info("bst tower num: {0}".format(self._bst_tower_num))
