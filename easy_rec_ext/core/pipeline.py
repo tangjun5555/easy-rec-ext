@@ -53,7 +53,7 @@ class OSSConfig(BaseConfig):
 class InputConfig(BaseConfig):
     def __init__(self,
                  input_fields: List[InputField], label_fields: List[str],
-                 input_type: str = "csv", oss_config: OSSConfig = None,
+                 input_type: str = "csv", oss_config: OSSConfig = OSSConfig(),
                  train_input_path: str = None, eval_input_path: str = None,
                  num_epochs: int = 2, batch_size: int = 256
                  ):
