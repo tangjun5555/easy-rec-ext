@@ -4,7 +4,6 @@
 # desc:
 
 import os
-import math
 
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
@@ -48,8 +47,9 @@ def get_embedding_variable(name, dim, vocab_size=None, key_is_string=False):
         else:
             return tf.get_variable(
                 name=name,
+                shape=(vocab_size, dim),
                 dtype=dtypes.float32,
-                initializer=tf.truncated_normal(shape=(vocab_size, dim), stddev=1.0 / math.sqrt(dim)),
+                initializer=init_ops.random_normal_initializer(mean=0.0, stddev=0.1),
             )
 
 
