@@ -106,7 +106,7 @@ def _create_estimator(pipeline_config):
         save_checkpoints_steps=pipeline_config.train_config.save_checkpoints_steps,
         keep_checkpoint_max=pipeline_config.train_config.keep_checkpoint_max,
     )
-    estimator = RankEstimator(pipeline_config)
+    estimator = RankEstimator(pipeline_config, run_config)
     return estimator, run_config
 
 

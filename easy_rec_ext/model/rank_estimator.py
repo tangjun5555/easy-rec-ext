@@ -18,12 +18,12 @@ if tf.__version__ >= "2.0":
 
 
 class RankEstimator(tf.estimator.Estimator):
-    def __init__(self, pipeline_config):
+    def __init__(self, pipeline_config, run_config):
         self._pipeline_config = pipeline_config
         super(RankEstimator, self).__init__(
             model_fn=self._model_fn,
             model_dir=self._pipeline_config.model_dir,
-            config=None,
+            config=run_config,
             params=None,
             warm_start_from=None
         )
@@ -42,7 +42,7 @@ class RankEstimator(tf.estimator.Estimator):
             raise ValueError("model_class:%s not supported." % self._pipeline_config.model_config.model_class)
         return model
 
-    def _train_model_fn(self, features, labels):
+    def _train_model_fn(self, features, labels, run_config):
         model = self._rank_model(
             self._pipeline_config.model_config,
             self._pipeline_config.feature_config,
@@ -229,7 +229,7 @@ class RankEstimator(tf.estimator.Estimator):
             training_hooks=hooks,
         )
 
-    def _eval_model_fn(self, features, labels):
+    def _eval_model_fn(self, features, labels, run_config):
         start = time.time()
         model = self._rank_model(
             self._pipeline_config.model_config,
@@ -261,7 +261,7 @@ class RankEstimator(tf.estimator.Estimator):
             eval_metric_ops=metric_dict
         )
 
-    def _export_model_fn(self, features):
+    def _export_model_fn(self, features, run_config):
         model = self._rank_model(
             self._pipeline_config.model_config,
             self._pipeline_config.feature_config,
@@ -315,10 +315,10 @@ class RankEstimator(tf.estimator.Estimator):
         os.environ["tf.estimator.mode"] = mode
         os.environ["tf.estimator.ModeKeys.TRAIN"] = tf.estimator.ModeKeys.TRAIN
         if mode == tf.estimator.ModeKeys.TRAIN:
-            return self._train_model_fn(features, labels)
+            return self._train_model_fn(features, labels, config)
         elif mode == tf.estimator.ModeKeys.EVAL:
-            return self._eval_model_fn(features, labels)
+            return self._eval_model_fn(features, labels, config)
         elif mode == tf.estimator.ModeKeys.PREDICT:
-            return self._export_model_fn(features)
+            return self._export_model_fn(features, config)
         else:
             raise ValueError("Mode:%s not supported." % mode)
