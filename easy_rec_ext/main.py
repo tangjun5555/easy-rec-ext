@@ -61,6 +61,10 @@ def get_pipeline_config_from_file(pipeline_config_path) -> PipelineConfig:
         logging.info("use args, export_dir:" + str(args.export_dir))
         res.export_config.export_dir = args.export_dir
     logging.info("main get_pipeline_config_from_file, pipeline_config:" + str(res))
+    if res.model_config.use_dynamic_embedding:
+        os.environ["use_dynamic_embedding"] = "1"
+    else:
+        os.environ["use_dynamic_embedding"] = "0"
     return res
 
 

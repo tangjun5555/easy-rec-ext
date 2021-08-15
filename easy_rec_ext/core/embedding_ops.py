@@ -3,12 +3,16 @@
 # time: 2021/7/30 12:21 下午
 # desc:
 
+import os
+import math
+
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
 from tensorflow.python.framework import sparse_tensor
 from tensorflow.python.framework import tensor_shape
 from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import math_ops
+from tensorflow.python.ops import embedding_ops
 from tensorflow.python.ops import sparse_ops
 from tensorflow.python.ops import init_ops
 
@@ -20,25 +24,32 @@ if tf.__version__ >= "2.0":
     tf = tf.compat.v1
 
 
-def get_embedding_variable(name, dim, key_is_string=False):
+def get_embedding_variable(name, dim, vocab_size=None, key_is_string=False):
     assert name
     assert isinstance(dim, int) and dim > 0
     with tf.variable_scope("embedding", reuse=tf.AUTO_REUSE):
-        if key_is_string:
-            return tfra.dynamic_embedding.get_variable(
-                name=name,
-                key_dtype=dtypes.string,
-                value_dtype=dtypes.float32,
-                dim=dim,
-                initializer=init_ops.random_normal_initializer(mean=0.0, stddev=0.1),
-            )
+        if "use_dynamic_embedding" in os.environ and os.environ["use_dynamic_embedding"] == "1":
+            if key_is_string:
+                return tfra.dynamic_embedding.get_variable(
+                    name=name,
+                    key_dtype=dtypes.string,
+                    value_dtype=dtypes.float32,
+                    dim=dim,
+                    initializer=init_ops.random_normal_initializer(mean=0.0, stddev=0.1),
+                )
+            else:
+                return tfra.dynamic_embedding.get_variable(
+                    name=name,
+                    key_dtype=dtypes.int64,
+                    value_dtype=dtypes.float32,
+                    dim=dim,
+                    initializer=init_ops.random_normal_initializer(mean=0.0, stddev=0.1),
+                )
         else:
-            return tfra.dynamic_embedding.get_variable(
+            return tf.get_variable(
                 name=name,
-                key_dtype=dtypes.int64,
-                value_dtype=dtypes.float32,
-                dim=dim,
-                initializer=init_ops.random_normal_initializer(mean=0.0, stddev=0.1),
+                dtype=dtypes.float32,
+                initializer=tf.truncated_normal(shape=(vocab_size, dim), stddev=1.0 / math.sqrt(dim)),
             )
 
 
@@ -227,24 +238,26 @@ def safe_embedding_lookup_sparse(embedding_weights,
         sparse_ids = sparse_tensor.SparseTensor(
             indices=indices, values=values, dense_shape=sparse_ids.dense_shape)
 
-        # result = embedding_ops.embedding_lookup_sparse(
-        #     embedding_weights,
-        #     sparse_ids,
-        #     sparse_weights,
-        #     combiner=combiner,
-        #     partition_strategy=partition_strategy,
-        #     name=None if default_id is None else scope,
-        #     max_norm=max_norm
-        # )
-        result = tfra.dynamic_embedding.safe_embedding_lookup_sparse(
-            embedding_weights,
-            sparse_ids,
-            sparse_weights,
-            combiner=combiner,
-            partition_strategy=partition_strategy,
-            # name=None,
-            max_norm=max_norm
-        )
+        if "use_dynamic_embedding" in os.environ and os.environ["use_dynamic_embedding"] == "1":
+            result = tfra.dynamic_embedding.safe_embedding_lookup_sparse(
+                embedding_weights,
+                sparse_ids,
+                sparse_weights,
+                combiner=combiner,
+                partition_strategy=partition_strategy,
+                # name=None,
+                max_norm=max_norm
+            )
+        else:
+            result = embedding_ops.embedding_lookup_sparse(
+                embedding_weights,
+                sparse_ids,
+                sparse_weights,
+                combiner=combiner,
+                partition_strategy=partition_strategy,
+                # name=None if default_id is None else scope,
+                max_norm=max_norm
+            )
 
         if default_id is None:
             # Broadcast is_row_empty to the same shape as embedding_lookup_result,

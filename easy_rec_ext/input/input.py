@@ -3,6 +3,7 @@
 # time: 2021/7/27 12:24 下午
 # desc:
 
+import os
 from abc import abstractmethod
 from collections import OrderedDict
 from easy_rec_ext.utils import string_ops
@@ -63,7 +64,8 @@ class Input(object):
                 sep = sep.encode("utf-8")
             field_num = len(line[0].split(sep))
             assert field_num == len(self._input_field_defaults), \
-                "sep[%s] maybe invalid: field_num=%d, required_num=%d" % (sep, field_num, len(self._input_field_defaults))
+                "sep[%s] maybe invalid: field_num=%d, required_num=%d" % (
+                sep, field_num, len(self._input_field_defaults))
             return True
 
         check_op = tf.py_func(_check_data, [line], Tout=tf.bool)
@@ -153,13 +155,14 @@ class Input(object):
                     if parsed_dict[fc.input_name].dtype == tf.string:
                         parsed_dict[fc.input_name] = tf.string_to_number(parsed_dict[fc.input_name], tf.dtypes.int64,
                                                                          name="%s_str_2_int" % fc.input_name)
-                    # parsed_dict[fc.input_name] = tf.expand_dims(parsed_dict[fc.input_name], axis=1)
                 else:
-                    # parsed_dict[fc.input_name] = string_ops.string_to_hash_bucket(parsed_dict[fc.input_name],
-                    #                                                               fc.hash_bucket_size)
-                    # parsed_dict[fc.input_name] = field_dict[fc.input_name]
-                    pass
-                    # parsed_dict[fc.input_name] = tf.expand_dims(parsed_dict[fc.input_name], axis=1)
+                    if "use_dynamic_embedding" in os.environ and os.environ["use_dynamic_embedding"] == "1":
+                        pass
+                    else:
+                        parsed_dict[fc.input_name] = string_ops.string_to_hash_bucket(
+                            parsed_dict[fc.input_name],
+                            fc.hash_bucket_size
+                        )
                 parsed_dict[fc.input_name] = tf.expand_dims(parsed_dict[fc.input_name], axis=1)
             else:
                 parsed_dict[fc.input_name] = field_dict[fc.input_name]
