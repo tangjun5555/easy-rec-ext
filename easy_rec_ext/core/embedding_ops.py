@@ -67,7 +67,7 @@ def get_embedding_variable(name, dim, vocab_size=None, key_is_string=False):
                 shape=(vocab_size, dim),
                 dtype=dtypes.float32,
                 initializer=initializer,
-                trainable=True,
+                # trainable=True,
             )
 
 

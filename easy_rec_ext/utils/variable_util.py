@@ -26,6 +26,6 @@ def get_normal_variable(scope, name, shape):
             shape=shape,
             dtype=tf.dtypes.float32,
             initializer=tf.random_normal_initializer(mean=0.0, stddev=0.1),
-            trainable=True,
+            # trainable=True,
         )
     return variable
