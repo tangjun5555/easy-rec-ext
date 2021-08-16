@@ -36,7 +36,7 @@ def get_embedding_variable(name, dim, vocab_size=None, key_is_string=False):
     initializer = init_ops.random_normal_initializer(mean=0.0, stddev=0.1)
     use_pretrain_variable = False
     if "pretrain_variable_dir" in os.environ and gfile.Exists(os.environ["pretrain_variable_dir"] + "/" + name):
-        if "used_pretrain_variable_list" not in os.environ["used_pretrain_variable_list"] or not os.environ["used_pretrain_variable_list"]:
+        if "used_pretrain_variable_list" not in os.environ or not os.environ["used_pretrain_variable_list"]:
             used_pretrain_variable_list = []
         else:
             used_pretrain_variable_list = os.environ["used_pretrain_variable_list"].split(",")
