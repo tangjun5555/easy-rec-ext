@@ -139,7 +139,9 @@ def train_and_evaluate(pipeline_config: PipelineConfig):
     Returns:
 
     """
-    if not gfile.Exists(pipeline_config.model_dir) and gfile.Exists(pipeline_config.model_config.pretrain_variable_dir):
+    if not gfile.Exists(pipeline_config.model_dir) \
+        and pipeline_config.model_config.pretrain_variable_dir \
+        and gfile.Exists(pipeline_config.model_config.pretrain_variable_dir):
         os.environ["pretrain_variable_dir"] = pipeline_config.model_config.pretrain_variable_dir
 
     estimator, _ = _create_estimator(pipeline_config)
