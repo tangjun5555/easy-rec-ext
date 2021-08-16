@@ -563,7 +563,8 @@ class ModelConfig(BaseConfig):
                  bias_tower: BiasTower = None,
                  embedding_regularization: float = 0.0,
                  l2_regularization: float = 0.0001,
-                 use_dynamic_embedding: bool = False
+                 use_dynamic_embedding: bool = False,
+                 pretrain_variable_dir: str = None,
                  ):
         self.model_class = model_class
         self.feature_groups = feature_groups
@@ -577,7 +578,9 @@ class ModelConfig(BaseConfig):
 
         self.embedding_regularization = embedding_regularization
         self.l2_regularization = l2_regularization
+
         self.use_dynamic_embedding = use_dynamic_embedding
+        self.pretrain_variable_dir = pretrain_variable_dir
 
     @staticmethod
     def handle(data):
@@ -585,6 +588,7 @@ class ModelConfig(BaseConfig):
         for feature_group in data["feature_groups"]:
             feature_groups.append(FeatureGroup.handle(feature_group))
         res = ModelConfig(data["model_class"], feature_groups)
+
         if "dnn_towers" in data:
             dnn_towers = []
             for dnn_tower in data["dnn_towers"]:
@@ -600,18 +604,24 @@ class ModelConfig(BaseConfig):
             for bst_tower in data["bst_towers"]:
                 bst_towers.append(BSTTower.handle(bst_tower))
             res.bst_towers = bst_towers
+
         if "final_dnn" in data:
             res.final_dnn = DNNConfig.handle(data["final_dnn"])
         if "aitm_model" in data:
             res.aitm_model = AITMModel.handle(data["aitm_model"])
         if "bias_tower" in data:
             res.bias_tower = BiasTower.handle(data["bias_tower"])
+
         if "embedding_regularization" in data:
             res.embedding_regularization = data["embedding_regularization"]
         if "l2_regularization" in data:
             res.l2_regularization = data["l2_regularization"]
+
         if "use_dynamic_embedding" in data:
             res.use_dynamic_embedding = data["use_dynamic_embedding"]
+
+        if "pretrain_variable_dir" in data:
+            res.pretrain_variable_dir = data["pretrain_variable_dir"]
         return res
 
 
