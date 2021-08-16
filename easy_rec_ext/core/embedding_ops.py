@@ -40,7 +40,7 @@ def get_embedding_variable(name, dim, vocab_size=None, key_is_string=False):
         assert values.shape[1] == dim
         if vocab_size:
             assert values.shape[0] == vocab_size
-        initializer = init_ops.constant_initializer(values)
+        initializer = tf.constant(value=values, dtype=tf.dtypes.float32)
         logging.info("use pretrain variable:%s" % name)
 
     with tf.variable_scope("embedding", reuse=tf.AUTO_REUSE):
@@ -67,7 +67,7 @@ def get_embedding_variable(name, dim, vocab_size=None, key_is_string=False):
                 shape=(vocab_size, dim),
                 dtype=dtypes.float32,
                 initializer=initializer,
-                # trainable=True,
+                trainable=True,
             )
 
 
