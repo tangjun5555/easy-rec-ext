@@ -36,32 +36,32 @@ def get_embedding_variable(name, dim, vocab_size=None, key_is_string=False):
     initializer = init_ops.random_normal_initializer(mean=0.0, stddev=0.1)
     use_pretrain_variable = False
     if "pretrain_variable_dir" in os.environ and gfile.Exists(os.environ["pretrain_variable_dir"] + "/" + name):
-        values = variable_util.load_variable_by_file(os.environ["pretrain_variable_dir"] + "/" + name)
-        assert len(values.shape) == 2
-        assert values.shape[1] == dim
-        if vocab_size:
-            assert values.shape[0] == vocab_size
-        initializer = tf.constant(value=values, dtype=tf.dtypes.float32)
-        use_pretrain_variable = True
-        logging.info("use pretrain variable:%s" % name)
+        # values = variable_util.load_variable_by_file(os.environ["pretrain_variable_dir"] + "/" + name)
+        # assert len(values.shape) == 2
+        # assert values.shape[1] == dim
+        # if vocab_size:
+        #     assert values.shape[0] == vocab_size
+        # initializer = tf.constant(value=values, dtype=tf.dtypes.float32)
+        # use_pretrain_variable = True
+        # logging.info("use pretrain variable:%s" % name)
 
-        # if "used_pretrain_variable_list" not in os.environ or not os.environ["used_pretrain_variable_list"]:
-        #     used_pretrain_variable_list = []
-        # else:
-        #     used_pretrain_variable_list = os.environ["used_pretrain_variable_list"].split(",")
-        #
-        # if name not in used_pretrain_variable_list:
-        #     used_pretrain_variable_list.append(name)
-        #     os.environ["used_pretrain_variable_list"] = ",".join(used_pretrain_variable_list)
-        #
-        #     values = variable_util.load_variable_by_file(os.environ["pretrain_variable_dir"] + "/" + name)
-        #     assert len(values.shape) == 2
-        #     assert values.shape[1] == dim
-        #     if vocab_size:
-        #         assert values.shape[0] == vocab_size
-        #     initializer = tf.constant(value=values, dtype=tf.dtypes.float32)
-        #     use_pretrain_variable = True
-        #     logging.info("use pretrain variable:%s" % name)
+        if "used_pretrain_variable_list" not in os.environ or not os.environ["used_pretrain_variable_list"]:
+            used_pretrain_variable_list = []
+        else:
+            used_pretrain_variable_list = os.environ["used_pretrain_variable_list"].split(",")
+
+        if name not in used_pretrain_variable_list:
+            used_pretrain_variable_list.append(name)
+            os.environ["used_pretrain_variable_list"] = ",".join(used_pretrain_variable_list)
+
+            values = variable_util.load_variable_by_file(os.environ["pretrain_variable_dir"] + "/" + name)
+            assert len(values.shape) == 2
+            assert values.shape[1] == dim
+            if vocab_size:
+                assert values.shape[0] == vocab_size
+            initializer = tf.constant(value=values, dtype=tf.dtypes.float32)
+            use_pretrain_variable = True
+            logging.info("use pretrain variable:%s" % name)
 
     with tf.variable_scope("embedding", reuse=tf.AUTO_REUSE):
         if "use_dynamic_embedding" in os.environ and os.environ["use_dynamic_embedding"] == "1":
