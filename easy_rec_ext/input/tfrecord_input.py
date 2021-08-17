@@ -34,7 +34,10 @@ class TFRecordInput(Input):
             logging.info("train files[%d]: %s" % (len(file_paths), ",".join(file_paths)))
 
             dataset = tf.data.Dataset.from_tensor_slices(file_paths)
-            dataset = dataset.shuffle(len(file_paths))
+            # dataset = dataset.shuffle(len(file_paths))
+
+            # too many readers read the same file will cause performance issues
+            # as the same data will be read multiple times
             parallel_num = min(self._num_parallel_calls, len(file_paths))
             dataset = dataset.interleave(
                 lambda x: tf.data.TFRecordDataset(x, compression_type=None),
