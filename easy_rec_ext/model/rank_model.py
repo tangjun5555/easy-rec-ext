@@ -195,3 +195,28 @@ class RankModel(object):
         outputs = tf.concat(outputs, axis=-1)
         outputs = tf.squeeze(outputs, axis=[1])
         return outputs
+
+    def build_wide_input_layer(self, feature_group):
+        feature_group = self._feature_groups_dict[feature_group]
+        outputs = []
+        feature_fields_num = len(feature_group.feature_names) if feature_group.feature_names else 0
+        for i in range(feature_fields_num):
+            feature_field = self._feature_fields_dict[feature_group.feature_names[i]]
+            if feature_field.feature_type == "IdFeature":
+                if feature_field.hash_bucket_size <= 0:
+                    outputs.append(
+                        tf.one_hot(self._feature_dict[feature_field.input_name], feature_field.num_buckets)
+                    )
+                else:
+                    outputs.append(
+                        tf.one_hot(self._feature_dict[feature_field.input_name], feature_field.hash_bucket_size)
+                    )
+            elif feature_field.feature_type == "RawFeature":
+                values = self._feature_dict[feature_field.input_name]
+                outputs.append(values)
+            else:
+                raise ValueError("build_wide_input_layer, feature_field.feature_type:%s is not supported."
+                                 % feature_field.feature_type)
+        outputs = tf.concat(outputs, axis=-1)
+        outputs = tf.squeeze(outputs, axis=[1])
+        return outputs
