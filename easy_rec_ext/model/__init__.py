@@ -5,6 +5,6 @@
 
 from .din import DIN
 from .bst import BST
-from .combine import Combine
+from .multi_tower import MultiTower
 from .aitm import AITM
 

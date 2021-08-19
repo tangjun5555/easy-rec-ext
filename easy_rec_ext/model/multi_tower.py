@@ -15,14 +15,14 @@ if tf.__version__ >= "2.0":
     tf = tf.compat.v1
 
 
-class Combine(RankModel):
+class MultiTower(RankModel):
     def __init__(self,
                  model_config,
                  feature_config,
                  features,
                  labels=None,
                  is_training=False):
-        super(Combine, self).__init__(model_config, feature_config, features, labels, is_training)
+        super(MultiTower, self).__init__(model_config, feature_config, features, labels, is_training)
 
         self._dnn_tower_num = len(self._model_config.dnn_towers) if self._model_config.dnn_towers else 0
         self._dnn_tower_features = []
