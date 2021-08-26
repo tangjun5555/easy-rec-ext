@@ -55,6 +55,7 @@ class DINLayer(object):
         hist_din_emb = tf.matmul(scores, hist_id_col)  # [B, 1, emb_dim]
         hist_din_emb = tf.reshape(hist_din_emb, [-1, emb_dim])  # [B, emb_dim]
         din_output = tf.concat([hist_din_emb, cur_id], axis=1)
+        logging.info("%s, din_output.shape:%s" % name, str(din_output.shape))
         return din_output
 
 
