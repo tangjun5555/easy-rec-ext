@@ -160,18 +160,21 @@ class SeqAttMap(BaseConfig):
 
 
 class FeatureGroup(BaseConfig):
-    def __init__(self, group_name: str, feature_names: List[str] = None, seq_att_map: SeqAttMap = None):
+    def __init__(self, group_name: str, feature_names: List[str] = None, seq_att_map_list: List[SeqAttMap] = None):
         self.group_name = group_name
         self.feature_names = feature_names
-        self.seq_att_map = seq_att_map
+        self.seq_att_map_list = seq_att_map_list
 
     @staticmethod
     def handle(data):
         res = FeatureGroup(data["group_name"])
         if "feature_names" in data:
             res.feature_names = data["feature_names"]
-        if "seq_att_map" in data:
-            res.seq_att_map = SeqAttMap.handle(data["seq_att_map"])
+        if "seq_att_map_list" in data:
+            seq_att_map_list = []
+            for seq_att_map in data["seq_att_map_list"]:
+                seq_att_map_list.append(SeqAttMap.handle(seq_att_map))
+            res.seq_att_map_list = seq_att_map_list
         return res
 
 

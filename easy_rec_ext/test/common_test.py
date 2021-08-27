@@ -11,6 +11,80 @@ if tf.__version__ >= "2.0":
 line_sep = "\n" + "##" * 20 + "\n"
 
 
+def test_15():
+    tf.disable_eager_execution()
+
+    with tf.variable_scope("variable", reuse=tf.AUTO_REUSE):
+        t1 = tf.get_variable("alpha", [5],
+                             initializer=tf.constant_initializer(0.0),
+                             dtype=tf.float32,
+                             )
+        t2 = tf.get_variable("alpha", [5],
+                             initializer=tf.constant_initializer(0.0),
+                             dtype=tf.float32,
+                             )
+    # print(line_sep + "t1")
+    # print(t1)
+    # print(line_sep + "t2")
+    # print(t2)
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+        # print(sess.run(t1))
+        # print(sess.run(t2))
+        print(t1)
+        print(t2)
+
+
+def test_14():
+    t1 = tf.constant(
+        value=[
+            [2],
+            [3],
+        ],
+        dtype=tf.dtypes.float32,
+    )
+    print(line_sep)
+    print(t1)
+
+    t2 = t1 + 0.1
+    print(line_sep)
+    print(t2)
+
+
+def test_13():
+    t1 = tf.constant(
+        value=[
+            [2],
+            [3],
+        ],
+        dtype=tf.dtypes.int32,
+    )
+    print(line_sep)
+    print(t1)
+
+    t2 = tf.sequence_mask(t1, maxlen=5, dtype=tf.dtypes.float32)
+    print(line_sep + "t2")
+    print(t2)
+
+    t3 = tf.transpose(t2, perm=(0, 2, 1))
+    print(line_sep)
+    print(t3)
+
+    t4 = tf.tile(t3, [1, 1, 4])
+    print(line_sep)
+    print(t4)
+
+
+def test_12():
+    t1 = tf.sequence_mask(lengths=[1, 3, 2], maxlen=5)
+    print(line_sep)
+    print(t1)
+
+    t2 = tf.sequence_mask(lengths=[1, 3, 2], maxlen=5, dtype=tf.dtypes.float32)
+    print(line_sep)
+    print(t2)
+
+
 def test_11():
     t1 = tf.constant(
         value=[1, 2],
@@ -25,7 +99,8 @@ def test_10():
     auth = oss2.Auth("LTAI4G3GfJSTZwsi8ySkYv4Z", "0EW3RLRUV7zWwxtxHiuQztl2dbAVNr")
     bucket = oss2.Bucket(auth, "http://oss-cn-hangzhou.aliyuncs.com", "shihuo-bigdata-oss")
 
-    for obj in oss2.ObjectIterator(bucket, prefix='tangjun0612/data/ShouyeFeedRankCvrDeepV1V2Data/20210810/part', delimiter='/'):
+    for obj in oss2.ObjectIterator(bucket, prefix='tangjun0612/data/ShouyeFeedRankCvrDeepV1V2Data/20210810/part',
+                                   delimiter='/'):
         # 通过is_prefix方法判断obj是否为文件夹。
         if obj.is_prefix():  # 判断obj为文件夹。
             print('directory: ' + obj.key)
