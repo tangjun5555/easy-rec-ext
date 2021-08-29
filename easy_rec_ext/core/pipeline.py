@@ -29,12 +29,14 @@ class OSSConfig(BaseConfig):
                  access_key_id="LTAI4G3GfJSTZwsi8ySkYv4Z",
                  access_key_secret="0EW3RLRUV7zWwxtxHiuQztl2dbAVNr",
                  endpoint="http://oss-cn-hangzhou.aliyuncs.com",
-                 bucket_name="shihuo-bigdata-oss"
+                 bucket_name="shihuo-bigdata-oss",
+                 read_per_size=16 * 1024,
                  ):
         self.access_key_id = access_key_id
         self.access_key_secret = access_key_secret
         self.endpoint = endpoint
         self.bucket_name = bucket_name
+        self.read_per_size = read_per_size
 
     @staticmethod
     def handle(data):
@@ -47,6 +49,8 @@ class OSSConfig(BaseConfig):
             res.endpoint = data["endpoint"]
         if "bucket_name" in data:
             res.bucket_name = data["bucket_name"]
+        if "read_per_size" in data:
+            res.read_per_size = data["read_per_size"]
         return res
 
 
