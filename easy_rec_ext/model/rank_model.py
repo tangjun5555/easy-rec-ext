@@ -142,6 +142,7 @@ class RankModel(object):
 
     def build_seq_att_input_layer(self, feature_group):
         feature_group = self._feature_groups_dict[feature_group]
+        logging.info("build_seq_att_input_layer, feature_group:%s" % str(feature_group))
         outputs = {}
 
         key_outputs = []
