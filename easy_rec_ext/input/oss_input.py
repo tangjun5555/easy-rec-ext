@@ -3,7 +3,7 @@
 # time: 2021/8/6 7:04 下午
 # desc:
 
-
+import random
 import oss2
 import logging
 from easy_rec_ext.input.input import Input
@@ -53,6 +53,8 @@ class OSSInput(Input):
                         buffer = split[-1]
                         for i in range(len(split) - 1):
                             line = split[i]
+                            if random.randint(1, 1000) == 5:
+                                logging.debug("oss input sample:%s" % line)
                             yield line
 
         if mode == tf.estimator.ModeKeys.TRAIN:
