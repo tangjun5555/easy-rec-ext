@@ -159,6 +159,8 @@ class AttentionSequencePoolingLayer(object):
             - 2D tensor with shape: (batch_size, embedding_size * 2)
         """
         keys_max_len = keys.shape[1]
+        embedding_size = keys.shape[-1]
+
         # (batch_size, 1, keys_max_len)
         key_masks = tf.sequence_mask(keys_length, maxlen=keys_max_len, dtype=tf.dtypes.bool)
 
@@ -179,7 +181,7 @@ class AttentionSequencePoolingLayer(object):
         if self.weight_normalization:
             attention_score = tf.nn.softmax(attention_score)
         res = tf.matmul(attention_score, keys)
-        res = tf.concat([res, query], axis=1)
+        res = tf.reshape(res, [-1, embedding_size])
         return res
 
 
