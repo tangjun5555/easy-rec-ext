@@ -40,8 +40,6 @@ class DINLayer(object):
             axis=-1
         )  # (B, seq_max_len, emb_dim*4)
 
-        # din_layer = dnn.DNN(dnn_config, self._l2_reg, name, self._is_training)
-        # din_net = din_layer(din_net)
         din_net = self.dnn_net(din_net, dnn_config.hidden_units, name + "_score")
         scores = tf.reshape(din_net, [-1, 1, seq_max_len])  # (B, 1, ?)
 
