@@ -9,39 +9,40 @@ if tf.__version__ >= "2.0":
     tf = tf.compat.v1
 
 
-class LayerNormalization(tf.layers.Layer):
+class LayerNormalization(object):
     """
     Layer normalization for BTC format: supports L2(default) and L1 modes.
     """
 
-    def __init__(self, hidden_size, params={}):
+    def __init__(self, hidden_size, name, norm_type="layernorm_L2"):
         super(LayerNormalization, self).__init__()
         self.hidden_size = hidden_size
-        self.norm_type = params.get("type", "layernorm_L2")
-        self.epsilon = params.get("epsilon", 1e-6)
+        self.name = name
+        self.norm_type = norm_type
+        self.epsilon = 1e-6
 
-    def build(self, _):
         self.scale = tf.get_variable(
-            "layer_norm_scale", [self.hidden_size],
+            self.name + "/" + "layer_norm_scale",
+            [self.hidden_size],
             initializer=tf.keras.initializers.Ones(),
-            dtype=tf.float32)
+            dtype=tf.float32
+        )
         self.bias = tf.get_variable(
-            "layer_norm_bias", [self.hidden_size],
+            self.name + "/" + "layer_norm_bias",
+            [self.hidden_size],
             initializer=tf.keras.initializers.Zeros(),
-            dtype=tf.float32)
-        self.built = True
+            dtype=tf.float32
+        )
 
-    def call(self, x):
+    def __call__(self, x):
         if self.norm_type == "layernorm_L2":
-            epsilon = self.epsilon
             dtype = x.dtype
             x = tf.cast(x=x, dtype=tf.float32)
             mean = tf.reduce_mean(x, axis=[-1], keepdims=True)
             variance = tf.reduce_mean(tf.square(x - mean), axis=[-1], keepdims=True)
-            norm_x = (x - mean) * tf.rsqrt(variance + epsilon)
+            norm_x = (x - mean) * tf.rsqrt(variance + self.epsilon)
             result = norm_x * self.scale + self.bias
             return tf.cast(x=result, dtype=dtype)
-
         else:
             dtype = x.dtype
             if dtype == tf.float16:

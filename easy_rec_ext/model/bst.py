@@ -44,30 +44,36 @@ class BSTLayer(object):
         att_res_net = tf.matmul(scores, value_net)  # [B, seq_size, emb_dim]
         return att_res_net
 
-    def multi_head_att_net(self, id_cols, head_count, emb_dim, seq_len, seq_size):
+    def multi_head_att_net(self, id_cols, head_count, seq_len, name):
+        seq_size = tf.shape(id_cols)[1]
+        emb_dim = tf.shape(id_cols)[2]
+
         multi_head_attention_res = []
         part_cols_emd_dim = int(math.ceil(emb_dim / head_count))
         for start_idx in range(0, emb_dim, part_cols_emd_dim):
             if start_idx + part_cols_emd_dim > emb_dim:
                 part_cols_emd_dim = emb_dim - start_idx
-            part_id_col = tf.slice(id_cols, [0, 0, start_idx],
-                                   [-1, -1, part_cols_emd_dim])
+            part_id_col = tf.slice(id_cols, [0, 0, start_idx], [-1, -1, part_cols_emd_dim])
             part_attention_net = self.attention_net(
                 part_id_col,
                 part_cols_emd_dim,
                 seq_len,
                 seq_size,
-                name="multi_head_%d" % start_idx)
+                name=name + "/" + "multi_head_%d" % start_idx
+            )
             multi_head_attention_res.append(part_attention_net)
         multi_head_attention_res_net = tf.concat(multi_head_attention_res, axis=2)
         multi_head_attention_res_net = self.dnn_net(
-            multi_head_attention_res_net, [emb_dim], name="multi_head_attention")
+            multi_head_attention_res_net,
+            [emb_dim],
+            name=name + "/" + "multi_head_attention"
+        )
         return multi_head_attention_res_net
 
     def add_and_norm(self, net_1, net_2, emb_dim, name):
         net = tf.add(net_1, net_2)
         # layer = tf.keras.layers.LayerNormalization(axis=2)
-        layer = layer_norm.LayerNormalization(emb_dim)
+        layer = layer_norm.LayerNormalization(emb_dim, name)
         net = layer(net)
         return net
 
@@ -75,21 +81,19 @@ class BSTLayer(object):
         cur_id, hist_id_col, seq_len = bst_fea["key"], bst_fea["hist_seq_emb"], bst_fea["hist_seq_len"]
 
         seq_size = tf.shape(hist_id_col)[1]
-        cur_batch_max_seq_len = tf.shape(hist_id_col)[1]
+        emb_dim = tf.shape(hist_id_col)[2]
 
-        hist_id_col = tf.cond(
-            tf.constant(seq_size) > cur_batch_max_seq_len,
-            lambda: tf.pad(
-                hist_id_col, [[0, 0], [0, seq_size - cur_batch_max_seq_len - 1],
-                              [0, 0]], "CONSTANT"),
-            lambda: tf.slice(hist_id_col, [0, 0, 0], [-1, seq_size - 1, -1])
-        )
-        all_ids = tf.concat([hist_id_col, tf.expand_dims(cur_id, 1)],
-                            axis=1)  # b, seq_size, emb_dim
+        # cur_batch_max_seq_len = tf.shape(hist_id_col)[1]
+        # hist_id_col = tf.cond(
+        #     tf.constant(seq_size) > cur_batch_max_seq_len,
+        #     lambda: tf.pad(hist_id_col, [[0, 0], [0, seq_size - cur_batch_max_seq_len - 1], [0, 0]], "CONSTANT"),
+        #     lambda: tf.slice(hist_id_col, [0, 0, 0], [-1, seq_size - 1, -1])
+        # )
+        # all_ids = tf.concat([hist_id_col, tf.expand_dims(cur_id, 1)], axis=1)  # b, seq_size, emb_dim
 
-        emb_dim = int(all_ids.shape[2])
-        attention_net = self.multi_head_att_net(all_ids, head_count, emb_dim,
-                                                seq_len, seq_size)
+        all_ids = tf.concat([hist_id_col, tf.expand_dims(cur_id, 1)], axis=1)  # b, seq_size + 1, emb_dim
+
+        attention_net = self.multi_head_att_net(all_ids, head_count, seq_len, name)
 
         tmp_net = self.add_and_norm(all_ids, attention_net, emb_dim, name=name + "/" + "add_and_norm_1")
         feed_forward_net = self.dnn_net(tmp_net, [emb_dim], name + "/" + "feed_forward_net")
@@ -140,9 +144,14 @@ class BST(RankModel, BSTLayer):
                 tower_fea,
                 training=self._is_training,
                 trainable=True,
-                name="%s_fea_bn" % tower_name)
-            tower_dnn = dnn.DNN(tower.dnn_config, self._l2_reg, "%s_dnn" % tower_name,
-                                self._is_training)
+                name="%s_fea_bn" % tower_name,
+            )
+            tower_dnn = dnn.DNN(
+                tower.dnn_config,
+                self._l2_reg,
+                "%s_dnn" % tower_name,
+                self._is_training,
+            )
             tower_fea = tower_dnn(tower_fea)
             tower_fea_arr.append(tower_fea)
 
