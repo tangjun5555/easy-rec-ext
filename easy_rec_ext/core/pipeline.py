@@ -490,13 +490,12 @@ class DINTower(BaseConfig):
 
 
 class BSTConfig(BaseConfig):
-    def __init__(self, seq_len: int, multi_head_size: int = 2):
-        self.seq_len = seq_len
+    def __init__(self, multi_head_size: int = 1):
         self.multi_head_size = multi_head_size
 
     @staticmethod
     def handle(data):
-        res = BSTConfig(data["seq_len"])
+        res = BSTConfig()
         if "multi_head_size" in data:
             res.multi_head_size = data["multi_head_size"]
         return res

@@ -71,9 +71,10 @@ class BSTLayer(object):
         net = layer(net)
         return net
 
-    def bst(self, bst_fea, seq_size, head_count, name):
+    def bst(self, bst_fea, head_count, name):
         cur_id, hist_id_col, seq_len = bst_fea["key"], bst_fea["hist_seq_emb"], bst_fea["hist_seq_len"]
 
+        seq_size = tf.shape(hist_id_col)[1]
         cur_batch_max_seq_len = tf.shape(hist_id_col)[1]
 
         hist_id_col = tf.cond(
@@ -90,11 +91,10 @@ class BSTLayer(object):
         attention_net = self.multi_head_att_net(all_ids, head_count, emb_dim,
                                                 seq_len, seq_size)
 
-        tmp_net = self.add_and_norm(
-            all_ids, attention_net, emb_dim, name="add_and_norm_1")
-        feed_forward_net = self.dnn_net(tmp_net, [emb_dim], "feed_forward_net")
-        net = self.add_and_norm(
-            tmp_net, feed_forward_net, emb_dim, name="add_and_norm_2")
+        tmp_net = self.add_and_norm(all_ids, attention_net, emb_dim, name=name + "/" + "add_and_norm_1")
+        feed_forward_net = self.dnn_net(tmp_net, [emb_dim], name + "/" + "feed_forward_net")
+        net = self.add_and_norm(tmp_net, feed_forward_net, emb_dim, name=name + "/" + "add_and_norm_2")
+
         bst_output = tf.reshape(net, [-1, seq_size * emb_dim])
         return bst_output
 
@@ -150,13 +150,12 @@ class BST(RankModel, BSTLayer):
             tower_fea = self._bst_tower_features[tower_id]
             tower = self._model_config.bst_towers[tower_id]
             tower_name = tower.input_group
-            tower_seq_len = tower.bst_config.seq_len
             tower_multi_head_size = tower.bst_config.multi_head_size
             tower_fea = self.bst(
                 tower_fea,
-                seq_size=tower_seq_len,
                 head_count=tower_multi_head_size,
-                name=tower_name)
+                name=tower_name,
+            )
             tower_fea_arr.append(tower_fea)
 
         all_fea = tf.concat(tower_fea_arr, axis=1)
@@ -169,6 +168,7 @@ class BST(RankModel, BSTLayer):
             bias_fea = self.build_bias_input_layer(self._model_config.bias_tower.input_group)
             all_fea = tf.concat([all_fea, bias_fea], axis=1)
             logging.info("build_predict_graph, logits.shape:%s" % (str(all_fea.shape)))
+
         logits = tf.layers.dense(all_fea, 1, name="logits")
         logits = tf.reshape(logits, (-1,))
         probs = tf.sigmoid(logits, name="probs")
