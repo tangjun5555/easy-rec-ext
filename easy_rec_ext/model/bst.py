@@ -91,7 +91,8 @@ class BSTLayer(object):
         # )
         # all_ids = tf.concat([hist_id_col, tf.expand_dims(cur_id, 1)], axis=1)  # b, seq_size, emb_dim
 
-        all_ids = tf.concat([hist_id_col, tf.expand_dims(cur_id, 1)], axis=1)  # b, seq_size + 1, emb_dim
+        # all_ids = tf.concat([hist_id_col, tf.expand_dims(cur_id, 1)], axis=1)  # b, seq_size + 1, emb_dim
+        all_ids = tf.concat([tf.expand_dims(cur_id, 1), hist_id_col], axis=1)  # b, seq_size + 1, emb_dim
 
         attention_net = self.multi_head_att_net(all_ids, head_count, seq_len, name)
 
