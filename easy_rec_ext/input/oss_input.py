@@ -3,6 +3,7 @@
 # time: 2021/8/6 7:04 下午
 # desc:
 
+import time
 import random
 import oss2
 import logging
@@ -24,6 +25,7 @@ class OSSInput(Input):
 
     def _get_oss_stream(self, path):
         bucket = self._get_oss_bucket()
+        time.sleep(2)
         return bucket.get_object(path)
 
     def _get_file_list(self, root_path):
