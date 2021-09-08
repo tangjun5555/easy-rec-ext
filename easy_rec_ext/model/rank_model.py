@@ -104,14 +104,14 @@ class RankModel(object):
                 ids = self._feature_dict[feature_field.input_name]
                 if ids.dtype == tf.dtypes.string:
                     embedding_weights = embedding_ops.get_embedding_variable(
-                        name=feature_field.embedding_name,
+                        name="input/" + feature_field.embedding_name,
                         dim=feature_field.embedding_dim,
                         vocab_size=feature_field.num_buckets if feature_field.num_buckets > 0 else feature_field.hash_bucket_size,
                         key_is_string=True,
                     )
                 else:
                     embedding_weights = embedding_ops.get_embedding_variable(
-                        name=feature_field.embedding_name,
+                        name="input/" + feature_field.embedding_name,
                         dim=feature_field.embedding_dim,
                         vocab_size=feature_field.num_buckets if feature_field.num_buckets > 0 else feature_field.hash_bucket_size,
                         key_is_string=False,
@@ -123,7 +123,7 @@ class RankModel(object):
                 values = self._feature_dict[feature_field.input_name]
             elif feature_field.feature_type == "SequenceFeature":
                 embedding_weights = embedding_ops.get_embedding_variable(
-                    name=feature_field.embedding_name,
+                    name="input/" + feature_field.embedding_name,
                     dim=feature_field.embedding_dim,
                     vocab_size=feature_field.num_buckets if feature_field.num_buckets > 0 else feature_field.hash_bucket_size,
                     key_is_string=False,
@@ -152,7 +152,7 @@ class RankModel(object):
             assert key_feature_field.feature_type == "IdFeature"
 
             key_embedding_weights = embedding_ops.get_embedding_variable(
-                key_feature_field.embedding_name,
+                "input/" + key_feature_field.embedding_name,
                 key_feature_field.embedding_dim,
                 vocab_size=key_feature_field.num_buckets if key_feature_field.num_buckets > 0 else key_feature_field.hash_bucket_size,
                 key_is_string=False,
@@ -168,7 +168,7 @@ class RankModel(object):
 
             hist_seq = self._feature_dict[seq_feature_field.input_name]
             seq_embedding_weights = embedding_ops.get_embedding_variable(
-                seq_feature_field.embedding_name,
+                "input/" + seq_feature_field.embedding_name,
                 seq_feature_field.embedding_dim,
                 vocab_size=seq_feature_field.num_buckets if seq_feature_field.num_buckets > 0 else seq_feature_field.hash_bucket_size,
                 key_is_string=False,
