@@ -3,6 +3,7 @@
 # time: 2021/8/1 12:23 下午
 # desc:
 
+import numpy as np
 import tensorflow as tf
 
 if tf.__version__ >= "2.0":
