@@ -103,7 +103,7 @@ class AttentionSequencePoolingLayer(object):
     """
 
     def __init__(self,
-                 name="AttentionSequencePoolingLayer",
+                 name,
                  attention_type="din",
                  weight_normalization=True,
                  ):
@@ -127,7 +127,7 @@ class AttentionSequencePoolingLayer(object):
             axis=-1,
         )
 
-        name = self._name + "/din"
+        name = self._name + "/dnn"
         with tf.variable_scope(name_or_scope=name, reuse=tf.AUTO_REUSE):
             dnn_units = [64, 32, 1]
             for idx, units in enumerate(dnn_units):
@@ -200,7 +200,7 @@ class BiLSTM(object):
                           If None, the outputs will not be combined, they will be returned as a list.
     """
 
-    def __init__(self, name="BiLSTM", units=64, layers=2, res_layers=0, dropout_rate=0.2, merge_mode="ave"):
+    def __init__(self, name, units=64, layers=2, res_layers=0, dropout_rate=0.2, merge_mode="ave"):
         self._name = name
 
         self.units = units
@@ -270,7 +270,7 @@ class BiLSTM(object):
 
 class PositionEncoding(object):
     def __init__(self,
-                 name="PositionEncoding",
+                 name,
                  pos_embedding_trainable=True,
                  zero_pad=False,
                  scale=True,

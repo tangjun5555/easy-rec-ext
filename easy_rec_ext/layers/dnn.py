@@ -12,7 +12,7 @@ if tf.__version__ >= "2.0":
 
 
 class DNN(object):
-    def __init__(self, dnn_config, l2_reg, name="dnn", is_training=False):
+    def __init__(self, dnn_config, l2_reg, name, is_training=False):
         """
         Initializes a `DNN` Layer.
         Args:
