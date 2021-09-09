@@ -30,10 +30,11 @@ class BSTLayer(object):
         scores = tf.matmul(
             query_net, key_net, transpose_b=True)  # [B, seq_size, seq_size]
 
-        hist_mask = tf.sequence_mask(
-            cur_seq_len, maxlen=seq_size - 1)  # [B, seq_size-1]
-        cur_id_mask = tf.ones([tf.shape(hist_mask)[0], 1], dtype=tf.bool)  # [B, 1]
-        mask = tf.concat([hist_mask, cur_id_mask], axis=1)  # [B, seq_size]
+        # hist_mask = tf.sequence_mask(
+        #     cur_seq_len, maxlen=seq_size - 1)  # [B, seq_size-1]
+        # cur_id_mask = tf.ones([tf.shape(hist_mask)[0], 1], dtype=tf.bool)  # [B, 1]
+        # mask = tf.concat([hist_mask, cur_id_mask], axis=1)  # [B, seq_size]
+        mask = tf.sequence_mask(cur_seq_len, maxlen=seq_size)
         masks = tf.reshape(tf.tile(mask, [1, seq_size]),
                            (-1, seq_size, seq_size))  # [B, seq_size, seq_size]
         padding = tf.ones_like(scores) * (-2 ** 32 + 1)
@@ -94,13 +95,14 @@ class BSTLayer(object):
         # all_ids = tf.concat([hist_id_col, tf.expand_dims(cur_id, 1)], axis=1)  # b, seq_size + 1, emb_dim
         all_ids = tf.concat([tf.expand_dims(cur_id, 1), hist_id_col], axis=1)  # b, seq_size + 1, emb_dim
 
-        attention_net = self.multi_head_att_net(all_ids, head_count, seq_len, name)
+        attention_net = self.multi_head_att_net(all_ids, head_count, seq_len + 1, name)
 
         tmp_net = self.add_and_norm(all_ids, attention_net, emb_dim, name=name + "/" + "add_and_norm_1")
         feed_forward_net = self.dnn_net(tmp_net, [emb_dim], name + "/" + "feed_forward_net")
         net = self.add_and_norm(tmp_net, feed_forward_net, emb_dim, name=name + "/" + "add_and_norm_2")
 
-        bst_output = tf.reshape(net, [-1, seq_size * emb_dim])
+        # bst_output = tf.reshape(net, [-1, seq_size * emb_dim])
+        bst_output = tf.reduce_sum(net, axis=1, keepdims=False)
         return bst_output
 
 

@@ -12,6 +12,20 @@ if tf.__version__ >= "2.0":
 line_sep = "\n" + "##" * 20 + "\n"
 
 
+def test_16():
+    t1 = tf.constant(
+        value=[
+            [1],
+            [2],
+            [3],
+        ],
+        dtype=tf.dtypes.int32,
+    )
+    t2 = t1 + 1
+    print(line_sep)
+    print(t2)
+
+
 def test_15():
     tf.disable_eager_execution()
 
