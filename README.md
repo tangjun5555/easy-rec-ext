@@ -8,3 +8,4 @@
 
 ##TODO
 ###1、serving阶段对DynamicEmbedding的支持
+###2、支持分布式训练
