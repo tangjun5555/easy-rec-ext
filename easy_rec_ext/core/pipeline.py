@@ -26,29 +26,19 @@ class InputField(BaseConfig):
 
 class OSSConfig(BaseConfig):
     def __init__(self,
-                 access_key_id="LTAI4G3GfJSTZwsi8ySkYv4Z",
-                 access_key_secret="0EW3RLRUV7zWwxtxHiuQztl2dbAVNr",
-                 endpoint="http://oss-cn-hangzhou.aliyuncs.com",
-                 bucket_name="shihuo-bigdata-oss",
-                 read_per_size=16 * 1024,
+                 endpoint, bucket_name,
+                 access_key_id, access_key_secret,
+                 read_per_size=16 * 1024,  # length of string of per read
                  ):
-        self.access_key_id = access_key_id
-        self.access_key_secret = access_key_secret
         self.endpoint = endpoint
         self.bucket_name = bucket_name
+        self.access_key_id = access_key_id
+        self.access_key_secret = access_key_secret
         self.read_per_size = read_per_size
 
     @staticmethod
     def handle(data):
-        res = OSSConfig()
-        if "access_key_id" in data:
-            res.access_key_id = data["access_key_id"]
-        if "access_key_secret" in data:
-            res.access_key_secret = data["access_key_secret"]
-        if "endpoint" in data:
-            res.endpoint = data["endpoint"]
-        if "bucket_name" in data:
-            res.bucket_name = data["bucket_name"]
+        res = OSSConfig(data["endpoint"], data["bucket_name"], data["access_key_id"], data["access_key_secret"])
         if "read_per_size" in data:
             res.read_per_size = data["read_per_size"]
         return res
@@ -57,7 +47,7 @@ class OSSConfig(BaseConfig):
 class InputConfig(BaseConfig):
     def __init__(self,
                  input_fields: List[InputField], label_fields: List[str],
-                 input_type: str = "csv", oss_config: OSSConfig = OSSConfig(),
+                 input_type: str = "csv", oss_config: OSSConfig = None,
                  train_input_path: str = None, eval_input_path: str = None,
                  num_epochs: int = 2, batch_size: int = 256
                  ):
