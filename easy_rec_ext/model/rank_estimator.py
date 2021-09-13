@@ -48,7 +48,7 @@ class RankEstimator(tf.estimator.Estimator):
             self._pipeline_config.feature_config,
             features,
             labels,
-            is_training=True
+            is_training=True,
         )
         predict_dict = model.build_predict_graph()
         loss_dict = model.build_loss_graph()
@@ -236,7 +236,7 @@ class RankEstimator(tf.estimator.Estimator):
             self._pipeline_config.feature_config,
             features,
             labels,
-            is_training=True
+            is_training=False,
         )
 
         predict_dict = model.build_predict_graph()
@@ -267,7 +267,7 @@ class RankEstimator(tf.estimator.Estimator):
             self._pipeline_config.feature_config,
             features,
             None,
-            is_training=False
+            is_training=False,
         )
         predict_dict = model.build_predict_graph()
 
