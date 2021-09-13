@@ -21,7 +21,7 @@ def parametric_relu(inputs, name):
     return pos + neg
 
 
-def dice(inputs, is_training, name, axis=-1, epsilon=1e-9):
+def dice(inputs, name, is_training=False, axis=-1, epsilon=1e-9):
     with tf.variable_scope(name, reuse=tf.AUTO_REUSE):
         alphas = tf.get_variable(name="alpha",
                                  shape=inputs.get_shape()[-1],

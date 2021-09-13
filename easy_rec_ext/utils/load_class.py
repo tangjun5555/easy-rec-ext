@@ -8,7 +8,8 @@ import pydoc
 
 
 def load_by_path(path):
-    """Load functions or modules or classes.
+    """
+    Load functions or modules or classes.
 
     Args:
       path: path to modules or functions or classes,
