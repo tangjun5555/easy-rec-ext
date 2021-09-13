@@ -23,11 +23,11 @@ def parametric_relu(inputs, name):
 
 def dice(inputs, name, is_training=False, axis=-1, epsilon=1e-9):
     with tf.variable_scope(name, reuse=tf.AUTO_REUSE):
-        alphas = tf.get_variable(name="alpha",
-                                 shape=inputs.get_shape()[-1],
-                                 initializer=tf.constant_initializer(0.0),
-                                 dtype=tf.float32,
-                                 )
+        alpha = tf.get_variable(name="alpha",
+                                shape=inputs.get_shape()[-1],
+                                initializer=tf.constant_initializer(0.0),
+                                dtype=tf.float32,
+                                )
     inputs_normed = tf.layers.batch_normalization(
         inputs,
         axis=axis,
@@ -39,4 +39,4 @@ def dice(inputs, name, is_training=False, axis=-1, epsilon=1e-9):
         trainable=True,
     )
     x_p = tf.sigmoid(inputs_normed)
-    return alphas * (1.0 - x_p) * inputs + x_p * inputs
+    return alpha * (1.0 - x_p) * inputs + x_p * inputs
