@@ -16,7 +16,7 @@ def build(optimizer_config):
     Create optimizer based on config.
 
     Args:
-      optimizer_config: A Optimizer proto message.
+      optimizer_config:
 
     Returns:
       An optimizer and a list of variables for summary.
@@ -24,6 +24,7 @@ def build(optimizer_config):
     Raises:
       ValueError: when using an unsupported input data type.
     """
+
     optimizer = None
     summary_vars = []
 
@@ -58,11 +59,12 @@ def exponential_decay_with_burnin(global_step,
                                   learning_rate_base,
                                   learning_rate_decay_steps,
                                   learning_rate_decay_factor,
+                                  min_learning_rate=0.0001,
                                   burnin_learning_rate=0.0,
                                   burnin_steps=0,
-                                  min_learning_rate=0.0,
                                   staircase=True):
-    """Exponential decay schedule with burn-in period.
+    """
+    Exponential decay schedule with burn-in period.
 
     In this schedule, learning rate is fixed at burnin_learning_rate
     for a fixed period, before transitioning to a regular exponential
@@ -109,10 +111,11 @@ def exponential_decay_with_burnin(global_step,
 
 
 def _create_learning_rate(learning_rate_config):
-    """Create optimizer learning rate based on config.
+    """
+    Create optimizer learning rate based on config.
 
     Args:
-      learning_rate_config: A LearningRate proto message.
+      learning_rate_config:
 
     Returns:
       A learning rate.

@@ -8,6 +8,14 @@ from easy_rec_ext.core.pipeline import TrainConfig
 
 
 def build(train_config):
+    """
+    Create distribute training strategy based on config.
+    Args:
+        train_config:
+
+    Returns:
+
+    """
     assert isinstance(train_config, TrainConfig)
     # single worker multi-gpu strategy
     if train_config.train_distribute == "MirroredStrategy":
