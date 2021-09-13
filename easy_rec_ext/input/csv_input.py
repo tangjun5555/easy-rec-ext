@@ -34,6 +34,7 @@ class CSVInput(Input):
             dataset = dataset.interleave(
                 tf.data.TextLineDataset, cycle_length=parallel_num, num_parallel_calls=parallel_num
             )
+            dataset = dataset.shard(self._task_num, self._task_index)
 
             dataset = dataset.shuffle(self._shuffle_buffer_size, seed=555, reshuffle_each_iteration=True)
             dataset = dataset.repeat(self._input_config.num_epochs)

@@ -16,10 +16,18 @@ if tf.__version__ >= "2.0":
 
 
 class Input(object):
-    def __init__(self, input_config: InputConfig, feature_config: FeatureConfig, input_path):
+    def __init__(self,
+                 input_config: InputConfig,
+                 feature_config: FeatureConfig,
+                 input_path: str,
+                 task_index=0,
+                 task_num=1
+                 ):
         self._input_config = input_config
         self._feature_config = feature_config
         self._input_path = input_path
+        self._task_index = task_index
+        self._task_num = task_num
 
         self._input_fields = [x.input_name for x in self._input_config.input_fields]
         self._input_field_types = [x.input_type for x in self._input_config.input_fields]
