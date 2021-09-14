@@ -44,7 +44,6 @@ def get_embedding_variable(name, dim, vocab_size=None, key_is_string=False):
         if name not in used_pretrain_variable_list:
             used_pretrain_variable_list.append(name)
             os.environ["used_pretrain_variable_list"] = ",".join(used_pretrain_variable_list)
-
             values = variable_util.load_variable_by_file(os.environ["pretrain_variable_dir"] + "/" + name)
             assert len(values.shape) == 2
             assert values.shape[1] == dim
@@ -52,7 +51,7 @@ def get_embedding_variable(name, dim, vocab_size=None, key_is_string=False):
                 assert values.shape[0] == vocab_size
             initializer = tf.constant(value=values, dtype=tf.dtypes.float32)
             use_pretrain_variable = True
-            logging.info("use pretrain variable:%s" % name)
+            logging.info("%s get_embedding_variable, load %s weight from file" % (str(os.path.basename(__file__)).split(".")[0], name))
 
     with tf.variable_scope("embedding", reuse=tf.AUTO_REUSE):
         if "use_dynamic_embedding" in os.environ and os.environ["use_dynamic_embedding"] == "1":
