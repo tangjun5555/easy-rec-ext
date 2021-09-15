@@ -46,8 +46,8 @@ class BSTLayer(object):
         return att_res_net
 
     def multi_head_att_net(self, id_cols, head_count, seq_len, name):
-        seq_size = tf.shape(id_cols)[1]
-        emb_dim = tf.shape(id_cols)[2]
+        seq_size = id_cols.get_shape().as_list()[1]
+        emb_dim = id_cols.get_shape().as_list()[2]
 
         multi_head_attention_res = []
         part_cols_emd_dim = int(math.ceil(emb_dim / head_count))
