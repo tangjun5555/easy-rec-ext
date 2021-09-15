@@ -83,14 +83,13 @@ class MultiTower(RankModel):
             tower_fea = self._bst_tower_features[tower_id]
             tower = self._model_config.bst_towers[tower_id]
             tower_name = tower.input_group
-            tower_seq_len = tower.bst_config.seq_len
             tower_multi_head_size = tower.bst_config.multi_head_size
             bst_layer = BSTLayer()
             tower_fea = bst_layer.bst(
                 tower_fea,
-                seq_size=tower_seq_len,
                 head_count=tower_multi_head_size,
-                name=tower_name)
+                name=tower_name,
+            )
             tower_fea_arr.append(tower_fea)
 
         all_fea = tf.concat(tower_fea_arr, axis=1)
