@@ -83,7 +83,8 @@ class BSTLayer(object):
     def bst(self, bst_fea, seq_size, head_count, name):
         cur_id, hist_id_col, seq_len = bst_fea["key"], bst_fea["hist_seq_emb"], bst_fea["hist_seq_len"]
 
-        emb_dim = tf.shape(hist_id_col)[2]
+        # emb_dim = tf.shape(hist_id_col)[2]
+        emb_dim = hist_id_col.get_shape().as_list()[2]
 
         # cur_batch_max_seq_len = tf.shape(hist_id_col)[1]
         # hist_id_col = tf.cond(
