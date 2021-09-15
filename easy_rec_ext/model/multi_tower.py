@@ -80,15 +80,14 @@ class MultiTower(RankModel):
             tower_fea_arr.append(tower_fea)
 
         for tower_id in range(self._bst_tower_num):
+            bst_layer = BSTLayer()
             tower_fea = self._bst_tower_features[tower_id]
             tower = self._model_config.bst_towers[tower_id]
-            tower_name = tower.input_group
-            tower_multi_head_size = tower.bst_config.multi_head_size
-            bst_layer = BSTLayer()
             tower_fea = bst_layer.bst(
                 tower_fea,
-                head_count=tower_multi_head_size,
-                name=tower_name,
+                seq_size=tower.bst_config.seq_size,
+                head_count=tower.bst_config.multi_head_size,
+                name=tower.input_group,
             )
             tower_fea_arr.append(tower_fea)
 

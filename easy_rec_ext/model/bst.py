@@ -45,8 +45,7 @@ class BSTLayer(object):
         att_res_net = tf.matmul(scores, value_net)  # [B, seq_size, emb_dim]
         return att_res_net
 
-    def multi_head_att_net(self, id_cols, head_count, seq_len, name):
-        seq_size = id_cols.get_shape().as_list()[1]
+    def multi_head_att_net(self, id_cols, seq_size, head_count, seq_len, name):
         emb_dim = id_cols.get_shape().as_list()[2]
         logging.info("multi_head_att_net, name:%s, shape:%s, seq_size:%s, emb_dim:%s" %
                      (str(name), str(seq_size), str(id_cols.get_shape().as_list()), str(emb_dim))
@@ -81,10 +80,9 @@ class BSTLayer(object):
         net = layer(net)
         return net
 
-    def bst(self, bst_fea, head_count, name):
+    def bst(self, bst_fea, seq_size, head_count, name):
         cur_id, hist_id_col, seq_len = bst_fea["key"], bst_fea["hist_seq_emb"], bst_fea["hist_seq_len"]
 
-        seq_size = tf.shape(hist_id_col)[1]
         emb_dim = tf.shape(hist_id_col)[2]
 
         # cur_batch_max_seq_len = tf.shape(hist_id_col)[1]
@@ -98,7 +96,7 @@ class BSTLayer(object):
         # all_ids = tf.concat([hist_id_col, tf.expand_dims(cur_id, 1)], axis=1)  # b, seq_size + 1, emb_dim
         all_ids = tf.concat([tf.expand_dims(cur_id, 1), hist_id_col], axis=1)  # b, seq_size + 1, emb_dim
 
-        attention_net = self.multi_head_att_net(all_ids, head_count, seq_len + 1, name)
+        attention_net = self.multi_head_att_net(all_ids, seq_size + 1, head_count, seq_len + 1, name)
 
         tmp_net = self.add_and_norm(all_ids, attention_net, emb_dim, name=name + "/" + "add_and_norm_1")
         feed_forward_net = self.dnn_net(tmp_net, [emb_dim], name + "/" + "feed_forward_net")
@@ -164,12 +162,11 @@ class BST(RankModel, BSTLayer):
         for tower_id in range(self._bst_tower_num):
             tower_fea = self._bst_tower_features[tower_id]
             tower = self._model_config.bst_towers[tower_id]
-            tower_name = tower.input_group
-            tower_multi_head_size = tower.bst_config.multi_head_size
             tower_fea = self.bst(
                 tower_fea,
-                head_count=tower_multi_head_size,
-                name=tower_name,
+                seq_size=tower.bst_config.seq_size,
+                head_count=tower.bst_config.multi_head_size,
+                name=tower.input_group,
             )
             tower_fea_arr.append(tower_fea)
 
