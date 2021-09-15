@@ -48,6 +48,7 @@ class BSTLayer(object):
     def multi_head_att_net(self, id_cols, head_count, seq_len, name):
         seq_size = id_cols.get_shape().as_list()[1]
         emb_dim = id_cols.get_shape().as_list()[2]
+        logging.info("multi_head_att_net, name:%s, seq_size:%s, emb_dim:%s" % (str(name), str(seq_size), str(emb_dim)))
 
         multi_head_attention_res = []
         part_cols_emd_dim = int(math.ceil(emb_dim / head_count))
@@ -56,10 +57,10 @@ class BSTLayer(object):
                 part_cols_emd_dim = emb_dim - start_idx
             part_id_col = tf.slice(id_cols, [0, 0, start_idx], [-1, -1, part_cols_emd_dim])
             part_attention_net = self.attention_net(
-                part_id_col,
-                part_cols_emd_dim,
-                seq_len,
-                seq_size,
+                net=part_id_col,
+                dim=part_cols_emd_dim,
+                cur_seq_len=seq_len,
+                seq_size=seq_size,
                 name=name + "/" + "multi_head_%d" % start_idx
             )
             multi_head_attention_res.append(part_attention_net)
