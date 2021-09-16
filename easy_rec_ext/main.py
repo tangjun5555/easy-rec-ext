@@ -7,11 +7,14 @@ import logging
 import json
 import os
 import argparse
-import tensorflow as tf
+
 from easy_rec_ext.core.pipeline import PipelineConfig
 from easy_rec_ext.core.exporter import FinalExporter
 from easy_rec_ext.input import CSVInput, TFRecordInput, OSSInput
 from easy_rec_ext.model.rank_estimator import RankEstimator
+from easy_rec_ext.utils import estimator_util
+
+import tensorflow as tf
 
 if tf.__version__ >= "2.0":
     gfile = tf.compat.v1.gfile
@@ -81,12 +84,13 @@ def get_input_fn(input_config, feature_config, input_path=None, export_config=No
     Returns:
       subclass of Input
     """
+    task_id, task_num = estimator_util.get_task_index_and_num()
     if input_config.input_type == "csv":
-        input_obj = CSVInput(input_config, feature_config, input_path)
+        input_obj = CSVInput(input_config, feature_config, input_path, task_index=task_id, task_num=task_num)
     elif input_config.input_type == "tfrecord":
-        input_obj = TFRecordInput(input_config, feature_config, input_path)
+        input_obj = TFRecordInput(input_config, feature_config, input_path, task_index=task_id, task_num=task_num)
     elif input_config.input_type == "oss":
-        input_obj = OSSInput(input_config, feature_config, input_path)
+        input_obj = OSSInput(input_config, feature_config, input_path, task_index=task_id, task_num=task_num)
     else:
         raise ValueError("input_type:%s not supported." % input_config.input_type)
     input_fn = input_obj.create_input(export_config)

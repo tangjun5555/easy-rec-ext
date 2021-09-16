@@ -13,8 +13,15 @@ if tf.__version__ >= "2.0":
 
 
 class CSVInput(Input):
-    def __init__(self, input_config, feature_config, input_path):
-        super(CSVInput, self).__init__(input_config, feature_config, input_path)
+    def __init__(self,
+                 input_config,
+                 feature_config,
+                 input_path: str,
+                 task_index=0,
+                 task_num=1,
+                 ):
+        super(CSVInput, self).__init__(input_config, feature_config, input_path,
+                                       task_index, task_num)
 
     def _build(self, mode):
         file_paths = []

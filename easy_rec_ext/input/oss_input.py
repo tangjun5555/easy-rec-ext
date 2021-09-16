@@ -15,8 +15,15 @@ if tf.__version__ >= "2.0":
 
 
 class OSSInput(Input):
-    def __init__(self, input_config, feature_config, input_path):
-        super(OSSInput, self).__init__(input_config, feature_config, input_path)
+    def __init__(self,
+                 input_config,
+                 feature_config,
+                 input_path: str,
+                 task_index=0,
+                 task_num=1,
+                 ):
+        super(OSSInput, self).__init__(input_config, feature_config, input_path,
+                                       task_index, task_num)
 
     def _get_oss_bucket(self):
         auth = oss2.Auth(self._input_config.oss_config.access_key_id, self._input_config.oss_config.access_key_secret)
@@ -65,6 +72,8 @@ class OSSInput(Input):
                 generator=generator_fn,
                 output_signature=tf.TensorSpec(shape=(), dtype=tf.dtypes.string)
             )
+            dataset = dataset.shard(self._task_num, self._task_index)
+
             dataset = dataset.shuffle(self._shuffle_buffer_size, seed=555, reshuffle_each_iteration=True)
             dataset = dataset.repeat(self._input_config.num_epochs)
         else:

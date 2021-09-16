@@ -6,6 +6,7 @@
 import os
 from abc import abstractmethod
 from collections import OrderedDict
+
 from easy_rec_ext.utils import string_ops
 from easy_rec_ext.core.pipeline import InputConfig, FeatureConfig
 
@@ -21,7 +22,7 @@ class Input(object):
                  feature_config: FeatureConfig,
                  input_path: str,
                  task_index=0,
-                 task_num=1
+                 task_num=1,
                  ):
         self._input_config = input_config
         self._feature_config = feature_config
@@ -224,7 +225,8 @@ class Input(object):
                 self._mode = mode
                 dataset = self._build(mode)
                 return dataset
-            else:  # serving_input_receiver_fn for export SavedModel
+            else:
+                # serving_input_receiver_fn for export SavedModel
                 inputs, features = self.create_placeholders()
                 return tf.estimator.export.ServingInputReceiver(features, inputs)
 

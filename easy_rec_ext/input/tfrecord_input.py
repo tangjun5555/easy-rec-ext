@@ -13,8 +13,15 @@ if tf.__version__ >= "2.0":
 
 
 class TFRecordInput(Input):
-    def __init__(self, input_config, feature_config, input_path):
-        super(TFRecordInput, self).__init__(input_config, feature_config, input_path)
+    def __init__(self,
+                 input_config,
+                 feature_config,
+                 input_path: str,
+                 task_index=0,
+                 task_num=1,
+                 ):
+        super(TFRecordInput, self).__init__(input_config, feature_config, input_path,
+                                            task_index, task_num)
 
         self.feature_desc = {}
         for x, t, d in zip(self._input_fields, self._input_field_types, self._input_field_defaults):
@@ -40,13 +47,12 @@ class TFRecordInput(Input):
             # as the same data will be read multiple times
             parallel_num = min(self._num_parallel_calls, len(file_paths))
             dataset = dataset.interleave(
-                lambda x: tf.data.TFRecordDataset(x, compression_type=None),
-                cycle_length=parallel_num,
-                num_parallel_calls=parallel_num
+                tf.data.TFRecordDataset, cycle_length=parallel_num, num_parallel_calls=parallel_num
             )
+            dataset = dataset.shard(self._task_num, self._task_index)
 
             dataset = dataset.shuffle(
-                buffer_size=32,
+                buffer_size=self._shuffle_buffer_size,
                 seed=555,
                 reshuffle_each_iteration=True
             )
@@ -54,7 +60,7 @@ class TFRecordInput(Input):
         else:
             logging.info("eval files[%d]: %s" % (len(file_paths), ",".join(file_paths)))
 
-            dataset = tf.data.TFRecordDataset(file_paths, compression_type=None)
+            dataset = tf.data.TFRecordDataset(file_paths)
             dataset = dataset.repeat(1)
 
         dataset = dataset.map(self._parse_tfrecord, num_parallel_calls=self._num_parallel_calls)
