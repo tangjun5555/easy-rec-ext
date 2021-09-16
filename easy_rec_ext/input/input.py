@@ -165,8 +165,12 @@ class Input(object):
                         parsed_dict[fc.input_name] = tf.string_to_number(parsed_dict[fc.input_name], tf.dtypes.int64,
                                                                          name="%s_str_2_int" % fc.input_name)
                 else:
-                    if "use_dynamic_embedding" in os.environ and os.environ["use_dynamic_embedding"] == "1":
-                        pass
+                    if os.environ["use_dynamic_embedding"] == "1":
+                        if os.environ["use_gpu"] == "1":
+                            parsed_dict[fc.input_name] = string_ops.string_to_hash_bucket(
+                                parsed_dict[fc.input_name],
+                                fc.hash_bucket_size
+                            )
                     else:
                         parsed_dict[fc.input_name] = string_ops.string_to_hash_bucket(
                             parsed_dict[fc.input_name],

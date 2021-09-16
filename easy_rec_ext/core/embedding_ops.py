@@ -54,7 +54,7 @@ def get_embedding_variable(name, dim, vocab_size=None, key_is_string=False):
             logging.info("%s get_embedding_variable, load %s weight from file" % (str(os.path.basename(__file__)).split(".")[0], name))
 
     with tf.variable_scope("embedding", reuse=tf.AUTO_REUSE):
-        if "use_dynamic_embedding" in os.environ and os.environ["use_dynamic_embedding"] == "1":
+        if os.environ["use_dynamic_embedding"] == "1":
             if key_is_string:
                 return tfra.dynamic_embedding.get_variable(
                     name=name,
