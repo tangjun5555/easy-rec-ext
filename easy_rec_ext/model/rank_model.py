@@ -104,7 +104,7 @@ class RankModel(object):
                 ids = self._feature_dict[feature_field.input_name]
                 if ids.dtype == tf.dtypes.string:
                     embedding_weights = embedding_ops.get_embedding_variable(
-                        name="input/" + feature_field.embedding_name,
+                        name=feature_field.embedding_name,
                         dim=feature_field.embedding_dim,
                         vocab_size=feature_field.num_buckets if feature_field.num_buckets > 0 else feature_field.hash_bucket_size,
                         key_is_string=True,
