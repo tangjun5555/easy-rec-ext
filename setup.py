@@ -15,7 +15,7 @@ setup(
     packages=find_packages(),
     author="tangj",
     author_email="1844250138@qq.com",
-    python_requires=">=3.5",
+    python_requires=">=3.6",
     install_requires=Path("requirements.txt").read_text().splitlines(),
     extras_require={
         "cpu": [
