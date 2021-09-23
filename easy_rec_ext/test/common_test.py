@@ -274,14 +274,23 @@ def test_04():
 
 def test_03():
     tf.enable_eager_execution()
+    # t1 = tf.constant(
+    #     value=[
+    #         ["431645d82843f859"],
+    #         ["431645d82843f859"],
+    #         [""],
+    #         [""]
+    #     ],
+    #     dtype=tf.dtypes.string,
+    # )
     t1 = tf.constant(
         value=[
-            ["431645d82843f859"],
-            ["431645d82843f859"],
-            [""],
-            [""]
+            [1],
+            [-1],
+            [0],
+            [1]
         ],
-        dtype=tf.dtypes.string
+        dtype=tf.dtypes.int64,
     )
     t2 = tf.string_to_hash_bucket(t1, 1000)
     t3 = tf.string_to_hash_bucket_fast(t1, 1000)
