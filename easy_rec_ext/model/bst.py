@@ -105,6 +105,7 @@ class BSTLayer(object):
 
         # bst_output = tf.reshape(net, [-1, seq_size * emb_dim])
         bst_output = tf.reduce_sum(net, axis=1, keepdims=False)
+        logging.info("bst %s, bst_output.shape:%s" % (name, str(bst_output.shape)))
         return bst_output
 
 
