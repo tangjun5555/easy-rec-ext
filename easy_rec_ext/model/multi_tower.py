@@ -3,6 +3,7 @@
 # time: 2021/8/12 5:05 下午
 # desc:
 
+import os
 import logging
 import tensorflow as tf
 from easy_rec_ext.layers import dnn
@@ -13,6 +14,9 @@ from easy_rec_ext.model.bst import BSTLayer
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
+
+
+filename = str(os.path.basename(__file__)).split(".")[0]
 
 
 class MultiTower(RankModel):
@@ -54,7 +58,7 @@ class MultiTower(RankModel):
         logging.info("din tower num: {0}".format(self._din_tower_num))
         logging.info("bst tower num: {0}".format(self._bst_tower_num))
 
-    def build_predict_graph(self):
+    def build_tower_fea_arr(self):
         tower_fea_arr = []
 
         for tower_id in range(self._dnn_tower_num):
@@ -90,6 +94,12 @@ class MultiTower(RankModel):
                 name=tower.input_group,
             )
             tower_fea_arr.append(tower_fea)
+
+        return tower_fea_arr
+
+    def build_predict_graph(self):
+        tower_fea_arr = self.build_tower_fea_arr()
+        logging.info("%s build_predict_graph, all_fea.length:%s" % (filename, str(len(tower_fea_arr))))
 
         all_fea = tf.concat(tower_fea_arr, axis=1)
         final_dnn_layer = dnn.DNN(self._model_config.final_dnn, self._l2_reg, "final_dnn", self._is_training)

@@ -3,6 +3,7 @@
 # time: 2021/8/1 12:23 下午
 # desc:
 
+import os
 import numpy as np
 import tensorflow as tf
 
@@ -10,6 +11,23 @@ if tf.__version__ >= "2.0":
     tf = tf.compat.v1
 
 line_sep = "\n" + "##" * 20 + "\n"
+
+
+def test_18():
+    t1 = tf.constant(
+        value=[[1], [2], [3]],
+        dtype=tf.dtypes.int32,
+    )
+    t2 = tf.constant(
+        value=[[4], [5], [6]],
+        dtype=tf.dtypes.int32,
+    )
+    r1 = tf.concat([t1, t2], axis=-1)
+    print(r1)
+
+
+def test_17():
+    print(str(os.path.basename(__file__)).split(".")[0])
 
 
 def test_16():

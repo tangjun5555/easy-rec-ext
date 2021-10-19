@@ -7,7 +7,7 @@ import os
 import time
 import logging
 from collections import OrderedDict
-from easy_rec_ext.model import DIN, BST, MultiTower, AITM
+from easy_rec_ext.model import DIN, BST, MultiTower, AITM, ESMM
 from easy_rec_ext.builders import optimizer_builder
 
 import tensorflow as tf
@@ -36,6 +36,8 @@ class RankEstimator(tf.estimator.Estimator):
             model = BST
         elif self._pipeline_config.model_config.model_class == "multi_tower":
             model = MultiTower
+        elif self._pipeline_config.model_config.model_class == "essm":
+            model = ESMM
         elif self._pipeline_config.model_config.model_class == "aitm":
             model = AITM
         else:

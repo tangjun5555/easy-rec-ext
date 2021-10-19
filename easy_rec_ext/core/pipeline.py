@@ -504,6 +504,29 @@ class BSTTower(BaseConfig):
         return res
 
 
+class CTCVRLabelConfig(BaseConfig):
+    def __init__(self, ctr_label_name="ctr_label", ctcvr_label_name="ctcvr_label",
+                 ctr_loss_weight=1.0, ctcvr_loss_weight=1.0
+                 ):
+        self.ctr_label_name = ctr_label_name
+        self.ctcvr_label_name = ctcvr_label_name
+        self.ctr_loss_weight = ctr_loss_weight
+        self.ctcvr_loss_weight = ctcvr_loss_weight
+
+    @staticmethod
+    def handle(data):
+        res = CTCVRLabelConfig()
+        if "ctr_label_name" in res:
+            res.ctr_label_name = data["ctr_label_name"]
+        if "ctcvr_label_name" in res:
+            res.ctcvr_label_name = data["ctcvr_label_name"]
+        if "ctr_loss_weight" in data:
+            res.ctr_loss_weight = data["ctr_loss_weight"]
+        if "ctcvr_loss_weight" in data:
+            res.ctcvr_loss_weight = data["ctcvr_loss_weight"]
+        return res
+
+
 class AITMModel(BaseConfig):
     def __init__(self, ctr_dnn_config: DNNConfig, ctcvr_dnn_config: DNNConfig,
                  ctr_label_name="ctr_label", ctcvr_label_name="ctcvr_label",
@@ -553,6 +576,7 @@ class ModelConfig(BaseConfig):
     def __init__(self, model_class: str,
                  feature_groups: List[FeatureGroup],
 
+                 ctcvr_label_config: CTCVRLabelConfig = None,
                  aitm_model: AITMModel = None,
 
                  dnn_towers: List[DNNTower] = None,
@@ -570,6 +594,7 @@ class ModelConfig(BaseConfig):
         self.model_class = model_class
         self.feature_groups = feature_groups
 
+        self.ctcvr_label_config = ctcvr_label_config
         self.aitm_model = aitm_model
 
         self.dnn_towers = dnn_towers
@@ -591,6 +616,12 @@ class ModelConfig(BaseConfig):
             feature_groups.append(FeatureGroup.handle(feature_group))
         res = ModelConfig(data["model_class"], feature_groups)
 
+        if "ctcvr_label_config" in data:
+            res.ctcvr_label_config = CTCVRLabelConfig.handle(data["ctcvr_label_config"])
+
+        if "aitm_model" in data:
+            res.aitm_model = AITMModel.handle(data["aitm_model"])
+
         if "dnn_towers" in data:
             dnn_towers = []
             for dnn_tower in data["dnn_towers"]:
@@ -609,8 +640,6 @@ class ModelConfig(BaseConfig):
 
         if "final_dnn" in data:
             res.final_dnn = DNNConfig.handle(data["final_dnn"])
-        if "aitm_model" in data:
-            res.aitm_model = AITMModel.handle(data["aitm_model"])
         if "bias_tower" in data:
             res.bias_tower = BiasTower.handle(data["bias_tower"])
 
