@@ -552,12 +552,16 @@ class BiasTower(BaseConfig):
 class ModelConfig(BaseConfig):
     def __init__(self, model_class: str,
                  feature_groups: List[FeatureGroup],
+
+                 aitm_model: AITMModel = None,
+
                  dnn_towers: List[DNNTower] = None,
                  din_towers: List[DINTower] = None,
                  bst_towers: List[BSTTower] = None,
+
                  final_dnn: DNNConfig = None,
-                 aitm_model: AITMModel = None,
                  bias_tower: BiasTower = None,
+
                  embedding_regularization: float = 0.0,
                  l2_regularization: float = 0.0001,
                  use_dynamic_embedding: bool = False,
@@ -566,11 +570,12 @@ class ModelConfig(BaseConfig):
         self.model_class = model_class
         self.feature_groups = feature_groups
 
+        self.aitm_model = aitm_model
+
         self.dnn_towers = dnn_towers
         self.din_towers = din_towers
         self.bst_towers = bst_towers
         self.final_dnn = final_dnn
-        self.aitm_model = aitm_model
         self.bias_tower = bias_tower
 
         self.embedding_regularization = embedding_regularization
