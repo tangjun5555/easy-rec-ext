@@ -3,7 +3,6 @@
 # time: 2021/7/30 4:37 下午
 # desc:
 
-
 import logging
 import tensorflow as tf
 from easy_rec_ext.layers import dnn
@@ -136,13 +135,13 @@ class AITM(RankModel):
                 metric_dict["ctr_gauc"] = metrics_lib.gauc(
                     ctr_label,
                     ctr_probs,
-                    uids=self._feature_dict[metric.gid_field],
+                    gids=self._feature_dict[metric.gid_field],
                     reduction=metric.reduction
                 )
                 metric_dict["ctcvr_gauc"] = metrics_lib.gauc(
                     ctcvr_label,
                     ctcvr_probs,
-                    uids=self._feature_dict[metric.gid_field],
+                    gids=self._feature_dict[metric.gid_field],
                     reduction=metric.reduction
                 )
             elif "pcopc" == metric.name:
