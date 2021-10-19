@@ -6,11 +6,9 @@
 import os
 import logging
 import tensorflow as tf
-from easy_rec_ext.layers import dnn
 from easy_rec_ext.model.multi_tower import MultiTower
+from easy_rec_ext.layers import dnn
 import easy_rec_ext.core.metrics as metrics_lib
-from easy_rec_ext.model.din import DINLayer
-from easy_rec_ext.model.bst import BSTLayer
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
