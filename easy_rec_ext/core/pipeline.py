@@ -516,9 +516,9 @@ class CTCVRLabelConfig(BaseConfig):
     @staticmethod
     def handle(data):
         res = CTCVRLabelConfig()
-        if "ctr_label_name" in res:
+        if "ctr_label_name" in data:
             res.ctr_label_name = data["ctr_label_name"]
-        if "ctcvr_label_name" in res:
+        if "ctcvr_label_name" in data:
             res.ctcvr_label_name = data["ctcvr_label_name"]
         if "ctr_loss_weight" in data:
             res.ctr_loss_weight = data["ctr_loss_weight"]
@@ -618,7 +618,6 @@ class ModelConfig(BaseConfig):
 
         if "ctcvr_label_config" in data:
             res.ctcvr_label_config = CTCVRLabelConfig.handle(data["ctcvr_label_config"])
-
         if "aitm_model" in data:
             res.aitm_model = AITMModel.handle(data["aitm_model"])
 
