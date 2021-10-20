@@ -98,22 +98,23 @@ class ESMM(MultiTower):
         metric_dict = {}
         for metric in eval_config.metric_set:
             if "auc" == metric.name:
-                metric_dict["ctr_auc"] = tf.metrics.auc(ctr_label, ctr_probs)
-                metric_dict["ctcvr_auc"] = tf.metrics.auc(ctcvr_label, ctcvr_probs)
+                metric_dict["ctr_auc"] = tf.metrics.auc(tf.to_int64(ctr_label), ctr_probs)
+                metric_dict["ctcvr_auc"] = tf.metrics.auc(tf.to_int64(ctcvr_label), ctcvr_probs)
             elif "gauc" == metric.name:
+                gids = tf.squeeze(self._feature_dict[metric.gid_field], axis=1)
                 metric_dict["ctr_gauc"] = metrics_lib.gauc(
-                    ctr_label,
+                    tf.to_int64(ctr_label),
                     ctr_probs,
-                    gids=self._feature_dict[metric.gid_field],
+                    gids=gids,
                     reduction=metric.reduction
                 )
                 metric_dict["ctcvr_gauc"] = metrics_lib.gauc(
-                    ctcvr_label,
+                    tf.to_int64(ctcvr_label),
                     ctcvr_probs,
-                    gids=self._feature_dict[metric.gid_field],
+                    gids=gids,
                     reduction=metric.reduction
                 )
             elif "pcopc" == metric.name:
-                metric_dict["ctr_pcopc"] = metrics_lib.pcopc(ctr_label, self._prediction_dict["ctr_probs"])
-                metric_dict["ctcvrpcopc"] = metrics_lib.pcopc(ctcvr_label, self._prediction_dict["ctcvr_probs"])
+                metric_dict["ctr_pcopc"] = metrics_lib.pcopc(tf.to_float(ctr_label), self._prediction_dict["ctr_probs"])
+                metric_dict["ctcvrpcopc"] = metrics_lib.pcopc(tf.to_float(ctcvr_label), self._prediction_dict["ctcvr_probs"])
         return metric_dict
