@@ -27,6 +27,7 @@ class CSVInput(Input):
         file_paths = []
         for x in self._input_path.split(","):
             file_paths.extend(tf.gfile.Glob(x))
+        file_paths = sorted(file_paths)
         assert len(file_paths) > 0, "match no files with %s" % self._input_path
 
         if mode == tf.estimator.ModeKeys.TRAIN:

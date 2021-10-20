@@ -35,6 +35,7 @@ class TFRecordInput(Input):
 
     def _build(self, mode):
         file_paths = tf.gfile.Glob(self._input_path)
+        file_paths = sorted(file_paths)
         assert len(file_paths) > 0, "match no files with %s" % self._input_path
 
         if mode == tf.estimator.ModeKeys.TRAIN:
