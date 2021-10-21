@@ -7,7 +7,7 @@ import os
 import time
 import logging
 from collections import OrderedDict
-from easy_rec_ext.model import DIN, BST, MultiTower, AITM, ESMM
+from easy_rec_ext.model import DIN, BST, MultiTower, ESMM
 from easy_rec_ext.builders import optimizer_builder
 
 import tensorflow as tf
