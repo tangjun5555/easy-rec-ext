@@ -577,7 +577,6 @@ class ModelConfig(BaseConfig):
                  feature_groups: List[FeatureGroup],
 
                  ctcvr_label_config: CTCVRLabelConfig = None,
-                 aitm_model: AITMModel = None,
 
                  dnn_towers: List[DNNTower] = None,
                  din_towers: List[DINTower] = None,
@@ -595,7 +594,6 @@ class ModelConfig(BaseConfig):
         self.feature_groups = feature_groups
 
         self.ctcvr_label_config = ctcvr_label_config
-        self.aitm_model = aitm_model
 
         self.dnn_towers = dnn_towers
         self.din_towers = din_towers
@@ -618,8 +616,6 @@ class ModelConfig(BaseConfig):
 
         if "ctcvr_label_config" in data:
             res.ctcvr_label_config = CTCVRLabelConfig.handle(data["ctcvr_label_config"])
-        if "aitm_model" in data:
-            res.aitm_model = AITMModel.handle(data["aitm_model"])
 
         if "dnn_towers" in data:
             dnn_towers = []

@@ -6,6 +6,5 @@
 from .din import DIN
 from .bst import BST
 from .multi_tower import MultiTower
-from .aitm import AITM
 from .esmm import ESMM
 

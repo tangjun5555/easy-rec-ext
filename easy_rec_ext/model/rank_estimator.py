@@ -36,10 +36,8 @@ class RankEstimator(tf.estimator.Estimator):
             model = BST
         elif self._pipeline_config.model_config.model_class == "multi_tower":
             model = MultiTower
-        elif self._pipeline_config.model_config.model_class == "essm":
+        elif self._pipeline_config.model_config.model_class == "esmm":
             model = ESMM
-        elif self._pipeline_config.model_config.model_class == "aitm":
-            model = AITM
         else:
             raise ValueError("model_class:%s not supported." % self._pipeline_config.model_config.model_class)
         return model
