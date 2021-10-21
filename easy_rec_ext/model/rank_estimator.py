@@ -7,7 +7,7 @@ import os
 import time
 import logging
 from collections import OrderedDict
-from easy_rec_ext.model import DIN, BST, MultiTower, ESMM
+from easy_rec_ext.model import *
 from easy_rec_ext.builders import optimizer_builder
 
 import tensorflow as tf
@@ -38,6 +38,8 @@ class RankEstimator(tf.estimator.Estimator):
             model = MultiTower
         elif self._pipeline_config.model_config.model_class == "esmm":
             model = ESMM
+        elif self._pipeline_config.model_config.model_class == "mmoe":
+            model = MMoE
         else:
             raise ValueError("model_class:%s not supported." % self._pipeline_config.model_config.model_class)
         return model

@@ -527,38 +527,16 @@ class CTCVRLabelConfig(BaseConfig):
         return res
 
 
-class AITMModel(BaseConfig):
-    def __init__(self, ctr_dnn_config: DNNConfig, ctcvr_dnn_config: DNNConfig,
-                 ctr_label_name="ctr_label", ctcvr_label_name="ctcvr_label",
-                 attention_k=32,
-                 ctr_loss_weight=1.0, ctcvr_loss_weight=1.0, label_constraint_loss_weight=1.0
-                 ):
-        self.ctr_dnn_config = ctr_dnn_config
-        self.ctcvr_dnn_config = ctcvr_dnn_config
-        self.ctr_label_name = ctr_label_name
-        self.ctcvr_label_name = ctcvr_label_name
-        self.attention_k = attention_k
-        self.ctr_loss_weight = ctr_loss_weight
-        self.ctcvr_loss_weight = ctcvr_loss_weight
-        self.label_constraint_loss_weight = label_constraint_loss_weight
+class MMoEModelCofing(BaseConfig):
+    def __init__(self, label_names: List[str], num_expert: int, expert_dnn_config: DNNConfig):
+        self.label_names = label_names
+        self.num_task = len(label_names)
+        self.num_expert = num_expert
+        self.expert_dnn_config = expert_dnn_config
 
     @staticmethod
     def handle(data):
-        ctr_dnn_config = DNNConfig.handle(data["ctr_dnn_config"])
-        ctcvr_dnn_config = DNNConfig.handle(data["ctcvr_dnn_config"])
-        res = AITMModel(ctr_dnn_config, ctcvr_dnn_config)
-        if "ctr_label_name" in data:
-            res.ctr_label_name = data["ctr_label_name"]
-        if "ctcvr_label_name" in data:
-            res.ctcvr_label_name = data["ctcvr_label_name"]
-        if "attention_k" in data:
-            res.attention_k = data["attention_k"]
-        if "ctr_loss_weight" in data:
-            res.ctr_loss_weight = data["ctr_loss_weight"]
-        if "ctcvr_loss_weight" in data:
-            res.ctcvr_loss_weight = data["ctcvr_loss_weight"]
-        if "label_constraint_loss_weight" in data:
-            res.label_constraint_loss_weight = data["label_constraint_loss_weight"]
+        res = MMoEModelCofing(data["label_names"], data["num_expert"], data["expert_dnn_config"])
         return res
 
 
@@ -577,6 +555,7 @@ class ModelConfig(BaseConfig):
                  feature_groups: List[FeatureGroup],
 
                  ctcvr_label_config: CTCVRLabelConfig = None,
+                 mmoe_model_config: MMoEModelCofing = None,
 
                  dnn_towers: List[DNNTower] = None,
                  din_towers: List[DINTower] = None,
@@ -594,6 +573,7 @@ class ModelConfig(BaseConfig):
         self.feature_groups = feature_groups
 
         self.ctcvr_label_config = ctcvr_label_config
+        self.mmoe_model_config = mmoe_model_config
 
         self.dnn_towers = dnn_towers
         self.din_towers = din_towers
@@ -616,6 +596,8 @@ class ModelConfig(BaseConfig):
 
         if "ctcvr_label_config" in data:
             res.ctcvr_label_config = CTCVRLabelConfig.handle(data["ctcvr_label_config"])
+        if "mmoe_model_config" in data:
+            res.mmoe_model_config = MMoEModelCofing.handle(data["mmoe_model_config"])
 
         if "dnn_towers" in data:
             dnn_towers = []

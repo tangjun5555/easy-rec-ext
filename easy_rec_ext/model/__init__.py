@@ -7,4 +7,4 @@ from .din import DIN
 from .bst import BST
 from .multi_tower import MultiTower
 from .esmm import ESMM
-
+from .mmoe import MMoE
