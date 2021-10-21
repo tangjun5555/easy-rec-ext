@@ -8,6 +8,7 @@ import logging
 import tensorflow as tf
 from easy_rec_ext.model.multi_tower import MultiTower
 from easy_rec_ext.layers import dnn
+import easy_rec_ext.core.metrics as metrics_lib
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
@@ -86,9 +87,42 @@ class MMoE(MultiTower):
         return self._prediction_dict
 
     def build_loss_graph(self):
-        # TODO
-        pass
+        for i in range(self._model_config.mmoe_model_config.num_task):
+            tower_name = self._model_config.mmoe_model_config.label_names[i]
+            tower_label = self._labels[tower_name]
+            tower_loss = tf.losses.log_loss(
+                labels=tf.cast(tower_label, tf.float32),
+                predictions=self._prediction_dict[tower_name],
+            )
+            self._loss_dict["%s_cross_entropy_loss" % tower_name] = tower_loss
+
+        regularization_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+        if regularization_losses:
+            regularization_losses = [
+                reg_loss.get() if hasattr(reg_loss, "get") else reg_loss
+                for reg_loss in regularization_losses
+            ]
+            regularization_losses = tf.add_n(regularization_losses, name="regularization_loss")
+            self._loss_dict["regularization_loss"] = regularization_losses
+        return self._loss_dict
 
     def build_metric_graph(self, eval_config):
-        # TODO
-        pass
+        metric_dict = dict()
+        for i in range(self._model_config.mmoe_model_config.num_task):
+            tower_name = self._model_config.mmoe_model_config.label_names[i]
+            tower_label = self._labels[tower_name]
+            tower_output = self._prediction_dict[tower_name]
+            for metric in eval_config.metric_set:
+                if "auc" == metric.name:
+                    metric_dict["%s_auc" % tower_name] = tf.metrics.auc(tf.to_int64(tower_label), tower_output)
+                elif "gauc" == metric.name:
+                    gids = tf.squeeze(self._feature_dict[metric.gid_field], axis=1)
+                    metric_dict["%s_gauc" % tower_name] = metrics_lib.gauc(
+                        tf.to_int64(tower_label),
+                        tower_output,
+                        gids=gids,
+                        reduction=metric.reduction
+                    )
+                elif "pcopc" == metric.name:
+                    metric_dict["%s_pcopc" % tower_name] = metrics_lib.pcopc(tf.to_float(tower_label), tower_output)
+        return metric_dict
