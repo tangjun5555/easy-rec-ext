@@ -69,24 +69,23 @@ class MultiTower(RankModel):
                 tower_fea,
                 training=self._is_training,
                 trainable=True,
-                name="%s_fea_bn" % tower_name)
-            dnn_layer = dnn.DNN(tower.dnn_config, self._l2_reg, "%s_dnn" % tower_name,
-                                self._is_training)
+                name="%s_fea_bn" % tower_name
+            )
+            dnn_layer = dnn.DNN(tower.dnn_config, self._l2_reg, "%s_dnn" % tower_name, self._is_training)
             tower_fea = dnn_layer(tower_fea)
             tower_fea_arr.append(tower_fea)
 
         for tower_id in range(self._din_tower_num):
             tower_fea = self._din_tower_features[tower_id]
             tower = self._model_config.din_towers[tower_id]
-            tower_name = tower.input_group
             din_layer = DINLayer()
-            tower_fea = din_layer.din(tower.din_config, tower_fea, name="%s_dnn" % tower_name)
+            tower_fea = din_layer.din(tower.din_config, tower_fea, name="%s_din" % tower.input_group)
             tower_fea_arr.append(tower_fea)
 
         for tower_id in range(self._bst_tower_num):
-            bst_layer = BSTLayer()
             tower_fea = self._bst_tower_features[tower_id]
             tower = self._model_config.bst_towers[tower_id]
+            bst_layer = BSTLayer()
             tower_fea = bst_layer.bst(
                 tower_fea,
                 seq_size=tower.bst_config.seq_size,
