@@ -8,3 +8,4 @@ from .bst import BST
 from .multi_tower import MultiTower
 from .esmm import ESMM
 from .mmoe import MMoE
+from .ple import PLE

@@ -40,6 +40,8 @@ class RankEstimator(tf.estimator.Estimator):
             model = ESMM
         elif self._pipeline_config.model_config.model_class == "mmoe":
             model = MMoE
+        elif self._pipeline_config.model_config.model_class == "ple":
+            model = PLE
         else:
             raise ValueError("model_class:%s not supported." % self._pipeline_config.model_config.model_class)
         return model

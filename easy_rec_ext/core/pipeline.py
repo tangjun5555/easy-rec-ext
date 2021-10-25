@@ -504,10 +504,9 @@ class BSTTower(BaseConfig):
         return res
 
 
-class CTCVRLabelConfig(BaseConfig):
+class ESMMModelConfig(BaseConfig):
     def __init__(self, ctr_label_name="ctr_label", ctcvr_label_name="ctcvr_label",
-                 ctr_loss_weight=1.0, ctcvr_loss_weight=1.0
-                 ):
+                 ctr_loss_weight=1.0, ctcvr_loss_weight=1.0):
         self.ctr_label_name = ctr_label_name
         self.ctcvr_label_name = ctcvr_label_name
         self.ctr_loss_weight = ctr_loss_weight
@@ -515,7 +514,7 @@ class CTCVRLabelConfig(BaseConfig):
 
     @staticmethod
     def handle(data):
-        res = CTCVRLabelConfig()
+        res = ESMMModelConfig()
         if "ctr_label_name" in data:
             res.ctr_label_name = data["ctr_label_name"]
         if "ctcvr_label_name" in data:
@@ -540,6 +539,22 @@ class MMoEModelCofing(BaseConfig):
         return res
 
 
+class PLEModelCofing(BaseConfig):
+    def __init__(self, label_names: List[str], expert_dnn_config: DNNConfig,
+                 num_expert_share: int, num_expert_per_task: int):
+        self.label_names = label_names
+        self.num_task = len(label_names)
+        self.expert_dnn_config = expert_dnn_config
+        self.num_expert_share = num_expert_share
+        self.num_expert_per_task = num_expert_per_task
+
+    @staticmethod
+    def handle(data):
+        res = PLEModelCofing(data["label_names"], data["expert_dnn_config"],
+                             data["num_expert_share"], data["num_expert_per_task"])
+        return res
+
+
 class BiasTower(BaseConfig):
     def __init__(self, input_group):
         self.input_group = input_group
@@ -554,8 +569,9 @@ class ModelConfig(BaseConfig):
     def __init__(self, model_class: str,
                  feature_groups: List[FeatureGroup],
 
-                 ctcvr_label_config: CTCVRLabelConfig = None,
+                 esmm_model_config: ESMMModelConfig = None,
                  mmoe_model_config: MMoEModelCofing = None,
+                 ple_model_config: PLEModelCofing = None,
 
                  dnn_towers: List[DNNTower] = None,
                  din_towers: List[DINTower] = None,
@@ -572,8 +588,9 @@ class ModelConfig(BaseConfig):
         self.model_class = model_class
         self.feature_groups = feature_groups
 
-        self.ctcvr_label_config = ctcvr_label_config
+        self.esmm_model_config = esmm_model_config
         self.mmoe_model_config = mmoe_model_config
+        self.ple_model_config = ple_model_config
 
         self.dnn_towers = dnn_towers
         self.din_towers = din_towers
@@ -594,10 +611,12 @@ class ModelConfig(BaseConfig):
             feature_groups.append(FeatureGroup.handle(feature_group))
         res = ModelConfig(data["model_class"], feature_groups)
 
-        if "ctcvr_label_config" in data:
-            res.ctcvr_label_config = CTCVRLabelConfig.handle(data["ctcvr_label_config"])
+        if "esmm_model_config" in data:
+            res.esmm_model_config = ESMMModelConfig.handle(data["ctcvr_label_config"])
         if "mmoe_model_config" in data:
             res.mmoe_model_config = MMoEModelCofing.handle(data["mmoe_model_config"])
+        if "ple_model_config" in data:
+            res.ple_model_config = PLEModelCofing.handle(data["ple_model_config"])
 
         if "dnn_towers" in data:
             dnn_towers = []
