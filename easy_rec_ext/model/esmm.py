@@ -62,14 +62,14 @@ class ESMM(MultiTower):
         ctr_probs = self._prediction_dict["ctr_probs"]
         ctcvr_probs = self._prediction_dict["ctcvr_probs"]
 
-        ctr_label = self._labels[self._model_config.ctcvr_label_config.ctr_label_name]
-        ctcvr_label = self._labels[self._model_config.ctcvr_label_config.ctcvr_label_name]
+        ctr_label = self._labels[self._model_config.esmm_model_config.ctr_label_name]
+        ctcvr_label = self._labels[self._model_config.esmm_model_config.ctcvr_label_name]
 
-        ctr_loss = self._model_config.ctcvr_label_config.ctr_loss_weight * tf.losses.log_loss(
+        ctr_loss = self._model_config.esmm_model_config.ctr_loss_weight * tf.losses.log_loss(
             labels=tf.cast(ctr_label, tf.float32),
             predictions=ctr_probs,
         )
-        ctcvr_loss = self._model_config.ctcvr_label_config.ctcvr_loss_weight * tf.losses.log_loss(
+        ctcvr_loss = self._model_config.esmm_model_config.ctcvr_loss_weight * tf.losses.log_loss(
             labels=tf.cast(ctcvr_label, tf.float32),
             predictions=ctcvr_probs,
         )
@@ -92,8 +92,8 @@ class ESMM(MultiTower):
         ctr_probs = self._prediction_dict["ctr_probs"]
         ctcvr_probs = self._prediction_dict["ctcvr_probs"]
 
-        ctr_label = self._labels[self._model_config.ctcvr_label_config.ctr_label_name]
-        ctcvr_label = self._labels[self._model_config.ctcvr_label_config.ctcvr_label_name]
+        ctr_label = self._labels[self._model_config.esmm_model_config.ctr_label_name]
+        ctcvr_label = self._labels[self._model_config.esmm_model_config.ctcvr_label_name]
 
         metric_dict = {}
         for metric in eval_config.metric_set:
