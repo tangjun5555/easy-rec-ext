@@ -535,7 +535,8 @@ class MMoEModelCofing(BaseConfig):
 
     @staticmethod
     def handle(data):
-        res = MMoEModelCofing(data["label_names"], data["num_expert"], data["expert_dnn_config"])
+        expert_dnn_config = DNNConfig.handle(data["expert_dnn_config"])
+        res = MMoEModelCofing(data["label_names"], data["num_expert"], expert_dnn_config)
         return res
 
 
@@ -550,7 +551,8 @@ class PLEModelCofing(BaseConfig):
 
     @staticmethod
     def handle(data):
-        res = PLEModelCofing(data["label_names"], data["expert_dnn_config"],
+        expert_dnn_config = DNNConfig.handle(data["expert_dnn_config"])
+        res = PLEModelCofing(data["label_names"], expert_dnn_config,
                              data["num_expert_share"], data["num_expert_per_task"])
         return res
 
