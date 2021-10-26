@@ -60,7 +60,7 @@ class MMoE(MultiTower):
         for task_id in range(self._model_config.mmoe_model_config.num_task):
             gate = self.gate(
                 unit=self._model_config.mmoe_model_config.num_expert,
-                deep_fea=experts_fea,
+                deep_fea=all_fea,
                 name="mmoe/gate_%d" % task_id
             )
             gate = tf.expand_dims(gate, -1)

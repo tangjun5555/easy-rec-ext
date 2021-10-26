@@ -90,11 +90,11 @@ class PLE(MultiTower):
         tower_fea_arr = self.build_tower_fea_arr()
         logging.info("%s build_predict_graph, tower_fea_arr.length:%s" % (filename, str(len(tower_fea_arr))))
 
-        tower_fea_arr = tf.concat(tower_fea_arr, axis=1)
-        logging.info("%s build_predict_graph, tower_fea_arr.shape:%s" % (filename, str(tower_fea_arr.shape)))
+        all_fea = tf.concat(tower_fea_arr, axis=1)
+        logging.info("%s build_predict_graph, all_fea.shape:%s" % (filename, str(all_fea.shape)))
 
-        shared_expert_fea = tower_fea_arr
-        extraction_network_fea = [tower_fea_arr] * self._model_config.ple_model_config.num_task
+        shared_expert_fea = all_fea
+        extraction_network_fea = [all_fea] * self._model_config.ple_model_config.num_task
 
         final_flag = False
         for idx in range(len(self._model_config.extraction_networks)):
