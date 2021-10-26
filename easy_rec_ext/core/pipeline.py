@@ -612,7 +612,7 @@ class ModelConfig(BaseConfig):
         res = ModelConfig(data["model_class"], feature_groups)
 
         if "esmm_model_config" in data:
-            res.esmm_model_config = ESMMModelConfig.handle(data["ctcvr_label_config"])
+            res.esmm_model_config = ESMMModelConfig.handle(data["esmm_model_config"])
         if "mmoe_model_config" in data:
             res.mmoe_model_config = MMoEModelCofing.handle(data["mmoe_model_config"])
         if "ple_model_config" in data:
