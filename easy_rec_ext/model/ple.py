@@ -60,7 +60,7 @@ class PLE(MultiTower):
                   final_flag):        
         expert_shared_out = self.experts_layer(
             shared_expert_fea, num_expert_share,
-            expert_dnn_config, layer_name + "_share/dnn"
+            expert_dnn_config, layer_name + "_share"
         )
 
         experts_outs = []
@@ -82,7 +82,7 @@ class PLE(MultiTower):
         else:
             shared_layer_out = self.gate(shared_expert_fea,
                                          experts_outs + expert_shared_out,
-                                         layer_name + "_share"
+                                         layer_name + "_share_out"
                                          )
         return cgc_layer_outs, shared_layer_out
 
@@ -97,14 +97,14 @@ class PLE(MultiTower):
         extraction_network_fea = [all_fea] * self._model_config.ple_model_config.num_task
 
         final_flag = False
-        for idx in range(len(self._model_config.extraction_networks)):
-            if idx == len(self._model_config.extraction_networks) - 1:
+        for idx in range(self._model_config.ple_model_config.num_extraction_network):
+            if idx == self._model_config.ple_model_config.num_extraction_network - 1:
                 final_flag = True
             extraction_network_fea, shared_expert_fea = self.CGC_layer(
                 self._model_config.ple_model_config.num_task, 
                 self._model_config.ple_model_config.num_expert_share, 
                 self._model_config.ple_model_config.num_expert_per_task, 
-                self._model_config.ple_model_config.label_names[idx], 
+                "extraction_network_%d" % idx,
                 self._model_config.ple_model_config.expert_dnn_config, 
                 extraction_network_fea, shared_expert_fea,
                 final_flag

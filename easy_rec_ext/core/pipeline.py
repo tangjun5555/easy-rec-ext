@@ -542,18 +542,19 @@ class MMoEModelCofing(BaseConfig):
 
 class PLEModelCofing(BaseConfig):
     def __init__(self, label_names: List[str], expert_dnn_config: DNNConfig,
-                 num_expert_share: int, num_expert_per_task: int):
+                 num_expert_share: int, num_expert_per_task: int, num_extraction_network: int):
         self.label_names = label_names
         self.num_task = len(label_names)
         self.expert_dnn_config = expert_dnn_config
         self.num_expert_share = num_expert_share
         self.num_expert_per_task = num_expert_per_task
+        self.num_extraction_network = num_extraction_network
 
     @staticmethod
     def handle(data):
         expert_dnn_config = DNNConfig.handle(data["expert_dnn_config"])
         res = PLEModelCofing(data["label_names"], expert_dnn_config,
-                             data["num_expert_share"], data["num_expert_per_task"])
+                             data["num_expert_share"], data["num_expert_per_task"], data["num_extraction_network"])
         return res
 
 
