@@ -52,6 +52,9 @@ class RankModel(object):
     def _add_to_prediction_dict(self, output):
         self._prediction_dict.update(output)
 
+    def get_prediction_keys(self):
+        return list(self._prediction_dict.keys())
+
     @abstractmethod
     def build_predict_graph(self):
         return self._prediction_dict

@@ -277,7 +277,7 @@ class RankEstimator(tf.estimator.Estimator):
 
         # add output info to estimator spec
         outputs = {}
-        output_list = ["probs"]
+        output_list = model.get_prediction_keys()
         for out in output_list:
             assert out in predict_dict, \
                 "output node %s not in prediction_dict, can not be exported" % out
