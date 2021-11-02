@@ -12,13 +12,10 @@ def build(train_config):
     Create distribute training strategy based on config.
     """
     assert isinstance(train_config, TrainConfig)
-    # single worker multi-gpu strategy
-    if train_config.train_distribute == "MirroredStrategy":
-        distribution = tf.distribute.MirroredStrategy()
     # multi-worker strategy with parameter servers
     # under tf1.15 and tf2.x
-    elif train_config.train_distribute == "PSStrategy":
+    if train_config.train_distribute == "TFPSStrategy":
         distribution = tf.distribute.experimental.ParameterServerStrategy()
     else:
-        raise ValueError("train_distribute:%s not supported." % train_config.train_distribute)
+        distribution = None
     return distribution

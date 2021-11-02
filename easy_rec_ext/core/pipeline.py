@@ -300,12 +300,14 @@ class TrainConfig(BaseConfig):
                  save_checkpoints_steps=20000,
                  keep_checkpoint_max=3,
                  train_distribute=None,
+                 TF_CONFIG=None,
                  ):
         self.optimizer_config = optimizer_config
         self.log_step_count_steps = log_step_count_steps
         self.save_checkpoints_steps = save_checkpoints_steps
         self.keep_checkpoint_max = keep_checkpoint_max
         self.train_distribute = train_distribute
+        self.TF_CONFIG = TF_CONFIG
 
     @staticmethod
     def handle(data):
@@ -318,6 +320,8 @@ class TrainConfig(BaseConfig):
             res.keep_checkpoint_max = data["keep_checkpoint_max"]
         if "train_distribute" in data:
             res.train_distribute = data["train_distribute"]
+        if "TF_CONFIG" in data:
+            res.TF_CONFIG = data["TF_CONFIG"]
         return res
 
 

@@ -10,6 +10,7 @@ import argparse
 
 from easy_rec_ext.core.pipeline import PipelineConfig
 from easy_rec_ext.core.exporter import FinalExporter
+from easy_rec_ext.builders import distribute_strategy_builder
 from easy_rec_ext.input import CSVInput, TFRecordInput, OSSInput
 from easy_rec_ext.model.rank_estimator import RankEstimator
 from easy_rec_ext.utils import estimator_util
@@ -18,8 +19,15 @@ import tensorflow as tf
 
 if tf.__version__ >= "2.0":
     gfile = tf.compat.v1.gfile
+
+    from tensorflow.core.protobuf import config_pb2
+    GPUOptions = config_pb2.GPUOptions
+    ConfigProto = config_pb2.ConfigProto
 else:
     gfile = tf.gfile
+
+    GPUOptions = tf.GPUOptions
+    ConfigProto = tf.ConfigProto
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--pipeline_config_path", type=str, required=True)
@@ -110,12 +118,24 @@ def _get_ckpt_path(pipeline_config):
     return ckpt_path
 
 
-def _create_estimator(pipeline_config):
+def _create_estimator(pipeline_config, distribution=None):
+    session_config = ConfigProto(
+        gpu_options=GPUOptions(allow_growth=False),
+        allow_soft_placement=True,
+        log_device_placement=True,
+        # inter_op_parallelism_threads=pipeline_config.train_config.inter_op_parallelism_threads,
+        # intra_op_parallelism_threads=pipeline_config.train_config.intra_op_parallelism_threads
+    )
+    session_config.device_filters.append("/job:ps")
+
     run_config = tf.estimator.RunConfig(
         model_dir=pipeline_config.model_dir,
         log_step_count_steps=pipeline_config.train_config.log_step_count_steps,
         save_checkpoints_steps=pipeline_config.train_config.save_checkpoints_steps,
         keep_checkpoint_max=pipeline_config.train_config.keep_checkpoint_max,
+        train_distribute=distribution,
+        eval_distribute=distribution,
+        session_config=session_config,
     )
     estimator = RankEstimator(pipeline_config, run_config)
     return estimator, run_config
@@ -150,12 +170,29 @@ def train_and_evaluate(pipeline_config: PipelineConfig):
     Returns:
 
     """
+
+    if "TF_CONFIG" in os.environ:
+        tf_config = json.loads(os.environ["TF_CONFIG"])
+
+        if "cluster" in tf_config \
+            and "chief" in tf_config["cluster"] \
+            and "ps" in tf_config["cluster"] \
+            and ("evaluator" not in tf_config["cluster"]):
+            chief = tf_config["cluster"]["chief"]
+            del tf_config["cluster"]["chief"]
+            tf_config["cluster"]["master"] = chief
+            if tf_config["task"]["type"] == "chief":
+                tf_config["task"]["type"] = "master"
+            os.environ["TF_CONFIG"] = json.dumps(tf_config)
+
     if not gfile.Exists(pipeline_config.model_dir) \
         and pipeline_config.model_config.pretrain_variable_dir \
         and gfile.Exists(pipeline_config.model_config.pretrain_variable_dir):
         os.environ["pretrain_variable_dir"] = pipeline_config.model_config.pretrain_variable_dir
 
-    estimator, _ = _create_estimator(pipeline_config)
+    distribution = distribute_strategy_builder.build(pipeline_config.train_config)
+
+    estimator, _ = _create_estimator(pipeline_config, distribution)
     train_input_fn = get_input_fn(pipeline_config.input_config,
                                   pipeline_config.feature_config,
                                   pipeline_config.input_config.train_input_path
@@ -222,14 +259,6 @@ def predict(pipeline_config):
 
 
 def export(pipeline_config):
-    """
-
-    Args:
-        pipeline_config:
-
-    Returns:
-
-    """
     if not gfile.Exists(pipeline_config.export_config.export_dir):
         gfile.MakeDirs(pipeline_config.export_config.export_dir)
     estimator, _ = _create_estimator(pipeline_config)
@@ -243,7 +272,7 @@ def export(pipeline_config):
         serving_input_receiver_fn=serving_input_fn,
         strip_default_attrs=True
     )
-    logging.info('model has been exported to %s successfully' % final_export_dir)
+    logging.info("model has been exported to %s successfully" % final_export_dir)
     return final_export_dir
 
 
