@@ -52,3 +52,18 @@ def get_task_index_and_num():
                  (str(os.path.basename(__file__)).split(".")[0], str(task_index), str(task_num))
                  )
     return task_index, task_num
+
+
+def chief_to_master():
+    if "TF_CONFIG" in os.environ:
+        tf_config = json.loads(os.environ["TF_CONFIG"])
+        # change chief to master
+        if "chief" in tf_config["cluster"]:
+            tf_config["cluster"]["master"] = tf_config["cluster"]["chief"]
+            del tf_config["cluster"]["chief"]
+            if tf_config["task"]["type"] == "chief":
+                tf_config["task"]["type"] = "master"
+        os.environ["TF_CONFIG"] = json.dumps(tf_config)
+        return tf_config
+    else:
+        return None

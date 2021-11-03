@@ -21,6 +21,7 @@ if tf.__version__ >= "2.0":
     gfile = tf.compat.v1.gfile
 
     from tensorflow.core.protobuf import config_pb2
+
     GPUOptions = config_pb2.GPUOptions
     ConfigProto = config_pb2.ConfigProto
 else:
@@ -174,16 +175,16 @@ def train_and_evaluate(pipeline_config: PipelineConfig):
     if "TF_CONFIG" in os.environ:
         tf_config = json.loads(os.environ["TF_CONFIG"])
 
-        if "cluster" in tf_config \
-            and "chief" in tf_config["cluster"] \
+        if "cluster" in tf_config and "chief" in tf_config["cluster"] \
             and "ps" in tf_config["cluster"] \
             and ("evaluator" not in tf_config["cluster"]):
-            chief = tf_config["cluster"]["chief"]
-            del tf_config["cluster"]["chief"]
-            tf_config["cluster"]["master"] = chief
-            if tf_config["task"]["type"] == "chief":
-                tf_config["task"]["type"] = "master"
-            os.environ["TF_CONFIG"] = json.dumps(tf_config)
+            # chief = tf_config["cluster"]["chief"]
+            # del tf_config["cluster"]["chief"]
+            # tf_config["cluster"]["master"] = chief
+            # if tf_config["task"]["type"] == "chief":
+            #     tf_config["task"]["type"] = "master"
+            # os.environ["TF_CONFIG"] = json.dumps(tf_config)
+            estimator_util.chief_to_master()
 
     if not gfile.Exists(pipeline_config.model_dir) \
         and pipeline_config.model_config.pretrain_variable_dir \
@@ -213,11 +214,63 @@ def evaluate(pipeline_config, eval_result_filename="eval_result.txt"):
     Returns:
 
     """
-    estimator, _ = _create_estimator(pipeline_config)
+    cluster = None
+    server_target = None
+    if "TF_CONFIG" in os.environ:
+        tf_config = estimator_util.chief_to_master()
+        from tensorflow.python.training import server_lib
+        if tf_config["task"]["type"] == "ps":
+            cluster = tf.train.ClusterSpec(tf_config["cluster"])
+            server = server_lib.Server(
+                cluster, job_name="ps", task_index=tf_config["task"]["index"]
+            )
+            server.join()
+        elif tf_config["task"]["type"] == "master":
+            if "ps" in tf_config["cluster"]:
+                cluster = tf.train.ClusterSpec(tf_config["cluster"])
+                server = server_lib.Server(cluster, job_name="master", task_index=0)
+                server_target = server.target
+                print("server_target = %s" % server_target)
+
+    distribution = distribute_strategy_builder.build(pipeline_config.train_config)
+
+    estimator, run_config = _create_estimator(pipeline_config, distribution)
     eval_spec = _create_eval_export_spec(pipeline_config, pipeline_config.input_config.eval_input_path)
 
     ckpt_path = _get_ckpt_path(pipeline_config)
-    eval_result = estimator.evaluate(eval_spec.input_fn, eval_spec.steps, checkpoint_path=ckpt_path)
+
+    if server_target:
+        # evaluate with parameter server
+        input_iter = eval_spec.input_fn(
+            mode=tf.estimator.ModeKeys.EVAL).make_one_shot_iterator()
+        input_feas, input_lbls = input_iter.get_next()
+        from tensorflow.python.training.device_setter import replica_device_setter
+        from tensorflow.python.framework.ops import device
+        from tensorflow.python.training.monitored_session import MonitoredSession
+        from tensorflow.python.training.monitored_session import ChiefSessionCreator
+
+        with device(replica_device_setter(worker_device='/job:master/task:0', cluster=cluster)):
+            estimator_spec = estimator._eval_model_fn(input_feas, input_lbls, run_config)
+
+        session_config = ConfigProto(
+            allow_soft_placement=True, log_device_placement=True)
+        chief_sess_creator = ChiefSessionCreator(
+            master=server_target,
+            checkpoint_filename_with_path=ckpt_path,
+            config=session_config)
+        eval_metric_ops = estimator_spec.eval_metric_ops
+        update_ops = [eval_metric_ops[x][1] for x in eval_metric_ops.keys()]
+        metric_ops = {x: eval_metric_ops[x][0] for x in eval_metric_ops.keys()}
+        update_op = tf.group(update_ops)
+        with MonitoredSession(session_creator=chief_sess_creator, hooks=None, stop_grace_period_secs=120) as sess:
+            while True:
+                try:
+                    sess.run(update_op)
+                except tf.errors.OutOfRangeError:
+                    break
+            eval_result = sess.run(metric_ops)
+    else:
+        eval_result = estimator.evaluate(eval_spec.input_fn, eval_spec.steps, checkpoint_path=ckpt_path)
     logging.info("Evaluate finish")
 
     # write eval result to file
