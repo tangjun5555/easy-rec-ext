@@ -13,9 +13,11 @@ from easy_rec_ext.core.exporter import FinalExporter
 from easy_rec_ext.builders import distribute_strategy_builder
 from easy_rec_ext.input import CSVInput, TFRecordInput, OSSInput
 from easy_rec_ext.model.rank_estimator import RankEstimator
-from easy_rec_ext.utils import estimator_util
+from easy_rec_ext.utils import estimator_util, config_util
 
 import tensorflow as tf
+
+version = "0.0.7"
 
 if tf.__version__ >= "2.0":
     gfile = tf.compat.v1.gfile
@@ -54,6 +56,22 @@ else:
         format="%(asctime)s %(name)s %(levelname)s %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S %a",
     )
+
+
+def _check_model_dir(model_dir, continue_train):
+    if not continue_train:
+        if not gfile.IsDirectory(model_dir):
+            gfile.MakeDirs(model_dir)
+        else:
+            assert len(gfile.Glob(model_dir + "/model.ckpt-*.meta")) == 0, \
+                "model_dir[=%s] already exists and not empty(if you " \
+                "want to continue train on current model_dir please " \
+                "delete dir %s or specify --continue_train[internal use only])" % (
+                    model_dir, model_dir)
+    else:
+        if not gfile.IsDirectory(model_dir):
+            logging.info("%s does not exists, create it automatically" % model_dir)
+            gfile.MakeDirs(model_dir)
 
 
 def get_pipeline_config_from_file(pipeline_config_path) -> PipelineConfig:
@@ -194,6 +212,17 @@ def train_and_evaluate(pipeline_config: PipelineConfig):
     distribution = distribute_strategy_builder.build(pipeline_config.train_config)
 
     estimator, _ = _create_estimator(pipeline_config, distribution)
+
+    # master_stat_file = os.path.join(pipeline_config.model_dir, "master.stat")
+    version_file = os.path.join(pipeline_config.model_dir, "version")
+    if estimator_util.is_chief():
+        _check_model_dir(pipeline_config.model_dir, True)
+        config_util.save_pipeline_config(pipeline_config, pipeline_config.model_dir)
+        with gfile.GFile(version_file, "w") as f:
+            f.write(version + "\n")
+        # if gfile.Exists(master_stat_file):
+        #     gfile.Remove(master_stat_file)
+
     train_input_fn = get_input_fn(pipeline_config.input_config,
                                   pipeline_config.feature_config,
                                   pipeline_config.input_config.train_input_path
@@ -249,7 +278,7 @@ def evaluate(pipeline_config, eval_result_filename="eval_result.txt"):
         from tensorflow.python.training.monitored_session import MonitoredSession
         from tensorflow.python.training.monitored_session import ChiefSessionCreator
 
-        with device(replica_device_setter(worker_device='/job:master/task:0', cluster=cluster)):
+        with device(replica_device_setter(worker_device="/job:master/task:0", cluster=cluster)):
             estimator_spec = estimator._eval_model_fn(input_feas, input_lbls, run_config)
 
         session_config = ConfigProto(

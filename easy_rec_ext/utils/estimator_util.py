@@ -67,3 +67,11 @@ def chief_to_master():
         return tf_config
     else:
         return None
+
+
+def is_chief():
+    if "TF_CONFIG" in os.environ:
+        tf_config = json.loads(os.environ["TF_CONFIG"])
+        if "task" in tf_config:
+            return tf_config["task"]["type"] in ["chief", "master"]
+    return True
