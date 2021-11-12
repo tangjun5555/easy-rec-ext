@@ -67,7 +67,6 @@ class SequencePooling(object):
             - 2D tensor with shape: (batch_size, embedding_size)
         """
         logging.info("%s, seq_value.shape:[%s]" % (filename, ",".join(seq_value.get_shape().as_list())))
-        batch_size = seq_value.get_shape().as_list()[0]
         seq_len_max = seq_value.get_shape().as_list()[1]
         embedding_size = seq_value.get_shape().as_list()[2]
 
@@ -93,6 +92,6 @@ class SequencePooling(object):
                     go_backwards=go_backwards,
                     name='{}_gru_{}'.format(self.name, str(i)),
                 )(gru_input)
-            return tf.reshape(gru_input, (batch_size, 1, -1))
+            return tf.reshape(gru_input, (-1, 1, embedding_size))
         else:
             raise ValueError("mode:%s not supported." % self.mode)
