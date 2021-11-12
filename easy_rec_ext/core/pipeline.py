@@ -4,6 +4,7 @@
 # desc:
 
 from typing import List
+from easy_rec_ext.layers.sequence_pooling import SequencePoolingConfig
 
 
 class BaseConfig(object):
@@ -84,15 +85,16 @@ class InputConfig(BaseConfig):
             res.num_epochs = data["num_epochs"]
         if "batch_size" in data:
             res.batch_size = data["batch_size"]
-
         return res
 
 
 class FeatureField(BaseConfig):
-    def __init__(self, input_name: str, feature_type: str,
+    def __init__(self,
+                 input_name: str, feature_type: str,
                  raw_input_dim=1,
-                 embedding_name: str = None, embedding_dim: int = 32, combiner: str = "sum",
-                 num_buckets: int = 0, hash_bucket_size: int = 0
+                 embedding_name: str = None, embedding_dim: int = 32,
+                 num_buckets: int = 0, hash_bucket_size: int = 0,
+                 sequence_pooling_config: SequencePoolingConfig = SequencePoolingConfig(),
                  ):
         self.input_name = input_name
         self.feature_type = feature_type
@@ -101,9 +103,11 @@ class FeatureField(BaseConfig):
 
         self.embedding_name = embedding_name
         self.embedding_dim = embedding_dim
-        self.combiner = combiner
+
         self.num_buckets = num_buckets
         self.hash_bucket_size = hash_bucket_size
+
+        self.sequence_pooling_config = sequence_pooling_config
 
         assert self.feature_type in ["IdFeature", "RawFeature", "SequenceFeature"]
 
@@ -118,14 +122,14 @@ class FeatureField(BaseConfig):
             res.embedding_name = data["embedding_name"]
         if "embedding_dim" in data:
             res.embedding_dim = data["embedding_dim"]
-        if "combiner" in data:
-            res.combiner = data["combiner"]
 
         if "num_buckets" in data:
             res.num_buckets = data["num_buckets"]
         if "hash_bucket_size" in data:
             res.hash_bucket_size = data["hash_bucket_size"]
 
+        if "sequence_pooling_config" in data:
+            res.sequence_pooling_config = SequencePoolingConfig.handle(data["sequence_pooling_config"])
         return res
 
 

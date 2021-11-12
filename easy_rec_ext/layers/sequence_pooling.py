@@ -4,8 +4,8 @@
 # desc:
 
 import os
-import json
 import logging
+from typing import List
 
 import tensorflow as tf
 from tensorflow.python.keras.layers import GRU
@@ -13,6 +13,32 @@ from tensorflow.python.keras.layers import GRU
 tf = tf.compat.v1
 
 filename = str(os.path.basename(__file__)).split(".")[0]
+
+
+class GRUConfig(object):
+    def __init__(self, gru_units: List[int], go_backwards: int):
+        self.gru_units = gru_units
+        self.go_backwards = go_backwards
+
+    @staticmethod
+    def handle(data):
+        res = GRUConfig(data["gru_units"], data["go_backwards"])
+        return res
+
+
+class SequencePoolingConfig(object):
+    def __init__(self, mode: str = "sum", gru_config: GRUConfig = None):
+        self.mode = mode
+        self.gru_config = gru_config
+
+    @staticmethod
+    def handle(data):
+        res = SequencePoolingConfig()
+        if "mode" in data:
+            res.mode = data["mode"]
+        if "gru_config" in data:
+            res.gru_config = GRUConfig.handle(data["gru_config"])
+        return res
 
 
 class SequencePooling(object):
@@ -26,10 +52,10 @@ class SequencePooling(object):
         gru_config: str.
     """
 
-    def __init__(self, name, mode="mean", gru_config=None):
+    def __init__(self, name, mode="sum", gru_config: GRUConfig = None):
         self.name = name
         self.mode = mode
-        self.gru_config = json.loads(gru_config)
+        self.gru_config = gru_config
 
     def __call__(self, seq_value, seq_len):
         """
@@ -59,10 +85,9 @@ class SequencePooling(object):
             hist = tf.reduce_sum(seq_value * mask, axis=1, keep_dims=False)
             return tf.div(hist, tf.cast(seq_len, tf.float32) + 1e-8)
         elif self.mode == "gru":
-            gru_units = [int(k) for k in self.gru_config["gru_units"].split(",")]
-            go_backwards = self.gru_config["go_backwards"] == 1
+            go_backwards = self.gru_config.go_backwards == 1
             gru_input = seq_value
-            for i, j in enumerate(gru_units):
+            for i, j in enumerate(self.gru_config.gru_units):
                 gru_input, gru_states = GRU(
                     units=j, stateful=True, return_state=True,
                     go_backwards=go_backwards,
