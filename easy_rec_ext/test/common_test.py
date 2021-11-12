@@ -13,6 +13,24 @@ if tf.__version__ >= "2.0":
 line_sep = "\n" + "##" * 20 + "\n"
 
 
+def test_19():
+    seq_len = tf.constant(
+        value=[[5], [4], [3], [2], [1], [0]],
+        dtype=tf.dtypes.int32,
+    )
+    mask = tf.sequence_mask(seq_len, maxlen=5, dtype=tf.dtypes.float32)
+    print(line_sep)
+    print(mask)
+
+    mask = tf.transpose(mask, perm=(0, 2, 1))
+    print(line_sep)
+    print(mask)
+
+    mask = tf.tile(mask, [1, 1, 4])
+    print(line_sep)
+    print(mask)
+
+
 def test_18():
     t1 = tf.constant(
         value=[[1], [2], [3]],
