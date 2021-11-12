@@ -8,6 +8,7 @@ from abc import abstractmethod
 from easy_rec_ext.core import embedding_ops
 from easy_rec_ext.core import regularizers
 import easy_rec_ext.core.metrics as metrics_lib
+from easy_rec_ext.layers.sequence_pooling import SequencePooling
 
 import tensorflow as tf
 
@@ -103,6 +104,7 @@ class RankModel(object):
         feature_fields_num = len(feature_group.feature_names) if feature_group.feature_names else 0
         for i in range(feature_fields_num):
             feature_field = self._feature_fields_dict[feature_group.feature_names[i]]
+
             if feature_field.feature_type == "IdFeature":
                 ids = self._feature_dict[feature_field.input_name]
                 if ids.dtype == tf.dtypes.string:
@@ -122,9 +124,15 @@ class RankModel(object):
                 values = embedding_ops.safe_embedding_lookup(
                     embedding_weights, ids
                 )
+
             elif feature_field.feature_type == "RawFeature":
                 values = self._feature_dict[feature_field.input_name]
+
             elif feature_field.feature_type == "SequenceFeature":
+                hist_seq = self._feature_dict[feature_field.input_name]
+                hist_seq_len = tf.where(tf.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
+                hist_seq_len = tf.reduce_sum(hist_seq_len, axis=1, keep_dims=False)
+
                 embedding_weights = embedding_ops.get_embedding_variable(
                     name=feature_field.embedding_name,
                     dim=feature_field.embedding_dim,
@@ -132,9 +140,13 @@ class RankModel(object):
                     key_is_string=False,
                 )
                 values = embedding_ops.safe_embedding_lookup(
-                    embedding_weights, self._feature_dict[feature_field.input_name],
-                    combiner=feature_field.combiner
+                    embedding_weights, tf.expand_dims(hist_seq, -1)
                 )
+                values = SequencePooling(
+                    name=feature_field.input_name,
+                    mode=feature_field.sequence_pooling_config.mode,
+                    gru_config=feature_field.sequence_pooling_config.gru_config,
+                )(values, hist_seq_len)
             else:
                 continue
             outputs.append(values)
