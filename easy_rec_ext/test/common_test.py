@@ -13,6 +13,20 @@ if tf.__version__ >= "2.0":
 line_sep = "\n" + "##" * 20 + "\n"
 
 
+def test_20():
+    from easy_rec_ext.utils.string_ops import string_to_hash_bucket
+
+    t1 = tf.constant(
+        value=[["阿迪达斯 外套"], ["aj"]],
+        dtype=tf.dtypes.string,
+    )
+
+    for i in range(100):
+        r1 = string_to_hash_bucket(t1, 1000 * 10000)
+        print(line_sep)
+        print(r1)
+
+
 def test_19():
     seq_len = tf.constant(
         value=[[5], [4], [3], [2], [1], [0]],
