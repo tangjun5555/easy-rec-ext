@@ -246,3 +246,35 @@ class RankModel(object):
         outputs = tf.concat(outputs, axis=-1)
         outputs = tf.squeeze(outputs, axis=[1])
         return outputs
+
+    def build_id_feature_input_layer(self, feature_group):
+        feature_group = self._feature_groups_dict[feature_group]
+        outputs = []
+        feature_fields_num = len(feature_group.feature_names) if feature_group.feature_names else 0
+
+        for i in range(feature_fields_num):
+            feature_field = self._feature_fields_dict[feature_group.feature_names[i]]
+            assert feature_field.feature_type == "IdFeature"
+
+            ids = self._feature_dict[feature_field.input_name]
+            if ids.dtype == tf.dtypes.string:
+                embedding_weights = embedding_ops.get_embedding_variable(
+                    name=feature_field.embedding_name,
+                    dim=feature_field.embedding_dim,
+                    vocab_size=feature_field.num_buckets if feature_field.num_buckets > 0 else feature_field.hash_bucket_size,
+                    key_is_string=True,
+                )
+            else:
+                embedding_weights = embedding_ops.get_embedding_variable(
+                    name=feature_field.embedding_name,
+                    dim=feature_field.embedding_dim,
+                    vocab_size=feature_field.num_buckets if feature_field.num_buckets > 0 else feature_field.hash_bucket_size,
+                    key_is_string=False,
+                )
+            values = embedding_ops.safe_embedding_lookup(
+                embedding_weights, ids
+            )
+            outputs.append(values)
+
+        outputs = tf.stack(outputs, axis=1)
+        return outputs

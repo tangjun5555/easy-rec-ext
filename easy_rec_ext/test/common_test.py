@@ -13,6 +13,33 @@ if tf.__version__ >= "2.0":
 line_sep = "\n" + "##" * 20 + "\n"
 
 
+def test_21():
+    t1 = tf.constant(
+        value=[
+            [1] * 4,
+            [2] * 4,
+            [3] * 4,
+        ],
+        dtype=tf.dtypes.int32,
+    )
+    t2 = tf.constant(
+        value=[
+            [4] * 4,
+            [5] * 4,
+            [6] * 4,
+        ],
+        dtype=tf.dtypes.int32,
+    )
+    r1 = tf.stack([t1, t2], axis=1)
+
+    print(line_sep)
+    print(t1)
+    print(line_sep)
+    print(t2)
+    print(line_sep)
+    print(r1)
+
+
 def test_20():
     from easy_rec_ext.utils.string_ops import string_to_hash_bucket
 

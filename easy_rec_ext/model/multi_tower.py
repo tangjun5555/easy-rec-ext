@@ -7,6 +7,7 @@ import os
 import logging
 import tensorflow as tf
 from easy_rec_ext.layers import dnn
+from easy_rec_ext.layers.interaction import FM
 from easy_rec_ext.core import regularizers
 from easy_rec_ext.model.rank_model import RankModel
 from easy_rec_ext.model.din import DINLayer
@@ -35,6 +36,13 @@ class MultiTower(RankModel):
             tower_feature = self.build_input_layer(tower.input_group)
             self._dnn_tower_features.append(tower_feature)
 
+        self._interaction_tower_num = len(self._model_config.interaction_towers) if self._model_config.interaction_towers else 0
+        self._interaction_tower_features = []
+        for tower_id in range(self._interaction_tower_num):
+            tower = self._model_config.interaction_towers[tower_id]
+            tower_feature = self.build_id_feature_input_layer(tower.input_group)
+            self._interaction_tower_features.append(tower_feature)
+
         self._din_tower_num = len(self._model_config.din_towers)
         self._din_tower_features = []
         for tower_id in range(self._din_tower_num):
@@ -53,8 +61,9 @@ class MultiTower(RankModel):
             regularizers.apply_regularization(self._emb_reg, weights_list=[tower_feature["hist_seq_emb"]])
             self._bst_tower_features.append(tower_feature)
 
-        logging.info("all tower num: {0}".format(self._dnn_tower_num + self._din_tower_num + self._bst_tower_num))
+        logging.info("all tower num: {0}".format(self._dnn_tower_num + self._interaction_tower_num + self._din_tower_num + self._bst_tower_num))
         logging.info("dnn tower num: {0}".format(self._dnn_tower_num))
+        logging.info("interaction tower num: {0}".format(self._interaction_tower_num))
         logging.info("din tower num: {0}".format(self._din_tower_num))
         logging.info("bst tower num: {0}".format(self._bst_tower_num))
 
@@ -74,6 +83,15 @@ class MultiTower(RankModel):
             dnn_layer = dnn.DNN(tower.dnn_config, self._l2_reg, "%s_dnn" % tower_name, self._is_training)
             tower_fea = dnn_layer(tower_fea)
             tower_fea_arr.append(tower_fea)
+
+        for tower_id in range(self._interaction_tower_num):
+            tower_fea = self._interaction_tower_features[tower_id]
+            tower = self._model_config.interaction_towers[tower_id]
+            tower_name = tower.input_group
+
+            if tower.interaction_config.mode == "fm":
+                fm_layer = FM(tower_name + "_fm")
+                tower_fea_arr.append(fm_layer(tower_fea))
 
         for tower_id in range(self._din_tower_num):
             tower_fea = self._din_tower_features[tower_id]
