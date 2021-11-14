@@ -7,9 +7,20 @@ import os
 import logging
 
 import tensorflow as tf
+
 tf = tf.compat.v1
 
 filename = str(os.path.basename(__file__)).split(".")[0]
+
+
+class InteractionConfig(object):
+    def __init__(self, mode):
+        self.mode = mode
+
+    @staticmethod
+    def handle(data):
+        res = InteractionConfig(data["mode"])
+        return res
 
 
 class FM(object):

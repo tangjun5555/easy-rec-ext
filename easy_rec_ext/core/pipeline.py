@@ -5,6 +5,7 @@
 
 from typing import List
 from easy_rec_ext.layers.sequence_pooling import SequencePoolingConfig
+from easy_rec_ext.layers.interaction import InteractionConfig
 
 
 class BaseConfig(object):
@@ -454,6 +455,18 @@ class DNNTower(BaseConfig):
         return res
 
 
+class InteractionTower(BaseConfig):
+    def __init__(self, input_group: str, interaction_config: InteractionConfig):
+        self.input_group = input_group
+        self.interaction_config = interaction_config
+
+    @staticmethod
+    def handle(data):
+        interaction_config = InteractionConfig.handle(data["interaction_config"])
+        res = InteractionTower(data["input_group"], interaction_config)
+        return res
+
+
 class DINConfig(DNNConfig):
     def __init__(self, hidden_units: List[int],
                  activation: str = "tf.nn.relu",
@@ -585,6 +598,7 @@ class ModelConfig(BaseConfig):
                  ple_model_config: PLEModelCofing = None,
 
                  dnn_towers: List[DNNTower] = None,
+                 interaction_towers: List[InteractionTower] = None,
                  din_towers: List[DINTower] = None,
                  bst_towers: List[BSTTower] = None,
 
@@ -604,8 +618,10 @@ class ModelConfig(BaseConfig):
         self.ple_model_config = ple_model_config
 
         self.dnn_towers = dnn_towers
+        self.interaction_towers = interaction_towers
         self.din_towers = din_towers
         self.bst_towers = bst_towers
+
         self.final_dnn = final_dnn
         self.bias_tower = bias_tower
 
@@ -631,18 +647,23 @@ class ModelConfig(BaseConfig):
 
         if "dnn_towers" in data:
             dnn_towers = []
-            for dnn_tower in data["dnn_towers"]:
-                dnn_towers.append(DNNTower.handle(dnn_tower))
+            for tower in data["dnn_towers"]:
+                dnn_towers.append(DNNTower.handle(tower))
             res.dnn_towers = dnn_towers
+        if "interaction_towers" in data:
+            interaction_towers = []
+            for tower in data["interaction_towers"]:
+                interaction_towers.append(InteractionTower.handle(tower))
+            res.dnn_towers = interaction_towers
         if "din_towers" in data:
             din_towers = []
-            for din_tower in data["din_towers"]:
-                din_towers.append(DINTower.handle(din_tower))
+            for tower in data["din_towers"]:
+                din_towers.append(DINTower.handle(tower))
             res.din_towers = din_towers
         if "bst_towers" in data:
             bst_towers = []
-            for bst_tower in data["bst_towers"]:
-                bst_towers.append(BSTTower.handle(bst_tower))
+            for tower in data["bst_towers"]:
+                bst_towers.append(BSTTower.handle(tower))
             res.bst_towers = bst_towers
 
         if "final_dnn" in data:
