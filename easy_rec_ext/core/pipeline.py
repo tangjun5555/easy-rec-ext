@@ -654,7 +654,7 @@ class ModelConfig(BaseConfig):
             interaction_towers = []
             for tower in data["interaction_towers"]:
                 interaction_towers.append(InteractionTower.handle(tower))
-            res.dnn_towers = interaction_towers
+            res.interaction_towers = interaction_towers
         if "din_towers" in data:
             din_towers = []
             for tower in data["din_towers"]:
