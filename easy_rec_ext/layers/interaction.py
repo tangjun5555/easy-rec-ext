@@ -3,6 +3,7 @@
 # time: 2021/8/11 6:32 下午
 # desc:
 
+import os
 import logging
 
 import tensorflow as tf
@@ -30,3 +31,11 @@ class FM(object):
         sum_square = tf.square(tf.reduce_sum(input_value, 1, keep_dims=False))
         square_sum = tf.reduce_sum(tf.square(input_value), 1, keep_dims=False)
         return 0.5 * tf.subtract(sum_square, square_sum)
+
+
+class CAN(object):
+    def __init__(self, name, ):
+        self.name = name
+
+    def __call__(self, input_value):
+        pass
