@@ -68,7 +68,6 @@ class SequencePooling(object):
         """
         seq_len_max = seq_value.get_shape().as_list()[1]
         embedding_size = seq_value.get_shape().as_list()[2]
-        logging.info("%s, %s seq_len_max:%d, embedding_size:%d" % (filename, self.name, seq_len_max, embedding_size))
 
         mask = tf.sequence_mask(seq_len, maxlen=seq_len_max, dtype=tf.dtypes.float32)
         mask = tf.transpose(mask, perm=(0, 2, 1))
