@@ -44,21 +44,27 @@ class FM(object):
         return 0.5 * tf.subtract(sum_square, square_sum)
 
 
-class InnerProduct(object):
-    def __init__(self, name):
-        self.name = name
-
-
-class OuterProduct(object):
-    def __init__(self, name):
-        self.name = name
-
-
 class CAN(object):
-    def __init__(self, name, ):
+    def __init__(self, name, mode):
+        """
+        Co-action Network
+        Args:
+            name:
+            mode: str, must be [sequence, non-sequence]
+        """
         self.name = name
+        self.mode = mode
 
     def __call__(self, query_value, key_value):
+        """
+        TODO
+        Args:
+            query_value:
+            key_value:
+
+        Returns:
+
+        """
         query_value_shape = query_value.get_shape().as_list()
         key_value_shape = key_value.get_shape().as_list()
         assert query_value_shape[0] == key_value_shape[0]
