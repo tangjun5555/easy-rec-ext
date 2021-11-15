@@ -4,6 +4,7 @@
 # desc:
 
 import os
+import logging
 from typing import List
 
 import tensorflow as tf
@@ -93,6 +94,7 @@ class SequencePooling(object):
                     go_backwards=go_backwards,
                     name='{}_gru_{}'.format(self.name, str(i)),
                 )(gru_input)
-            return tf.reshape(gru_input, (-1, 1, embedding_size))
+                logging.info("%s %s, gru_input.shape:%s, gru_states:%s" % (filename, self.name, str(gru_input.shape), str(gru_states.shape)))
+            return tf.reshape(gru_input, (-1, embedding_size))
         else:
             raise ValueError("mode:%s not supported." % self.mode)
