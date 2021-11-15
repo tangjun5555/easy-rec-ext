@@ -143,14 +143,14 @@ class RankModel(object):
                     embedding_weights, tf.expand_dims(hist_seq, -1)
                 )
                 values = SequencePooling(
-                    name=feature_field.input_name,
+                    name=feature_field.input_name + "_pooling",
                     mode=feature_field.sequence_pooling_config.mode,
                     gru_config=feature_field.sequence_pooling_config.gru_config,
                 )(values, hist_seq_len)
             else:
                 continue
             outputs.append(values)
-            logging.debug("build_input_layer, name:" + str(feature_field.input_name) + ", shape:" + str(
+            logging.info("build_input_layer, name:" + str(feature_field.input_name) + ", shape:" + str(
                 values.get_shape().as_list()))
         outputs = tf.concat(outputs, axis=1)
         return outputs

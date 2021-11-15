@@ -59,6 +59,9 @@ def test_19():
         value=[[5], [4], [3], [2], [1], [0]],
         dtype=tf.dtypes.int32,
     )
+    print(line_sep)
+    print(seq_len)
+
     mask = tf.sequence_mask(seq_len, maxlen=5, dtype=tf.dtypes.float32)
     print(line_sep)
     print(mask)

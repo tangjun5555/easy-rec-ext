@@ -61,13 +61,15 @@ class SequencePooling(object):
         """
         Input shape
             - seq_value is a 3D tensor with shape: (batch_size, T, embedding_size)
-            - seq_len is a 2D tensor with shape : (batch_size, 1), indicate valid length of each sequence
+            - seq_len is a 2D tensor with shape : (batch_size), indicate valid length of each sequence
 
         Output shape
             - 2D tensor with shape: (batch_size, embedding_size)
         """
         seq_len_max = seq_value.get_shape().as_list()[1]
         embedding_size = seq_value.get_shape().as_list()[2]
+
+        seq_len = tf.expand_dims(seq_len, 1)
 
         mask = tf.sequence_mask(seq_len, maxlen=seq_len_max, dtype=tf.dtypes.float32)
         mask = tf.transpose(mask, perm=(0, 2, 1))
