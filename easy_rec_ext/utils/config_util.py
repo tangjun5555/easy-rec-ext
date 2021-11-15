@@ -4,7 +4,6 @@
 # desc:
 
 import os
-import json
 
 import logging
 
@@ -30,4 +29,4 @@ def save_pipeline_config(pipeline_config, directory, filename="pipeline.config")
     pipeline_config_path = os.path.join(directory, filename)
     with tf.gfile.Open(pipeline_config_path, "wb") as f:
         logging.info("Writing protobuf message file to %s", filename)
-        f.write(json.dumps(pipeline_config))
+        f.write(str(pipeline_config))
