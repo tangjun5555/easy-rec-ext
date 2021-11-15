@@ -95,6 +95,6 @@ class SequencePooling(object):
                     name='{}_gru_{}'.format(self.name, str(i)),
                 )(gru_input)
                 logging.info("%s %s, gru_input.shape:%s, gru_states:%s" % (filename, self.name, str(gru_input.shape), str(gru_states.shape)))
-            return tf.reshape(gru_input, (-1, embedding_size))
+            return tf.reshape(gru_input, (-1, self.gru_config.gru_units[-1]))
         else:
             raise ValueError("mode:%s not supported." % self.mode)
