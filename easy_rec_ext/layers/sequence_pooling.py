@@ -4,11 +4,9 @@
 # desc:
 
 import os
-import logging
 from typing import List
 
 import tensorflow as tf
-from tensorflow.python.keras.layers import GRU
 
 tf = tf.compat.v1
 
@@ -88,8 +86,10 @@ class SequencePooling(object):
             go_backwards = self.gru_config.go_backwards == 1
             gru_input = seq_value
             for i, j in enumerate(self.gru_config.gru_units):
-                gru_input, gru_states = GRU(
-                    units=j, stateful=True, return_state=True,
+                gru_input, gru_states = tf.keras.layers.GRU(
+                    units=j,
+                    # stateful=True,
+                    return_state=True,
                     go_backwards=go_backwards,
                     name='{}_gru_{}'.format(self.name, str(i)),
                 )(gru_input)
