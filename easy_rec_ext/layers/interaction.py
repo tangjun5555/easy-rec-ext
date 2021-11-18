@@ -66,6 +66,7 @@ class InnerProduct(object):
             for j in range(i + 1, field_num):
                 row.append(i)
                 col.append(j)
+        logging.info("InnerProduct, name:%s, row:%s, col:%s" % (self.name, str(row), str(col)))
 
         p = tf.concat(
             [tf.slice(input_value, [0, 0, 0], [-1, idx, -1]) for idx in row],
@@ -75,8 +76,9 @@ class InnerProduct(object):
             [tf.slice(input_value, [0, 0, 0], [-1, idx, -1]) for idx in col],
             axis=1,
         )
+        logging.info("InnerProduct, name:%s, p.shape:%s, q.shape:%s" % (self.name, str(p.shape), str(q.shape)))
 
-        inner_product = p * q
+        inner_product = tf.multiply(p, q)
         inner_product = tf.reduce_sum(inner_product, axis=2, keep_dims=False)
         return inner_product
 
