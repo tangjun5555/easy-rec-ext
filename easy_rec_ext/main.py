@@ -50,21 +50,18 @@ if args.log_level == "dubug":
         format="%(asctime)s %(name)s %(levelname)s %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S %a",
     )
-    tf.logging.set_verbosity(tf.logging.DEBUG)
 elif args.log_level == "warn":
     logging.basicConfig(
         level=logging.WARN,
         format="%(asctime)s %(name)s %(levelname)s %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S %a",
     )
-    tf.logging.set_verbosity(tf.logging.WARN)
 elif args.log_level == "error":
     logging.basicConfig(
         level=logging.ERROR,
         format="%(asctime)s %(name)s %(levelname)s %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S %a",
     )
-    tf.logging.set_verbosity(tf.logging.ERROR)
 else:
     logging.basicConfig(
         level=logging.INFO,
