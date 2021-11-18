@@ -40,7 +40,7 @@ parser.add_argument("--model_dir", type=str, required=False)
 parser.add_argument("--train_input_path", type=str, required=False)
 parser.add_argument("--eval_input_path", type=str, required=False)
 parser.add_argument("--export_dir", type=str, required=False)
-parser.add_argument("--log_level", type=str, required=False, default="info", choices=["debug", "info"])
+parser.add_argument("--log_level", type=str, required=False, default="info")
 args = parser.parse_args()
 print("Run params:" + str(args))
 
