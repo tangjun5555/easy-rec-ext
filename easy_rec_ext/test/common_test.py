@@ -26,7 +26,7 @@ def test_22():
     print(line_sep)
     print(t1)
 
-    r1 = tf.slice(t1, [0, 0, 0], [-1, 1, -1])
+    r1 = tf.slice(t1, [0, 1, 0], [-1, 1, -1])
     print(line_sep)
     print(r1)
 

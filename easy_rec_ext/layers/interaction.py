@@ -69,11 +69,11 @@ class InnerProduct(object):
         logging.info("InnerProduct, name:%s, row:%s, col:%s" % (self.name, str(row), str(col)))
 
         p = tf.concat(
-            [tf.slice(input_value, [0, 0, 0], [-1, idx, -1]) for idx in row],
+            [tf.slice(input_value, [0, idx, 0], [-1, 1, -1]) for idx in row],
             axis=1,
         )
         q = tf.concat(
-            [tf.slice(input_value, [0, 0, 0], [-1, idx, -1]) for idx in col],
+            [tf.slice(input_value, [0, idx, 0], [-1, 1, -1]) for idx in col],
             axis=1,
         )
         logging.info("InnerProduct, name:%s, p.shape:%s, q.shape:%s" % (self.name, str(p.shape), str(q.shape)))
