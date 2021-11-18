@@ -20,11 +20,11 @@ setup(
     extras_require={
         "cpu": [
             "tensorflow==2.4.1",
-            "tensorflow-recommenders-addons>=0.2.0"
+            "tensorflow-recommenders-addons==0.2.0"
         ],
         "gpu": [
             "tensorflow-gpu==2.4.1",
-            "tensorflow-recommenders-addons-gpu>=0.2.0"
+            "tensorflow-recommenders-addons-gpu==0.2.0"
         ],
     },
 )
