@@ -13,6 +13,24 @@ if tf.__version__ >= "2.0":
 line_sep = "\n" + "##" * 20 + "\n"
 
 
+def test_22():
+    t1 = tf.constant(
+        value=[
+            [[1, 1, 1], [2, 2, 2]],
+            [[3, 3, 3], [4, 4, 4]],
+            [[5, 5, 5], [6, 6, 6]],
+            [[7, 7, 7], [8, 8, 8]]
+        ],
+        dtype=tf.dtypes.int32
+    )
+    print(line_sep)
+    print(t1)
+
+    r1 = tf.slice(t1, [0, 0, 0], [-1, 1, -1])
+    print(line_sep)
+    print(r1)
+
+
 def test_21():
     t1 = tf.constant(
         value=[

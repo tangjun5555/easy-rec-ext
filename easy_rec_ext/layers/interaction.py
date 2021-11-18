@@ -50,7 +50,6 @@ class InnerProduct(object):
 
     def __call__(self, input_value):
         """
-        TODO
         Input shape
             - seq_value is a 3D tensor with shape: (batch_size, field_num, embedding_size)
 
@@ -60,6 +59,26 @@ class InnerProduct(object):
         field_num = input_value.get_shape().as_list()[1]
         embed_size = input_value.get_shape().as_list()[2]
         logging.info("InnerProduct, name:%s, field_num:%d, embed_size:%d" % (self.name, field_num, embed_size))
+
+        row = []
+        col = []
+        for i in range(field_num - 1):
+            for j in range(i + 1, field_num):
+                row.append(i)
+                col.append(j)
+
+        p = tf.concat(
+            [tf.slice(input_value, [0, 0, 0], [-1, idx, -1]) for idx in row],
+            axis=1,
+        )
+        q = tf.concat(
+            [tf.slice(input_value, [0, 0, 0], [-1, idx, -1]) for idx in col],
+            axis=1,
+        )
+
+        inner_product = p * q
+        inner_product = tf.reduce_sum(inner_product, axis=2, keep_dims=False)
+        return inner_product
 
 
 class CAN(object):
