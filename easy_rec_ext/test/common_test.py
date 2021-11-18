@@ -44,12 +44,18 @@ def test_20():
     from easy_rec_ext.utils.string_ops import string_to_hash_bucket
 
     t1 = tf.constant(
-        value=[["阿迪达斯 外套"], ["aj"]],
+        value=[
+            ["阿迪达斯 外套"],
+            ["aj"],
+            ["aj1"],
+            ["aj3"],
+            ["aj5"],
+        ],
         dtype=tf.dtypes.string,
     )
 
     for i in range(100):
-        r1 = string_to_hash_bucket(t1, 1000 * 10000)
+        r1 = string_to_hash_bucket(t1, 300 * 10000)
         print(line_sep)
         print(r1)
 
