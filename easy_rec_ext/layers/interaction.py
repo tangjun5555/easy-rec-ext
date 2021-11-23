@@ -85,15 +85,13 @@ class InnerProduct(object):
 
 
 class CAN(object):
-    def __init__(self, name, mode, item_vocab_size, order=2, mlp_units=(8, 4)):
+    def __init__(self, name, item_vocab_size, order=2, mlp_units=(8, 4)):
         """
         Co-action Network
         Args:
             name:
-            mode: str, must be [sequence, non-sequence]
         """
         self.name = name
-        self.mode = mode
         self.item_vocab_size = item_vocab_size
         self.order = order
         self.mlp_units = mlp_units
