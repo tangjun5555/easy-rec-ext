@@ -52,7 +52,7 @@ class DINLayer(object):
         scores = tf.nn.softmax(scores)  # (B, 1, seq_max_len)
         din_output = tf.matmul(scores, hist_id_col)  # [B, 1, emb_dim]
         din_output = tf.reshape(din_output, [-1, emb_dim])  # [B, emb_dim]
-        # din_output = tf.concat([din_output, cur_id], axis=1)
+        din_output = tf.concat([din_output, cur_id], axis=1)
         logging.info("din %s, din_output.shape:%s" % (name, str(din_output.shape)))
         return din_output
 

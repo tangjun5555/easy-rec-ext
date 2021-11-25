@@ -103,8 +103,8 @@ class BSTLayer(object):
         feed_forward_net = self.dnn_net(tmp_net, [emb_dim], name + "/" + "feed_forward_net")
         net = self.add_and_norm(tmp_net, feed_forward_net, emb_dim, name=name + "/" + "add_and_norm_2")
 
-        # bst_output = tf.reshape(net, [-1, seq_size * emb_dim])
-        bst_output = tf.reduce_sum(net, axis=1, keepdims=False)
+        bst_output = tf.reshape(net, [-1, seq_size * emb_dim])
+        # bst_output = tf.reduce_sum(net, axis=1, keepdims=False)
         logging.info("bst %s, bst_output.shape:%s" % (name, str(bst_output.shape)))
         return bst_output
 
