@@ -98,101 +98,39 @@ class RankModel(object):
         return metric_dict
 
     def build_input_layer(self, feature_group):
-        feature_group = self._feature_groups_dict[feature_group]
+        group_input_dict = self.build_group_input_dict(feature_group)
         outputs = []
 
+        feature_group = self._feature_groups_dict[feature_group]
         feature_fields_num = len(feature_group.feature_names) if feature_group.feature_names else 0
+
         for i in range(feature_fields_num):
             feature_field = self._feature_fields_dict[feature_group.feature_names[i]]
+            outputs.append(group_input_dict[feature_field.input_name])
 
-            if feature_field.feature_type == "IdFeature":
-                ids = self._feature_dict[feature_field.input_name]
-                if ids.dtype == tf.dtypes.string:
-                    embedding_weights = embedding_ops.get_embedding_variable(
-                        name=feature_field.embedding_name,
-                        dim=feature_field.embedding_dim,
-                        vocab_size=feature_field.num_buckets if feature_field.num_buckets > 0 else feature_field.hash_bucket_size,
-                        key_is_string=True,
-                    )
-                else:
-                    embedding_weights = embedding_ops.get_embedding_variable(
-                        name=feature_field.embedding_name,
-                        dim=feature_field.embedding_dim,
-                        vocab_size=feature_field.num_buckets if feature_field.num_buckets > 0 else feature_field.hash_bucket_size,
-                        key_is_string=False,
-                    )
-                values = embedding_ops.safe_embedding_lookup(
-                    embedding_weights, ids
-                )
-
-            elif feature_field.feature_type == "RawFeature":
-                values = self._feature_dict[feature_field.input_name]
-
-            elif feature_field.feature_type == "SequenceFeature":
-                hist_seq = self._feature_dict[feature_field.input_name]
-                hist_seq_len = tf.where(tf.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
-                hist_seq_len = tf.reduce_sum(hist_seq_len, axis=1, keep_dims=False)
-
-                embedding_weights = embedding_ops.get_embedding_variable(
-                    name=feature_field.embedding_name,
-                    dim=feature_field.embedding_dim,
-                    vocab_size=feature_field.num_buckets if feature_field.num_buckets > 0 else feature_field.hash_bucket_size,
-                    key_is_string=False,
-                )
-                values = embedding_ops.safe_embedding_lookup(
-                    embedding_weights, tf.expand_dims(hist_seq, -1)
-                )
-                values = SequencePooling(
-                    name=feature_field.input_name + "_pooling",
-                    mode=feature_field.sequence_pooling_config.mode,
-                    gru_config=feature_field.sequence_pooling_config.gru_config,
-                )(values, hist_seq_len)
-            else:
-                continue
-            outputs.append(values)
-            logging.info("build_input_layer, name:" + str(feature_field.input_name) + ", shape:" + str(
-                values.get_shape().as_list()))
         outputs = tf.concat(outputs, axis=1)
         return outputs
 
     def build_seq_att_input_layer(self, feature_group):
+        group_input_dict = self.build_group_input_dict(feature_group)
+        outputs = {}
+
         feature_group = self._feature_groups_dict[feature_group]
         logging.info("build_seq_att_input_layer, feature_group:%s" % str(feature_group))
-        outputs = {}
 
         key_outputs = []
         hist_seq_emb_outputs = []
         for seq_att_map in feature_group.seq_att_map_list:
+
             key_feature_field = self._feature_fields_dict[seq_att_map.key]
             assert key_feature_field.feature_type == "IdFeature"
-
-            key_embedding_weights = embedding_ops.get_embedding_variable(
-                name=key_feature_field.embedding_name,
-                dim=key_feature_field.embedding_dim,
-                vocab_size=key_feature_field.num_buckets if key_feature_field.num_buckets > 0 else key_feature_field.hash_bucket_size,
-                key_is_string=False,
-            )
-            key_outputs.append(
-                embedding_ops.safe_embedding_lookup(
-                    key_embedding_weights, self._feature_dict[key_feature_field.input_name],
-                )
-            )
+            key_outputs.append(group_input_dict[key_feature_field.input_name])
 
             seq_feature_field = self._feature_fields_dict[seq_att_map.hist_seq]
             assert seq_feature_field.feature_type == "SequenceFeature"
+            hist_seq_emb_outputs.append(group_input_dict[seq_feature_field.input_name])
 
             hist_seq = self._feature_dict[seq_feature_field.input_name]
-            seq_embedding_weights = embedding_ops.get_embedding_variable(
-                seq_feature_field.embedding_name,
-                seq_feature_field.embedding_dim,
-                vocab_size=seq_feature_field.num_buckets if seq_feature_field.num_buckets > 0 else seq_feature_field.hash_bucket_size,
-                key_is_string=False,
-            )
-            hist_seq_emb_outputs.append(
-                embedding_ops.safe_embedding_lookup(
-                    seq_embedding_weights, tf.expand_dims(hist_seq, -1)
-                )
-            )
 
             if "hist_seq_len" not in outputs:
                 hist_seq_len = tf.where(tf.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
@@ -204,77 +142,18 @@ class RankModel(object):
         return outputs
 
     def build_bias_input_layer(self, feature_group):
-        feature_group = self._feature_groups_dict[feature_group]
-        outputs = []
-        feature_fields_num = len(feature_group.feature_names) if feature_group.feature_names else 0
-        for i in range(feature_fields_num):
-            feature_field = self._feature_fields_dict[feature_group.feature_names[i]]
-            assert feature_field.feature_type == "IdFeature"
-            if feature_field.hash_bucket_size <= 0:
-                outputs.append(
-                    tf.one_hot(self._feature_dict[feature_field.input_name], feature_field.num_buckets)
-                )
-            else:
-                outputs.append(
-                    tf.one_hot(self._feature_dict[feature_field.input_name], feature_field.hash_bucket_size)
-                )
-        outputs = tf.concat(outputs, axis=-1)
-        outputs = tf.squeeze(outputs, axis=[1])
-        return outputs
+        return self.build_input_layer(feature_group)
 
-    def build_wide_input_layer(self, feature_group):
-        feature_group = self._feature_groups_dict[feature_group]
+    def build_interaction_input_layer(self, feature_group):
+        group_input_dict = self.build_group_input_dict(feature_group)
         outputs = []
-        feature_fields_num = len(feature_group.feature_names) if feature_group.feature_names else 0
-        for i in range(feature_fields_num):
-            feature_field = self._feature_fields_dict[feature_group.feature_names[i]]
-            if feature_field.feature_type == "IdFeature":
-                if feature_field.hash_bucket_size <= 0:
-                    outputs.append(
-                        tf.one_hot(self._feature_dict[feature_field.input_name], feature_field.num_buckets)
-                    )
-                else:
-                    outputs.append(
-                        tf.one_hot(self._feature_dict[feature_field.input_name], feature_field.hash_bucket_size)
-                    )
-            elif feature_field.feature_type == "RawFeature":
-                values = self._feature_dict[feature_field.input_name]
-                outputs.append(values)
-            else:
-                raise ValueError("build_wide_input_layer, feature_field.feature_type:%s is not supported."
-                                 % feature_field.feature_type)
-        outputs = tf.concat(outputs, axis=-1)
-        outputs = tf.squeeze(outputs, axis=[1])
-        return outputs
 
-    def build_id_feature_input_layer(self, feature_group):
         feature_group = self._feature_groups_dict[feature_group]
-        outputs = []
         feature_fields_num = len(feature_group.feature_names) if feature_group.feature_names else 0
 
         for i in range(feature_fields_num):
             feature_field = self._feature_fields_dict[feature_group.feature_names[i]]
-            assert feature_field.feature_type == "IdFeature"
-
-            ids = self._feature_dict[feature_field.input_name]
-            if ids.dtype == tf.dtypes.string:
-                embedding_weights = embedding_ops.get_embedding_variable(
-                    name=feature_field.embedding_name,
-                    dim=feature_field.embedding_dim,
-                    vocab_size=feature_field.num_buckets if feature_field.num_buckets > 0 else feature_field.hash_bucket_size,
-                    key_is_string=True,
-                )
-            else:
-                embedding_weights = embedding_ops.get_embedding_variable(
-                    name=feature_field.embedding_name,
-                    dim=feature_field.embedding_dim,
-                    vocab_size=feature_field.num_buckets if feature_field.num_buckets > 0 else feature_field.hash_bucket_size,
-                    key_is_string=False,
-                )
-            values = embedding_ops.safe_embedding_lookup(
-                embedding_weights, ids
-            )
-            outputs.append(values)
+            outputs.append(group_input_dict[feature_field.input_name])
 
         outputs = tf.stack(outputs, axis=1)
         return outputs

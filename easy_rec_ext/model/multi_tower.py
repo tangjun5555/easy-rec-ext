@@ -40,7 +40,7 @@ class MultiTower(RankModel):
         self._interaction_tower_features = []
         for tower_id in range(self._interaction_tower_num):
             tower = self._model_config.interaction_towers[tower_id]
-            tower_feature = self.build_id_feature_input_layer(tower.input_group)
+            tower_feature = self.build_interaction_input_layer(tower.input_group)
             self._interaction_tower_features.append(tower_feature)
 
         self._din_tower_num = len(self._model_config.din_towers)
