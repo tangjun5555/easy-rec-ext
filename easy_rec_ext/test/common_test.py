@@ -13,6 +13,39 @@ if tf.__version__ >= "2.0":
 line_sep = "\n" + "##" * 20 + "\n"
 
 
+def test_23():
+    t1 = tf.constant(
+        value=[
+            [1.0, 1.0],
+            [2.0, 2.0],
+            [3.0, 3.0],
+            [4.0, 4.0],
+        ],
+        dtype=tf.dtypes.float32
+    )
+    t2 = tf.constant(
+        value=[
+            [10.0] * 5,
+            [10.0] * 5
+        ],
+        dtype=tf.dtypes.float32
+    )
+    r1 = tf.multiply(tf.expand_dims(t1, axis=-1), t2)
+    r2 = tf.reshape(r1, [-1, 2 * 5])
+    r3 = tf.reshape(r1, [-1, 2, 5])
+
+    print(line_sep)
+    print(t1)
+    print(line_sep)
+    print(t2)
+    print(line_sep)
+    print(r1)
+    print(line_sep)
+    print(r2)
+    print(line_sep)
+    print(r3)
+
+
 def test_22():
     t1 = tf.constant(
         value=[

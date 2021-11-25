@@ -153,7 +153,14 @@ class RankModel(object):
 
         for i in range(feature_fields_num):
             feature_field = self._feature_fields_dict[feature_group.feature_names[i]]
-            outputs.append(group_input_dict[feature_field.input_name])
+            if feature_field.feature_type == "IdFeature":
+                outputs.append(group_input_dict[feature_field.input_name])
+            elif feature_field.feature_type == "RawFeature":
+                outputs.append(
+                    tf.reshape(group_input_dict[feature_field.input_name], [-1, feature_field.raw_input_dim, feature_field.embedding_dim])
+                )
+            else:
+                raise ValueError("build_interaction_input_layer, feature_type: %s not supported." % feature_field.feature_type)
 
         outputs = tf.stack(outputs, axis=1)
         return outputs
@@ -204,7 +211,8 @@ class RankModel(object):
                         vocab_size=feature_field.raw_input_dim,
                         key_is_string=False,
                     )
-                    values = tf.matmul(values, embedding_weights)
+                    values = tf.multiply(tf.expand_dims(values, axis=-1), embedding_weights)
+                    values = tf.reshape(tf.reshape(values, [-1, feature_field.raw_input_dim * feature_field.embedding_dim]))
 
             elif feature_field.feature_type == "SequenceFeature":
                 hist_seq = self._feature_dict[feature_field.input_name]
@@ -229,7 +237,7 @@ class RankModel(object):
                     )(values, hist_seq_len)
 
             else:
-                raise ValueError("feature_type: %s not supported." % feature_field.feature_type)
+                raise ValueError("build_group_input_dict, feature_type: %s not supported." % feature_field.feature_type)
 
             outputs[feature_field.input_name] = values
             logging.info("build_group_input_dict, name:%s, shape:%s" %
