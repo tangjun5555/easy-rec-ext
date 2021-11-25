@@ -81,3 +81,17 @@ def pcopc(labels, predictions):
     update_op = tf.py_func(update_pyfunc, [labels, predictions], [])
     value_op = tf.py_func(value_pyfunc, [], tf.float32)
     return value_op, update_op
+
+
+def normalized_discounted_cumulative_gain(labels, predictions, topn=None):
+    """
+    Computes normalized discounted cumulative gain (NDCG).
+    Args:
+        labels:
+        predictions:
+        topn:
+
+    Returns:
+
+    """
+    pass
