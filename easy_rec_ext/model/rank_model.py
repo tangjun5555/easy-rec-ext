@@ -278,3 +278,83 @@ class RankModel(object):
 
         outputs = tf.stack(outputs, axis=1)
         return outputs
+
+    def build_group_input_dict(self, feature_group):
+        feature_group = self._feature_groups_dict[feature_group]
+        outputs = {}
+
+        feature_fields_num = len(feature_group.feature_names) if feature_group.feature_names else 0
+        for i in range(feature_fields_num):
+            feature_field = self._feature_fields_dict[feature_group.feature_names[i]]
+
+            if feature_field.feature_type == "IdFeature":
+                input_ids = self._feature_dict[feature_field.input_name]
+
+                if feature_field.one_hot == 1:
+                    if feature_field.num_buckets > 0:
+                        values = tf.one_hot(input_ids, feature_field.num_buckets)
+                    else:
+                        values = tf.one_hot(input_ids, feature_field.hash_bucket_size)
+                    values = tf.squeeze(values, axis=[1])
+
+                else:
+                    if input_ids.dtype == tf.dtypes.string:
+                        embedding_weights = embedding_ops.get_embedding_variable(
+                            name=feature_field.embedding_name,
+                            dim=feature_field.embedding_dim,
+                            vocab_size=feature_field.num_buckets if feature_field.num_buckets > 0 else feature_field.hash_bucket_size,
+                            key_is_string=True,
+                        )
+                    else:
+                        embedding_weights = embedding_ops.get_embedding_variable(
+                            name=feature_field.embedding_name,
+                            dim=feature_field.embedding_dim,
+                            vocab_size=feature_field.num_buckets if feature_field.num_buckets > 0 else feature_field.hash_bucket_size,
+                            key_is_string=False,
+                        )
+                    values = embedding_ops.safe_embedding_lookup(
+                        embedding_weights, input_ids
+                    )
+
+            elif feature_field.feature_type == "RawFeature":
+                values = self._feature_dict[feature_field.input_name]
+                if feature_field.raw_input_use_field_embedding == 1:
+                    embedding_weights = embedding_ops.get_embedding_variable(
+                        name=feature_field.embedding_name,
+                        dim=feature_field.embedding_dim,
+                        vocab_size=feature_field.raw_input_dim,
+                        key_is_string=False,
+                    )
+                    values = tf.matmul(values, embedding_weights)
+
+            elif feature_field.feature_type == "SequenceFeature":
+                hist_seq = self._feature_dict[feature_field.input_name]
+                hist_seq_len = tf.where(tf.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
+                hist_seq_len = tf.reduce_sum(hist_seq_len, axis=1, keep_dims=False)
+
+                embedding_weights = embedding_ops.get_embedding_variable(
+                    name=feature_field.embedding_name,
+                    dim=feature_field.embedding_dim,
+                    vocab_size=feature_field.num_buckets if feature_field.num_buckets > 0 else feature_field.hash_bucket_size,
+                    key_is_string=False,
+                )
+                values = embedding_ops.safe_embedding_lookup(
+                    embedding_weights, tf.expand_dims(hist_seq, -1)
+                )
+
+                if feature_field.sequence_pooling_config is not None:
+                    values = SequencePooling(
+                        name=feature_field.input_name + "_pooling",
+                        mode=feature_field.sequence_pooling_config.mode,
+                        gru_config=feature_field.sequence_pooling_config.gru_config,
+                    )(values, hist_seq_len)
+
+            else:
+                raise ValueError("feature_type: %s not supported." % feature_field.feature_type)
+
+            outputs[feature_field.input_name] = values
+            logging.info("build_group_input_dict, name:%s, shape:%s" %
+                         (feature_field.input_name, str(values.get_shape().as_list()))
+                         )
+
+        return outputs

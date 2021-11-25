@@ -92,15 +92,19 @@ class InputConfig(BaseConfig):
 class FeatureField(BaseConfig):
     def __init__(self,
                  input_name: str, feature_type: str,
-                 raw_input_dim=1,
+                 raw_input_dim: int = 1, raw_input_use_field_embedding: int = 0,
+                 one_hot: int = 0,
                  embedding_name: str = None, embedding_dim: int = 32,
                  num_buckets: int = 0, hash_bucket_size: int = 0,
-                 sequence_pooling_config: SequencePoolingConfig = SequencePoolingConfig(),
+                 sequence_pooling_config: SequencePoolingConfig = None,
                  ):
         self.input_name = input_name
         self.feature_type = feature_type
 
         self.raw_input_dim = raw_input_dim
+        self.raw_input_use_field_embedding = raw_input_use_field_embedding
+
+        self.one_hot = one_hot
 
         self.embedding_name = embedding_name
         self.embedding_dim = embedding_dim
@@ -118,6 +122,11 @@ class FeatureField(BaseConfig):
 
         if "raw_input_dim" in data:
             res.raw_input_dim = data["raw_input_dim"]
+        if "raw_input_use_field_embedding" in data:
+            res.raw_input_use_field_embedding = data["raw_input_use_field_embedding"]
+
+        if "one_hot" in data:
+            res.one_hot = data["one_hot"]
 
         if "embedding_name" in data:
             res.embedding_name = data["embedding_name"]

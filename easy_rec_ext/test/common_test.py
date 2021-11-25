@@ -344,10 +344,13 @@ def test_05():
         ]
     )
     t2 = tf.one_hot(t1, 5)
+    t3 = tf.squeeze(t2, axis=1)
     print(line_sep)
     print(t1)
     print(line_sep)
     print(t2)
+    print(line_sep)
+    print(t3)
 
 
 def test_04():
