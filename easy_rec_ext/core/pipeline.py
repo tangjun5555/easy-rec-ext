@@ -92,7 +92,7 @@ class InputConfig(BaseConfig):
 class FeatureField(BaseConfig):
     def __init__(self,
                  input_name: str, feature_type: str,
-                 raw_input_dim: int = 1, raw_input_use_field_embedding: int = 0,
+                 raw_input_dim: int = 1, raw_input_embedding_type: str = None,
                  one_hot: int = 0,
                  embedding_name: str = None, embedding_dim: int = 32,
                  num_buckets: int = 0, hash_bucket_size: int = 0,
@@ -102,7 +102,7 @@ class FeatureField(BaseConfig):
         self.feature_type = feature_type
 
         self.raw_input_dim = raw_input_dim
-        self.raw_input_use_field_embedding = raw_input_use_field_embedding
+        self.raw_input_embedding_type = raw_input_embedding_type
 
         self.one_hot = one_hot
 
@@ -122,8 +122,8 @@ class FeatureField(BaseConfig):
 
         if "raw_input_dim" in data:
             res.raw_input_dim = data["raw_input_dim"]
-        if "raw_input_use_field_embedding" in data:
-            res.raw_input_use_field_embedding = data["raw_input_use_field_embedding"]
+        if "raw_input_embedding_type" in data:
+            res.raw_input_embedding_type = data["raw_input_embedding_type"]
 
         if "one_hot" in data:
             res.one_hot = data["one_hot"]

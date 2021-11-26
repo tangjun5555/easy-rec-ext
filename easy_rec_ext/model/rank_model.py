@@ -204,7 +204,7 @@ class RankModel(object):
 
             elif feature_field.feature_type == "RawFeature":
                 values = self._feature_dict[feature_field.input_name]
-                if feature_field.raw_input_use_field_embedding == 1:
+                if feature_field.raw_input_embedding_type == "field_embedding":
                     embedding_weights = embedding_ops.get_embedding_variable(
                         name=feature_field.embedding_name,
                         dim=feature_field.embedding_dim,
@@ -213,6 +213,10 @@ class RankModel(object):
                     )
                     values = tf.multiply(tf.expand_dims(values, axis=-1), embedding_weights)
                     values = tf.reshape(tf.reshape(values, [-1, feature_field.raw_input_dim * feature_field.embedding_dim]))
+                elif feature_field.raw_input_embedding_type == "mlp":
+                    values = tf.layers.dense(
+                        values, units=feature_field.embedding_dim, activation=tf.nn.relu, name=feature_field.embedding_name + "_dnn"
+                    )
 
             elif feature_field.feature_type == "SequenceFeature":
                 hist_seq = self._feature_dict[feature_field.input_name]
