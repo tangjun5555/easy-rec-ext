@@ -3,7 +3,6 @@
 # time: 2021/11/9 11:20 下午
 # desc:
 
-import logging
 import numpy as np
 import tensorflow as tf
 
@@ -44,8 +43,3 @@ class PositionEncoding(object):
         if self.scale:
             outputs = outputs * (num_units ** 0.5)
         return outputs + inputs
-
-
-class MultiHeadAttention(object):
-    def __init__(self):
-        pass

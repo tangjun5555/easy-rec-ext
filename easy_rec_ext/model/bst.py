@@ -7,6 +7,7 @@ import logging
 import math
 import tensorflow as tf
 from easy_rec_ext.layers import dnn, layer_norm
+from easy_rec_ext.layers.transformers import PositionEncoding
 from easy_rec_ext.core import regularizers
 from easy_rec_ext.model.rank_model import RankModel
 
@@ -80,7 +81,7 @@ class BSTLayer(object):
         net = layer(net)
         return net
 
-    def bst(self, bst_fea, seq_size, head_count, name):
+    def bst(self, bst_fea, seq_size, head_count, name, use_positional_encoding=1):
         cur_id, hist_id_col, seq_len = bst_fea["key"], bst_fea["hist_seq_emb"], bst_fea["hist_seq_len"]
 
         # emb_dim = tf.shape(hist_id_col)[2]
@@ -96,6 +97,9 @@ class BSTLayer(object):
 
         # all_ids = tf.concat([hist_id_col, tf.expand_dims(cur_id, 1)], axis=1)  # b, seq_size + 1, emb_dim
         all_ids = tf.concat([tf.expand_dims(cur_id, 1), hist_id_col], axis=1)  # b, seq_size + 1, emb_dim
+
+        if use_positional_encoding == 1:
+            all_ids = PositionEncoding(name + "/" + "PositionEncoding")(all_ids)
 
         attention_net = self.multi_head_att_net(all_ids, seq_size + 1, head_count, seq_len + 1, name)
 
@@ -169,6 +173,7 @@ class BST(RankModel, BSTLayer):
                 seq_size=tower.bst_config.seq_size,
                 head_count=tower.bst_config.multi_head_size,
                 name=tower.input_group,
+                use_positional_encoding=tower.bst_config.use_positional_encoding,
             )
             tower_fea_arr.append(tower_fea)
 

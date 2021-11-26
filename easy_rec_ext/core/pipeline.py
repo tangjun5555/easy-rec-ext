@@ -510,15 +510,18 @@ class DINTower(BaseConfig):
 
 
 class BSTConfig(BaseConfig):
-    def __init__(self, seq_size, multi_head_size: int = 1):
+    def __init__(self, seq_size, multi_head_size: int = 4, use_positional_encoding: int = 0):
         self.seq_size = seq_size
         self.multi_head_size = multi_head_size
+        self.use_positional_encoding = use_positional_encoding
 
     @staticmethod
     def handle(data):
         res = BSTConfig(data["seq_size"])
         if "multi_head_size" in data:
             res.multi_head_size = data["multi_head_size"]
+        if "use_positional_encoding" in data:
+            res.use_positional_encoding = data["use_positional_encoding"]
         return res
 
 
