@@ -215,7 +215,8 @@ class RankModel(object):
                     values = tf.reshape(tf.reshape(values, [-1, feature_field.raw_input_dim * feature_field.embedding_dim]))
                 elif feature_field.raw_input_embedding_type == "mlp":
                     values = tf.layers.dense(
-                        values, units=feature_field.embedding_dim, activation=tf.nn.relu, name=feature_field.embedding_name + "_dnn"
+                        values, units=feature_field.raw_input_dim * feature_field.embedding_dim,
+                        activation=tf.nn.relu, name=feature_field.embedding_name + "_dnn"
                     )
 
             elif feature_field.feature_type == "SequenceFeature":
