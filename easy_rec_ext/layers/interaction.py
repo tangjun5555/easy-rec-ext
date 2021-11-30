@@ -67,7 +67,6 @@ class InnerProduct(object):
             for j in range(i + 1, field_num):
                 row.append(i)
                 col.append(j)
-        logging.info("InnerProduct, name:%s, row:%s, col:%s" % (self.name, str(row), str(col)))
 
         p = tf.concat(
             [tf.slice(input_value, [0, idx, 0], [-1, 1, -1]) for idx in row],
