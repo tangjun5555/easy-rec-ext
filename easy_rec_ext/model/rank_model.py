@@ -153,17 +153,14 @@ class RankModel(object):
 
         for i in range(feature_fields_num):
             feature_field = self._feature_fields_dict[feature_group.feature_names[i]]
-            # if feature_field.feature_type == "IdFeature":
-            #     outputs.append(group_input_dict[feature_field.input_name])
             if feature_field.feature_type == "RawFeature":
                 outputs.append(
                     tf.reshape(group_input_dict[feature_field.input_name], [-1, feature_field.raw_input_dim, feature_field.embedding_dim])
                 )
             else:
-                outputs.append(group_input_dict[feature_field.input_name])
-            # else:
-            #     raise ValueError("build_interaction_input_layer, feature_type: %s not supported." % feature_field.feature_type)
-
+                values = group_input_dict[feature_field.input_name]
+                values = tf.expand_dims(values, axis=1)
+                outputs.append(values)
         outputs = tf.stack(outputs, axis=1)
         return outputs
 

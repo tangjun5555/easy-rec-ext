@@ -4,13 +4,30 @@
 # desc:
 
 import os
-import numpy as np
 import tensorflow as tf
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
 
 line_sep = "\n" + "##" * 20 + "\n"
+
+
+def test_24():
+    t1 = tf.constant(
+        value=[
+            [1.0, 1.0],
+            [2.0, 2.0],
+            [3.0, 3.0],
+            [4.0, 4.0],
+        ],
+        dtype=tf.dtypes.float32
+    )
+    t2 = tf.expand_dims(t1, axis=1)
+
+    print(line_sep)
+    print(t1)
+    print(line_sep)
+    print(t2)
 
 
 def test_23():
