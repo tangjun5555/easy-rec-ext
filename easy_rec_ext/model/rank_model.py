@@ -212,7 +212,7 @@ class RankModel(object):
                         key_is_string=False,
                     )
                     values = tf.multiply(tf.expand_dims(values, axis=-1), embedding_weights)
-                    values = tf.reshape(tf.reshape(values, [-1, feature_field.raw_input_dim * feature_field.embedding_dim]))
+                    values = tf.reshape(values, [-1, feature_field.raw_input_dim * feature_field.embedding_dim])
                 elif feature_field.raw_input_embedding_type == "mlp":
                     values = tf.layers.dense(
                         values, units=feature_field.raw_input_dim * feature_field.embedding_dim,
