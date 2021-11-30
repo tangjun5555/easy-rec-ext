@@ -161,7 +161,7 @@ class RankModel(object):
                 values = group_input_dict[feature_field.input_name]
                 values = tf.expand_dims(values, axis=1)
                 outputs.append(values)
-        outputs = tf.stack(outputs, axis=1)
+        outputs = tf.concat(outputs, axis=1)
         return outputs
 
     def build_group_input_dict(self, feature_group):

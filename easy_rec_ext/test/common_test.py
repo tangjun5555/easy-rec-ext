@@ -24,10 +24,26 @@ def test_24():
     )
     t2 = tf.expand_dims(t1, axis=1)
 
+    t3 = tf.constant(
+        value=[
+            [1.0, 1.0],
+            [2.0, 2.0],
+            [3.0, 3.0],
+            [4.0, 4.0],
+        ],
+        dtype=tf.dtypes.float32
+    )
+    t4 = tf.expand_dims(t3, axis=1)
+
+    r1 = tf.concat([t2, t4], axis=1)
+
     print(line_sep)
     print(t1)
     print(line_sep)
     print(t2)
+
+    print(line_sep)
+    print(r1)
 
 
 def test_23():
