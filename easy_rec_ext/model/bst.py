@@ -98,6 +98,8 @@ class BSTLayer(object):
         # all_ids = tf.concat([hist_id_col, tf.expand_dims(cur_id, 1)], axis=1)  # b, seq_size + 1, emb_dim
         all_ids = tf.concat([tf.expand_dims(cur_id, 1), hist_id_col], axis=1)  # b, seq_size + 1, emb_dim
 
+        all_ids = tf.layers.dense(all_ids, emb_dim, use_bias=False, name=name + "/" + "dnn_projection")
+
         if use_positional_encoding == 1:
             all_ids = PositionEncoding(name + "/" + "PositionEncoding")(all_ids)
 
