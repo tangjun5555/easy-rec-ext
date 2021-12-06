@@ -12,6 +12,10 @@ if tf.__version__ >= "2.0":
 line_sep = "\n" + "##" * 20 + "\n"
 
 
+def test_25():
+    # with tf.variable_scope(:)
+    pass
+
 def test_24():
     t1 = tf.constant(
         value=[

@@ -68,57 +68,65 @@ class MultiTower(RankModel):
         logging.info("din tower num: {0}".format(self._din_tower_num))
         logging.info("bst tower num: {0}".format(self._bst_tower_num))
 
-    def build_tower_fea_arr(self):
+    def build_tower_fea_arr(self, variable_scope=None):
         tower_fea_arr = []
+        variable_scope = variable_scope if not variable_scope else 'multi_tower'
 
         for tower_id in range(self._dnn_tower_num):
             tower_fea = self._dnn_tower_features[tower_id]
             tower = self._model_config.dnn_towers[tower_id]
             tower_name = tower.input_group
-            tower_fea = tf.layers.batch_normalization(
-                tower_fea,
-                training=self._is_training,
-                trainable=True,
-                name="%s_fea_bn" % tower_name
-            )
-            dnn_layer = dnn.DNN(tower.dnn_config, self._l2_reg, "%s_dnn" % tower_name, self._is_training)
-            tower_fea = dnn_layer(tower_fea)
-            tower_fea_arr.append(tower_fea)
+
+            with tf.variable_scope(variable_scope):
+                tower_fea = tf.layers.batch_normalization(
+                    tower_fea,
+                    training=self._is_training,
+                    trainable=True,
+                    name="%s_fea_bn" % tower_name
+                )
+                dnn_layer = dnn.DNN(tower.dnn_config, self._l2_reg, "%s_dnn" % tower_name, self._is_training)
+                tower_fea = dnn_layer(tower_fea)
+                tower_fea_arr.append(tower_fea)
 
         for tower_id in range(self._interaction_tower_num):
             tower_fea = self._interaction_tower_features[tower_id]
             tower = self._model_config.interaction_towers[tower_id]
             tower_name = tower.input_group
 
-            if tower.interaction_config.mode == "fm":
-                fm_layer = FM(tower_name + "_" + "fm")
-                tower_fea_arr.append(fm_layer(tower_fea))
-            elif tower.interaction_config.mode == "inner_product":
-                inner_product_layer = InnerProduct(tower_name + "_" + "inner_product")
-                tower_fea_arr.append(inner_product_layer(tower_fea))
-            else:
-                raise ValueError(
-                    "%s interaction_config.mode:%s is not supported." % (filename, tower.interaction_config.mode)
-                )
+            with tf.variable_scope(variable_scope):
+                if tower.interaction_config.mode == "fm":
+                    fm_layer = FM(tower_name + "_" + "fm")
+                    tower_fea_arr.append(fm_layer(tower_fea))
+                elif tower.interaction_config.mode == "inner_product":
+                    inner_product_layer = InnerProduct(tower_name + "_" + "inner_product")
+                    tower_fea_arr.append(inner_product_layer(tower_fea))
+                else:
+                    raise ValueError(
+                        "%s interaction_config.mode:%s is not supported." % (filename, tower.interaction_config.mode)
+                    )
 
         for tower_id in range(self._din_tower_num):
             tower_fea = self._din_tower_features[tower_id]
             tower = self._model_config.din_towers[tower_id]
-            din_layer = DINLayer()
-            tower_fea = din_layer.din(tower.din_config, tower_fea, name="%s_din" % tower.input_group)
-            tower_fea_arr.append(tower_fea)
+
+            with tf.variable_scope(variable_scope):
+                din_layer = DINLayer()
+                tower_fea = din_layer.din(tower.din_config, tower_fea, name="%s_din" % tower.input_group)
+                tower_fea_arr.append(tower_fea)
 
         for tower_id in range(self._bst_tower_num):
             tower_fea = self._bst_tower_features[tower_id]
             tower = self._model_config.bst_towers[tower_id]
-            bst_layer = BSTLayer()
-            tower_fea = bst_layer.bst(
-                tower_fea,
-                seq_size=tower.bst_config.seq_size,
-                head_count=tower.bst_config.multi_head_size,
-                name=tower.input_group,
-            )
-            tower_fea_arr.append(tower_fea)
+
+            with tf.variable_scope(variable_scope):
+                bst_layer = BSTLayer()
+                tower_fea = bst_layer.bst(
+                    tower_fea,
+                    seq_size=tower.bst_config.seq_size,
+                    head_count=tower.bst_config.multi_head_size,
+                    name=tower.input_group,
+                )
+                tower_fea_arr.append(tower_fea)
 
         return tower_fea_arr
 
