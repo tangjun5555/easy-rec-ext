@@ -27,12 +27,18 @@ class ESMM(MultiTower):
         super(ESMM, self).__init__(model_config, feature_config, features, labels, is_training)
 
     def build_predict_graph(self):
-        ctr_tower_fea_arr = self.build_tower_fea_arr(variable_scope="task_ctr")
+        if self._model_config.esmm_model_config.share_fn_param == 1:
+            ctr_tower_fea_arr = self.build_tower_fea_arr(variable_scope="task_ctr")
+            cvr_tower_fea_arr = self.build_tower_fea_arr(variable_scope="task_cvr")
+        else:
+            tower_fea_arr = self.build_tower_fea_arr()
+            ctr_tower_fea_arr = tower_fea_arr
+            cvr_tower_fea_arr = tower_fea_arr
+
         logging.info("%s build_predict_graph, ctr_tower_fea_arr.length:%s" % (filename, str(len(ctr_tower_fea_arr))))
         ctr_all_fea = tf.concat(ctr_tower_fea_arr, axis=1)
         logging.info("%s build_predict_graph, ctr_all_fea.shape:%s" % (filename, str(ctr_all_fea.shape)))
 
-        cvr_tower_fea_arr = self.build_tower_fea_arr(variable_scope="task_cvr")
         logging.info("%s build_predict_graph, cvr_tower_fea_arr.length:%s" % (filename, str(len(cvr_tower_fea_arr))))
         cvr_all_fea = tf.concat(cvr_tower_fea_arr, axis=1)
         logging.info("%s build_predict_graph, cvr_all_fea.shape:%s" % (filename, str(cvr_all_fea.shape)))

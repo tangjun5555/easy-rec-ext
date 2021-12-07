@@ -538,10 +538,13 @@ class BSTTower(BaseConfig):
 
 
 class ESMMModelConfig(BaseConfig):
-    def __init__(self, ctr_label_name="ctr_label", ctcvr_label_name="ctcvr_label",
-                 ctr_loss_weight=1.0, ctcvr_loss_weight=1.0):
+    def __init__(self, ctr_label_name: str = "ctr_label", ctcvr_label_name: str = "ctcvr_label",
+                 share_fn_param: int = 0,
+                 ctr_loss_weight: float = 1.0, ctcvr_loss_weight: float = 1.0,
+                 ):
         self.ctr_label_name = ctr_label_name
         self.ctcvr_label_name = ctcvr_label_name
+        self.share_fn_param = share_fn_param
         self.ctr_loss_weight = ctr_loss_weight
         self.ctcvr_loss_weight = ctcvr_loss_weight
 
@@ -552,6 +555,8 @@ class ESMMModelConfig(BaseConfig):
             res.ctr_label_name = data["ctr_label_name"]
         if "ctcvr_label_name" in data:
             res.ctcvr_label_name = data["ctcvr_label_name"]
+        if "share_fn_param" in data:
+            res.share_fn_param = data["share_fn_param"]
         if "ctr_loss_weight" in data:
             res.ctr_loss_weight = data["ctr_loss_weight"]
         if "ctcvr_loss_weight" in data:
