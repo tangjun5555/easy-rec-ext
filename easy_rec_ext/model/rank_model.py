@@ -121,24 +121,45 @@ class RankModel(object):
         key_outputs = []
         hist_seq_emb_outputs = []
         for seq_att_map in feature_group.seq_att_map_list:
+            if seq_att_map.key:
+                key_feature_field = self._feature_fields_dict[seq_att_map.key]
+                key_outputs.append(group_input_dict[key_feature_field.input_name])
 
-            key_feature_field = self._feature_fields_dict[seq_att_map.key]
-            assert key_feature_field.feature_type == "IdFeature"
-            key_outputs.append(group_input_dict[key_feature_field.input_name])
+            if seq_att_map.hist_seq:
+                seq_feature_field = self._feature_fields_dict[seq_att_map.hist_seq]
+                if seq_feature_field.feature_type == "SequenceFeature":
+                    hist_seq_emb_outputs.append(group_input_dict[seq_feature_field.input_name])
 
-            seq_feature_field = self._feature_fields_dict[seq_att_map.hist_seq]
-            assert seq_feature_field.feature_type == "SequenceFeature"
-            hist_seq_emb_outputs.append(group_input_dict[seq_feature_field.input_name])
-
-            hist_seq = self._feature_dict[seq_feature_field.input_name]
-
-            if "hist_seq_len" not in outputs:
-                hist_seq_len = tf.where(tf.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
-                hist_seq_len = tf.reduce_sum(hist_seq_len, axis=1, keep_dims=False)
-                outputs["hist_seq_len"] = hist_seq_len
+                    hist_seq = self._feature_dict[seq_feature_field.input_name]
+                    if "hist_seq_len" not in outputs:
+                        hist_seq_len = tf.where(tf.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
+                        hist_seq_len = tf.reduce_sum(hist_seq_len, axis=1, keep_dims=False)
+                        outputs["hist_seq_len"] = hist_seq_len
+                elif seq_feature_field.feature_type == "RawFeature":
+                    if seq_feature_field.raw_input_embedding_type:
+                        hist_seq_emb_outputs.append(
+                            tf.reshape(group_input_dict[seq_feature_field.input_name],
+                                       [-1, seq_feature_field.raw_input_dim, seq_feature_field.embedding_dim])
+                        )
+                    else:
+                        hist_seq_emb_outputs.append(
+                            tf.reshape(group_input_dict[seq_feature_field.input_name],
+                                       [-1, seq_feature_field.raw_input_dim, 1])
+                        )
 
         outputs["key"] = tf.concat(key_outputs, axis=-1)
         outputs["hist_seq_emb"] = tf.concat(hist_seq_emb_outputs, axis=-1)
+        if feature_group.seq_att_projection_dim > 0:
+            outputs["key"] = tf.layers.dense(
+                outputs["key"], feature_group.seq_att_projection_dim,
+                activation=None, use_bias=False,
+                name=feature_group.group_name + "/" + "key_projection",
+            )
+            outputs["hist_seq_emb"] = tf.layers.dense(
+                outputs["hist_seq_emb"], feature_group.seq_att_projection_dim,
+                activation=None, use_bias=False,
+                name=feature_group.group_name + "/" + "seq_projection"
+            )
         return outputs
 
     def build_bias_input_layer(self, feature_group):
@@ -154,8 +175,10 @@ class RankModel(object):
         for i in range(feature_fields_num):
             feature_field = self._feature_fields_dict[feature_group.feature_names[i]]
             if feature_field.feature_type == "RawFeature":
+                assert feature_field.raw_input_embedding_type
                 outputs.append(
-                    tf.reshape(group_input_dict[feature_field.input_name], [-1, feature_field.raw_input_dim, feature_field.embedding_dim])
+                    tf.reshape(group_input_dict[feature_field.input_name],
+                               [-1, feature_field.raw_input_dim, feature_field.embedding_dim])
                 )
             else:
                 values = group_input_dict[feature_field.input_name]
