@@ -168,10 +168,14 @@ class SeqAttMap(BaseConfig):
 
 
 class FeatureGroup(BaseConfig):
-    def __init__(self, group_name: str, feature_names: List[str] = None, seq_att_map_list: List[SeqAttMap] = None):
+    def __init__(self, group_name: str, feature_names: List[str] = None
+                 , seq_att_map_list: List[SeqAttMap] = None
+                 , seq_att_projection_dim: int = 0
+                 ):
         self.group_name = group_name
         self.feature_names = feature_names
         self.seq_att_map_list = seq_att_map_list
+        self.seq_att_projection_dim = seq_att_projection_dim
 
     @staticmethod
     def handle(data):
@@ -183,6 +187,8 @@ class FeatureGroup(BaseConfig):
             for seq_att_map in data["seq_att_map_list"]:
                 seq_att_map_list.append(SeqAttMap.handle(seq_att_map))
             res.seq_att_map_list = seq_att_map_list
+        if "seq_att_projection_dim" in data:
+            res.seq_att_projection_dim = data["seq_att_projection_dim"]
         return res
 
 
