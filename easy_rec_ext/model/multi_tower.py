@@ -70,14 +70,14 @@ class MultiTower(RankModel):
 
     def build_tower_fea_arr(self, variable_scope=None):
         tower_fea_arr = []
-        variable_scope = variable_scope if not variable_scope else 'multi_tower'
+        variable_scope = variable_scope if not variable_scope else "multi_tower"
 
         for tower_id in range(self._dnn_tower_num):
             tower_fea = self._dnn_tower_features[tower_id]
             tower = self._model_config.dnn_towers[tower_id]
             tower_name = tower.input_group
 
-            with tf.variable_scope(variable_scope):
+            with tf.variable_scope(variable_scope, reuse=tf.AUTO_REUSE):
                 tower_fea = tf.layers.batch_normalization(
                     tower_fea,
                     training=self._is_training,
@@ -93,7 +93,7 @@ class MultiTower(RankModel):
             tower = self._model_config.interaction_towers[tower_id]
             tower_name = tower.input_group
 
-            with tf.variable_scope(variable_scope):
+            with tf.variable_scope(variable_scope, reuse=tf.AUTO_REUSE):
                 if tower.interaction_config.mode == "fm":
                     fm_layer = FM(tower_name + "_" + "fm")
                     tower_fea_arr.append(fm_layer(tower_fea))
@@ -109,7 +109,7 @@ class MultiTower(RankModel):
             tower_fea = self._din_tower_features[tower_id]
             tower = self._model_config.din_towers[tower_id]
 
-            with tf.variable_scope(variable_scope):
+            with tf.variable_scope(variable_scope, reuse=tf.AUTO_REUSE):
                 din_layer = DINLayer()
                 tower_fea = din_layer.din(tower.din_config, tower_fea, name="%s_din" % tower.input_group)
                 tower_fea_arr.append(tower_fea)
@@ -118,7 +118,7 @@ class MultiTower(RankModel):
             tower_fea = self._bst_tower_features[tower_id]
             tower = self._model_config.bst_towers[tower_id]
 
-            with tf.variable_scope(variable_scope):
+            with tf.variable_scope(variable_scope, reuse=tf.AUTO_REUSE):
                 bst_layer = BSTLayer()
                 tower_fea = bst_layer.bst(
                     tower_fea,
