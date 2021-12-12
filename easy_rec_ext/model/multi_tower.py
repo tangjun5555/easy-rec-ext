@@ -70,7 +70,7 @@ class MultiTower(RankModel):
 
     def build_tower_fea_arr(self, variable_scope=None):
         tower_fea_arr = []
-        variable_scope = variable_scope if not variable_scope else "multi_tower"
+        variable_scope = variable_scope if variable_scope else "multi_tower"
 
         for tower_id in range(self._dnn_tower_num):
             tower_fea = self._dnn_tower_features[tower_id]
