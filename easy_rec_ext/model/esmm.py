@@ -28,12 +28,12 @@ class ESMM(MultiTower):
 
     def build_predict_graph(self):
         if self._model_config.esmm_model_config.share_fn_param == 1:
-            ctr_tower_fea_arr = self.build_tower_fea_arr(variable_scope="task_ctr")
-            cvr_tower_fea_arr = self.build_tower_fea_arr(variable_scope="task_cvr")
-        else:
             tower_fea_arr = self.build_tower_fea_arr()
             ctr_tower_fea_arr = tower_fea_arr
             cvr_tower_fea_arr = tower_fea_arr
+        else:
+            ctr_tower_fea_arr = self.build_tower_fea_arr(variable_scope="task_ctr")
+            cvr_tower_fea_arr = self.build_tower_fea_arr(variable_scope="task_cvr")
 
         logging.info("%s build_predict_graph, ctr_tower_fea_arr.length:%s" % (filename, str(len(ctr_tower_fea_arr))))
         ctr_all_fea = tf.concat(ctr_tower_fea_arr, axis=1)
@@ -47,12 +47,20 @@ class ESMM(MultiTower):
                                       "ctr" + "_" + "final_dnn", self._is_training
                                       )
         ctr_logits = ctr_final_dnn_layer(ctr_all_fea)
+        if self._model_config.bias_tower:
+            bias_fea = self.build_bias_input_layer(self._model_config.bias_tower.input_group)
+            ctr_logits = tf.concat([ctr_logits, bias_fea], axis=1)
+            logging.info("build_predict_graph, ctr_logits.shape:%s" % (str(ctr_logits.shape)))
         ctr_logits = tf.layers.dense(ctr_logits, 1, name="ctr_logits")
 
         cvr_final_dnn_layer = dnn.DNN(self._model_config.final_dnn, self._l2_reg,
                                       "cvr" + "_" + "final_dnn", self._is_training
                                       )
         cvr_logits = cvr_final_dnn_layer(cvr_all_fea)
+        if self._model_config.bias_tower:
+            bias_fea = self.build_bias_input_layer(self._model_config.bias_tower.input_group)
+            cvr_logits = tf.concat([cvr_logits, bias_fea], axis=1)
+            logging.info("build_predict_graph, cvr_logits.shape:%s" % (str(cvr_logits.shape)))
         cvr_logits = tf.layers.dense(cvr_logits, 1, name="cvr_logits")
 
         ctr_probs = tf.sigmoid(ctr_logits, name="ctr_probs")
