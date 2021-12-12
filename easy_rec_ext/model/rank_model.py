@@ -168,7 +168,7 @@ class RankModel(object):
         for i in range(feature_fields_num):
             feature_field = self._feature_fields_dict[feature_group.feature_names[i]]
             assert feature_field.feature_type == "IdFeature", "build_bias_input_layer bias feature must be IdFeature"
-            assert feature_field.feature_type.one_hot, "build_bias_input_layer bias feature.one_hot must be 1"
+            assert feature_field.one_hot, "build_bias_input_layer bias feature.one_hot must be 1"
         return self.build_input_layer(feature_group.group_name)
 
     def build_wide_input_layer(self, feature_group):
@@ -177,7 +177,7 @@ class RankModel(object):
         for i in range(feature_fields_num):
             feature_field = self._feature_fields_dict[feature_group.feature_names[i]]
             if feature_field.feature_type == "IdFeature":
-                assert feature_field.feature_type.one_hot, "build_wide_input_layer IdFeature one_hot must be 1"
+                assert feature_field.one_hot, "build_wide_input_layer IdFeature one_hot must be 1"
             if feature_field.feature_type == "RawFeature":
                 assert not feature_field.raw_input_embedding_type, "build_wide_input_layer one_hot can't use raw_input_embedding_type"
         return self.build_input_layer(feature_group.group_name)
