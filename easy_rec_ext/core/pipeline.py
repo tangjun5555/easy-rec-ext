@@ -94,7 +94,7 @@ class FeatureField(BaseConfig):
                  input_name: str, feature_type: str,
                  raw_input_dim: int = 1, raw_input_embedding_type: str = None,
                  one_hot: int = 0,
-                 embedding_name: str = None, embedding_dim: int = 32,
+                 embedding_name: str = None, embedding_dim: int = 16,
                  num_buckets: int = 0, hash_bucket_size: int = 0,
                  sequence_pooling_config: SequencePoolingConfig = None,
                  ):
