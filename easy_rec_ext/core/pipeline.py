@@ -106,7 +106,7 @@ class FeatureField(BaseConfig):
 
         self.one_hot = one_hot
 
-        self.embedding_name = embedding_name
+        self.embedding_name = embedding_name if embedding_name else input_name + "_embedding"
         self.embedding_dim = embedding_dim
 
         self.num_buckets = num_buckets
@@ -129,7 +129,7 @@ class FeatureField(BaseConfig):
             res.one_hot = data["one_hot"]
 
         if "embedding_name" in data:
-            res.embedding_name = data["embedding_name"]
+            res.embedding_name = data["embedding_name"] if data["embedding_name"] else res.input_name + "_embedding"
         if "embedding_dim" in data:
             res.embedding_dim = data["embedding_dim"]
 
