@@ -17,7 +17,7 @@ from easy_rec_ext.utils import estimator_util, config_util
 
 import tensorflow as tf
 
-version = "0.0.8"
+version = "0.0.9"
 
 if tf.__version__ >= "2.0":
     gfile = tf.compat.v1.gfile
