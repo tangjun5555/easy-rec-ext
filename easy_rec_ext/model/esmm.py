@@ -9,11 +9,48 @@ import tensorflow as tf
 from easy_rec_ext.model.multi_tower import MultiTower
 from easy_rec_ext.layers import dnn
 import easy_rec_ext.core.metrics as metrics_lib
+from easy_rec_ext.utils import variable_util
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
 
 filename = str(os.path.basename(__file__)).split(".")[0]
+
+
+class ESMMModelConfig(object):
+    def __init__(self, ctr_label_name: str = "ctr_label", ctcvr_label_name: str = "ctcvr_label",
+                 share_fn_param: int = 0,
+                 ctr_loss_weight: float = 1.0, ctcvr_loss_weight: float = 1.0,
+                 formula="dot",
+                 ):
+        self.ctr_label_name = ctr_label_name
+        self.ctcvr_label_name = ctcvr_label_name
+        self.share_fn_param = share_fn_param
+        self.ctr_loss_weight = ctr_loss_weight
+        self.ctcvr_loss_weight = ctcvr_loss_weight
+
+        assert formula in ["dot", "pow"], "esmm_model_config.formula must be dot|pow."
+        self.formula = formula
+
+    @staticmethod
+    def handle(data):
+        res = ESMMModelConfig()
+        if "ctr_label_name" in data:
+            res.ctr_label_name = data["ctr_label_name"]
+        if "ctcvr_label_name" in data:
+            res.ctcvr_label_name = data["ctcvr_label_name"]
+        if "share_fn_param" in data:
+            res.share_fn_param = data["share_fn_param"]
+        if "ctr_loss_weight" in data:
+            res.ctr_loss_weight = data["ctr_loss_weight"]
+        if "ctcvr_loss_weight" in data:
+            res.ctcvr_loss_weight = data["ctcvr_loss_weight"]
+        if "formula" in data:
+            res.formula = data["formula"]
+        return res
+
+    def __str__(self):
+        return str(self.__dict__)
 
 
 class ESMM(MultiTower):
@@ -65,10 +102,21 @@ class ESMM(MultiTower):
 
         ctr_probs = tf.sigmoid(ctr_logits, name="ctr_probs")
         cvr_probs = tf.sigmoid(cvr_logits, name="cvr_probs")
-        ctcvr_probs = tf.multiply(ctr_probs, cvr_probs, name="ctcvr_probs")
+
+        if self._model_config.esmm_model_config.formula == "pow":
+            with tf.variable_scope("esmm", reuse=tf.AUTO_REUSE):
+                alpha = tf.get_variable(name="alpha", shape=[1], dtype=tf.float32,
+                                        initializer=tf.constant_initializer(0.5),
+                                        )
+            alpha = tf.clip_by_value(alpha, clip_value_min=0.0, clip_value_max=1.0)
+            ctcvr_probs = tf.multiply(ctr_probs, tf.pow(cvr_probs, alpha), name="ctcvr_probs")
+        else:
+            ctcvr_probs = tf.multiply(ctr_probs, cvr_probs, name="ctcvr_probs")
         all_probs = tf.concat([ctr_probs, cvr_probs, ctcvr_probs], axis=-1, name="all_probs")
 
         prediction_dict = dict()
+        if self._model_config.esmm_model_config.formula == "pow":
+            prediction_dict["alpha"] = alpha
         prediction_dict["ctr_probs"] = tf.reshape(ctr_probs, (-1,))
         prediction_dict["cvr_probs"] = tf.reshape(cvr_probs, (-1,))
         prediction_dict["ctcvr_probs"] = tf.reshape(ctcvr_probs, (-1,))
@@ -134,5 +182,6 @@ class ESMM(MultiTower):
                 )
             elif "pcopc" == metric.name:
                 metric_dict["ctr_pcopc"] = metrics_lib.pcopc(tf.to_float(ctr_label), self._prediction_dict["ctr_probs"])
-                metric_dict["ctcvr_pcopc"] = metrics_lib.pcopc(tf.to_float(ctcvr_label), self._prediction_dict["ctcvr_probs"])
+                metric_dict["ctcvr_pcopc"] = metrics_lib.pcopc(tf.to_float(ctcvr_label),
+                                                               self._prediction_dict["ctcvr_probs"])
         return metric_dict

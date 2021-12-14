@@ -6,6 +6,7 @@
 from typing import List
 from easy_rec_ext.layers.sequence_pooling import SequencePoolingConfig
 from easy_rec_ext.layers.interaction import InteractionConfig
+from easy_rec_ext.model.esmm import ESMMModelConfig
 
 
 class BaseConfig(object):
@@ -540,33 +541,6 @@ class BSTTower(BaseConfig):
     def handle(data):
         bst_config = BSTConfig.handle(data["bst_config"])
         res = BSTTower(data["input_group"], bst_config)
-        return res
-
-
-class ESMMModelConfig(BaseConfig):
-    def __init__(self, ctr_label_name: str = "ctr_label", ctcvr_label_name: str = "ctcvr_label",
-                 share_fn_param: int = 0,
-                 ctr_loss_weight: float = 1.0, ctcvr_loss_weight: float = 1.0,
-                 ):
-        self.ctr_label_name = ctr_label_name
-        self.ctcvr_label_name = ctcvr_label_name
-        self.share_fn_param = share_fn_param
-        self.ctr_loss_weight = ctr_loss_weight
-        self.ctcvr_loss_weight = ctcvr_loss_weight
-
-    @staticmethod
-    def handle(data):
-        res = ESMMModelConfig()
-        if "ctr_label_name" in data:
-            res.ctr_label_name = data["ctr_label_name"]
-        if "ctcvr_label_name" in data:
-            res.ctcvr_label_name = data["ctcvr_label_name"]
-        if "share_fn_param" in data:
-            res.share_fn_param = data["share_fn_param"]
-        if "ctr_loss_weight" in data:
-            res.ctr_loss_weight = data["ctr_loss_weight"]
-        if "ctcvr_loss_weight" in data:
-            res.ctcvr_loss_weight = data["ctcvr_loss_weight"]
         return res
 
 
