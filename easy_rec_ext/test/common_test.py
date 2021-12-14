@@ -13,8 +13,22 @@ line_sep = "\n" + "##" * 20 + "\n"
 
 
 def test_25():
-    # with tf.variable_scope(:)
-    pass
+    tf.disable_eager_execution()
+    from easy_rec_ext.utils import variable_util
+
+    t1 = variable_util.get_normal_variable(
+        scope="esmm", name="t1", shape=1,
+    )
+
+    t2 = variable_util.get_normal_variable(
+        scope="esmm", name="t2", shape=[1],
+    )
+
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+        print(sess.run(t1))
+        print(sess.run(t2))
+
 
 def test_24():
     t1 = tf.constant(
