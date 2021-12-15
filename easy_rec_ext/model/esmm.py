@@ -9,7 +9,6 @@ import tensorflow as tf
 from easy_rec_ext.model.multi_tower import MultiTower
 from easy_rec_ext.layers import dnn
 import easy_rec_ext.core.metrics as metrics_lib
-from easy_rec_ext.utils import variable_util
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
