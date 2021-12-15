@@ -27,8 +27,6 @@ class ESMMModelConfig(object):
         self.share_fn_param = share_fn_param
         self.ctr_loss_weight = ctr_loss_weight
         self.ctcvr_loss_weight = ctcvr_loss_weight
-
-        assert formula in ["dot", "pow"], "esmm_model_config.formula must be dot|pow."
         self.formula = formula
 
     @staticmethod

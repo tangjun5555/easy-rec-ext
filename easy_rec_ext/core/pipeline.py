@@ -594,6 +594,7 @@ class ModelConfig(BaseConfig):
                  mmoe_model_config: MMoEModelCofing = None,
                  ple_model_config: PLEModelCofing = None,
 
+                 wide_towers: List[str] = None,
                  dnn_towers: List[DNNTower] = None,
                  interaction_towers: List[InteractionTower] = None,
                  din_towers: List[DINTower] = None,
@@ -614,6 +615,7 @@ class ModelConfig(BaseConfig):
         self.mmoe_model_config = mmoe_model_config
         self.ple_model_config = ple_model_config
 
+        self.wide_towers = wide_towers
         self.dnn_towers = dnn_towers
         self.interaction_towers = interaction_towers
         self.din_towers = din_towers
@@ -642,6 +644,8 @@ class ModelConfig(BaseConfig):
         if "ple_model_config" in data:
             res.ple_model_config = PLEModelCofing.handle(data["ple_model_config"])
 
+        if "wide_towers" in data:
+            res.wide_towers = data["wide_towers"]
         if "dnn_towers" in data:
             dnn_towers = []
             for tower in data["dnn_towers"]:

@@ -28,6 +28,13 @@ class MultiTower(RankModel):
                  is_training=False):
         super(MultiTower, self).__init__(model_config, feature_config, features, labels, is_training)
 
+        self._wide_tower_num = len(self._model_config.wide_towers) if self._model_config.wide_towers else 0
+        self._wide_tower_features = []
+        for tower_id in range(self._wide_tower_num):
+            tower = self._model_config.wide_towers[tower_id]
+            tower_feature = self.build_input_layer(tower)
+            self._wide_tower_features.append(tower_feature)
+
         self._dnn_tower_num = len(self._model_config.dnn_towers) if self._model_config.dnn_towers else 0
         self._dnn_tower_features = []
         for tower_id in range(self._dnn_tower_num):
@@ -43,7 +50,7 @@ class MultiTower(RankModel):
             tower_feature = self.build_interaction_input_layer(tower.input_group)
             self._interaction_tower_features.append(tower_feature)
 
-        self._din_tower_num = len(self._model_config.din_towers)
+        self._din_tower_num = len(self._model_config.din_towers) if self._model_config.din_towers else 0
         self._din_tower_features = []
         for tower_id in range(self._din_tower_num):
             tower = self._model_config.din_towers[tower_id]
@@ -62,7 +69,13 @@ class MultiTower(RankModel):
             self._bst_tower_features.append(tower_feature)
 
         logging.info("all tower num: {0}".format(
-            self._dnn_tower_num + self._interaction_tower_num + self._din_tower_num + self._bst_tower_num))
+            self._wide_tower_num
+            + self._dnn_tower_num
+            + self._interaction_tower_num
+            + self._din_tower_num
+            + self._bst_tower_num
+        ))
+        logging.info("wide tower num: {0}".format(self._wide_tower_num))
         logging.info("dnn tower num: {0}".format(self._dnn_tower_num))
         logging.info("interaction tower num: {0}".format(self._interaction_tower_num))
         logging.info("din tower num: {0}".format(self._din_tower_num))
