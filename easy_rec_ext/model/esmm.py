@@ -81,6 +81,10 @@ class ESMM(MultiTower):
                                       "ctr" + "_" + "final_dnn", self._is_training
                                       )
         ctr_logits = ctr_final_dnn_layer(ctr_all_fea)
+        if self._model_config.wide_towers:
+            wide_fea = tf.concat(self._wide_tower_features, axis=1)
+            ctr_logits = tf.concat([ctr_logits, wide_fea], axis=1)
+            logging.info("build_predict_graph, ctr_logits.shape:%s" % (str(ctr_logits.shape)))
         if self._model_config.bias_tower:
             bias_fea = self.build_bias_input_layer(self._model_config.bias_tower.input_group)
             ctr_logits = tf.concat([ctr_logits, bias_fea], axis=1)
@@ -91,6 +95,10 @@ class ESMM(MultiTower):
                                       "cvr" + "_" + "final_dnn", self._is_training
                                       )
         cvr_logits = cvr_final_dnn_layer(cvr_all_fea)
+        if self._model_config.wide_towers:
+            wide_fea = tf.concat(self._wide_tower_features, axis=1)
+            cvr_logits = tf.concat([cvr_logits, wide_fea], axis=1)
+            logging.info("build_predict_graph, cvr_logits.shape:%s" % (str(cvr_logits.shape)))
         if self._model_config.bias_tower:
             bias_fea = self.build_bias_input_layer(self._model_config.bias_tower.input_group)
             cvr_logits = tf.concat([cvr_logits, bias_fea], axis=1)

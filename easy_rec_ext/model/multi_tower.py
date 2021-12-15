@@ -32,7 +32,7 @@ class MultiTower(RankModel):
         self._wide_tower_features = []
         for tower_id in range(self._wide_tower_num):
             tower = self._model_config.wide_towers[tower_id]
-            tower_feature = self.build_input_layer(tower)
+            tower_feature = self.build_wide_input_layer(tower)
             self._wide_tower_features.append(tower_feature)
 
         self._dnn_tower_num = len(self._model_config.dnn_towers) if self._model_config.dnn_towers else 0
@@ -152,6 +152,10 @@ class MultiTower(RankModel):
         all_fea = final_dnn_layer(all_fea)
         logging.info("build_predict_graph, logits.shape:%s" % (str(all_fea.shape)))
 
+        if self._model_config.wide_towers:
+            wide_fea = tf.concat(self._wide_tower_features, axis=1)
+            all_fea = tf.concat([all_fea, wide_fea], axis=1)
+            logging.info("build_predict_graph, logits.shape:%s" % (str(all_fea.shape)))
         if self._model_config.bias_tower:
             bias_fea = self.build_bias_input_layer(self._model_config.bias_tower.input_group)
             all_fea = tf.concat([all_fea, bias_fea], axis=1)
