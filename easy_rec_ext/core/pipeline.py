@@ -193,7 +193,7 @@ class FeatureGroup(BaseConfig):
         return res
 
     @property
-    def _feature_names(self):
+    def feature_name_list(self):
         if self.feature_names:
             return self.feature_names
         elif self.seq_att_map_list:
