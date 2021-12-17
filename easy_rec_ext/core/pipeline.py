@@ -192,6 +192,20 @@ class FeatureGroup(BaseConfig):
             res.seq_att_projection_dim = data["seq_att_projection_dim"]
         return res
 
+    @property
+    def _feature_names(self):
+        if self.feature_names:
+            return self.feature_names
+        elif self.seq_att_map_list:
+            res = []
+            for att_map in self.seq_att_map_list:
+                if att_map.key and att_map.key not in res:
+                    res.append(att_map.key)
+                if att_map.hist_seq and att_map.hist_seq not in res:
+                    res.append(att_map.hist_seq)
+        else:
+            return []
+
 
 class ConstantLearningRate(BaseConfig):
     def __init__(self, learning_rate=0.01):
