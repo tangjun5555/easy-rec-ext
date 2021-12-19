@@ -203,6 +203,7 @@ class FeatureGroup(BaseConfig):
                     res.append(att_map.key)
                 if att_map.hist_seq and att_map.hist_seq not in res:
                     res.append(att_map.hist_seq)
+            return res
         else:
             return []
 
