@@ -20,7 +20,7 @@ class ESMMModelConfig(object):
     def __init__(self, ctr_label_name: str = "ctr_label", ctcvr_label_name: str = "ctcvr_label",
                  share_fn_param: int = 0,
                  ctr_loss_weight: float = 1.0, ctcvr_loss_weight: float = 1.0,
-                 formula="dot",
+                 formula="dot", alpha: float = None,
                  ):
         self.ctr_label_name = ctr_label_name
         self.ctcvr_label_name = ctcvr_label_name
@@ -28,6 +28,7 @@ class ESMMModelConfig(object):
         self.ctr_loss_weight = ctr_loss_weight
         self.ctcvr_loss_weight = ctcvr_loss_weight
         self.formula = formula
+        self.alpha = alpha
 
     @staticmethod
     def handle(data):
@@ -44,6 +45,8 @@ class ESMMModelConfig(object):
             res.ctcvr_loss_weight = data["ctcvr_loss_weight"]
         if "formula" in data:
             res.formula = data["formula"]
+        if "alpha" in data:
+            res.alpha = data["alpha"]
         return res
 
     def __str__(self):
@@ -109,10 +112,13 @@ class ESMM(MultiTower):
         cvr_probs = tf.sigmoid(cvr_logits, name="cvr_probs")
 
         if self._model_config.esmm_model_config.formula == "pow":
-            with tf.variable_scope("esmm", reuse=tf.AUTO_REUSE):
-                alpha = tf.get_variable(name="alpha", shape=[1], dtype=tf.float32,
-                                        initializer=tf.constant_initializer(0.5),
-                                        )
+            if self._model_config.esmm_model_config.alpha:
+                alpha = self._model_config.esmm_model_config.alpha
+            else:
+                with tf.variable_scope("esmm", reuse=tf.AUTO_REUSE):
+                    alpha = tf.get_variable(name="alpha", shape=[1], dtype=tf.float32,
+                                            initializer=tf.constant_initializer(0.5),
+                                            )
             alpha = tf.clip_by_value(alpha, clip_value_min=0.0, clip_value_max=1.0)
             ctcvr_probs = tf.multiply(ctr_probs, tf.pow(cvr_probs, alpha), name="ctcvr_probs")
         else:
