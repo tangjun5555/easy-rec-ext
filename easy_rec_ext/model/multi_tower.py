@@ -7,7 +7,7 @@ import os
 import logging
 import tensorflow as tf
 from easy_rec_ext.layers import dnn
-from easy_rec_ext.layers.interaction import FM, InnerProduct
+from easy_rec_ext.layers.interaction import FM, InnerProduct, OuterProduct
 from easy_rec_ext.core import regularizers
 from easy_rec_ext.model.rank_model import RankModel
 from easy_rec_ext.model.din import DINLayer
@@ -112,6 +112,9 @@ class MultiTower(RankModel):
                     tower_fea_arr.append(fm_layer(tower_fea))
                 elif tower.interaction_config.mode == "inner_product":
                     inner_product_layer = InnerProduct(tower_name + "_" + "inner_product")
+                    tower_fea_arr.append(inner_product_layer(tower_fea))
+                elif tower.interaction_config.mode == "outer_product":
+                    inner_product_layer = OuterProduct(tower_name + "_" + "outer_product")
                     tower_fea_arr.append(inner_product_layer(tower_fea))
                 else:
                     raise ValueError(

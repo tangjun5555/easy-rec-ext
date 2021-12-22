@@ -12,6 +12,19 @@ if tf.__version__ >= "2.0":
 line_sep = "\n" + "##" * 20 + "\n"
 
 
+def test_26():
+    t1 = tf.constant(
+        value=[1.0, 2.0, 3.0],
+        dtype=tf.dtypes.float32,
+    )
+    t2 = tf.constant(
+        value=[1.0, 2.0, 3.0],
+        dtype=tf.dtypes.float32,
+    )
+    r1 = t1 * t2
+    print(r1)
+
+
 def test_25():
     tf.disable_eager_execution()
     from easy_rec_ext.utils import variable_util
