@@ -192,7 +192,7 @@ class ESMM(MultiTower):
                     reduction=metric.reduction
                 )
             elif "pcopc" == metric.name:
-                metric_dict["ctr_pcopc"] = metrics_lib.pcopc(tf.to_float(ctr_label), self._prediction_dict["ctr_probs"])
+                metric_dict["ctr_pcopc"] = metrics_lib.pcopc(tf.to_float(ctr_label), ctr_probs)
                 metric_dict["ctcvr_pcopc"] = metrics_lib.pcopc(tf.to_float(ctcvr_label),
-                                                               self._prediction_dict["ctcvr_probs"])
+                                                               ctcvr_probs)
         return metric_dict
