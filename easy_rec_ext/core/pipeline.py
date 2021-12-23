@@ -7,6 +7,7 @@ from typing import List
 from easy_rec_ext.layers.sequence_pooling import SequencePoolingConfig
 from easy_rec_ext.layers.interaction import InteractionConfig
 from easy_rec_ext.model.esmm import ESMMModelConfig
+from easy_rec_ext.model.aitm import AITMModelConfig
 
 
 class BaseConfig(object):
@@ -606,6 +607,7 @@ class ModelConfig(BaseConfig):
                  feature_groups: List[FeatureGroup],
 
                  esmm_model_config: ESMMModelConfig = None,
+                 aitm_model_config: AITMModelConfig = None,
                  mmoe_model_config: MMoEModelCofing = None,
                  ple_model_config: PLEModelCofing = None,
 
@@ -627,6 +629,7 @@ class ModelConfig(BaseConfig):
         self.feature_groups = feature_groups
 
         self.esmm_model_config = esmm_model_config
+        self.aitm_model_config = aitm_model_config
         self.mmoe_model_config = mmoe_model_config
         self.ple_model_config = ple_model_config
 
@@ -654,6 +657,8 @@ class ModelConfig(BaseConfig):
 
         if "esmm_model_config" in data:
             res.esmm_model_config = ESMMModelConfig.handle(data["esmm_model_config"])
+        if "aitm_model_config" in data:
+            res.aitm_model_config = AITMModelConfig.handle(data["aitm_model_config"])
         if "mmoe_model_config" in data:
             res.mmoe_model_config = MMoEModelCofing.handle(data["mmoe_model_config"])
         if "ple_model_config" in data:
