@@ -109,21 +109,17 @@ class AITM(MultiTower):
         prediction_dict = dict()
         for i in range(len(self._model_config.aitm_model.label_names)):
             task_name = self._model_config.aitm_model.label_names[i]
-
+            assert self._model_config.final_dnn.hidden_units[-1] == attention_dim
             task_raw_logits = dnn.DNN(self._model_config.final_dnn,
                                       self._l2_reg,
                                       task_name + "_" + "final_dnn",
                                       self._is_training,
                                       )(task_all_fea[i])
-            task_raw_logits = tf.layers.dense(task_raw_logits,
-                                              attention_dim,
-                                              activation=tf.nn.relu,
-                                              )
             raw_logits_list.append(task_raw_logits)
 
             if i > 0:
                 info = tf.layers.dense(raw_logits_list[i], attention_dim, activation=tf.nn.relu)
-                task_logits = self.attention(info, task_raw_logits, attention_dim, task_name)
+                task_logits = self.attention(task_raw_logits, info, attention_dim, task_name)
             else:
                 task_logits = task_raw_logits
 
