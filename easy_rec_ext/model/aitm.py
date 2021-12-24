@@ -109,12 +109,20 @@ class AITM(MultiTower):
         prediction_dict = dict()
         for i in range(len(self._model_config.aitm_model.label_names)):
             task_name = self._model_config.aitm_model.label_names[i]
-            assert self._model_config.final_dnn.hidden_units[-1] == attention_dim
             task_raw_logits = dnn.DNN(self._model_config.final_dnn,
                                       self._l2_reg,
                                       task_name + "_" + "final_dnn",
                                       self._is_training,
                                       )(task_all_fea[i])
+            if self._model_config.wide_towers:
+                wide_fea = tf.concat(self._wide_tower_features, axis=1)
+                task_raw_logits = tf.concat([task_raw_logits, wide_fea], axis=1)
+                logging.info("%s build_predict_graph, task:%s, task_raw_logits.shape:%s" % (filename, task_name, str(task_raw_logits.shape)))
+            task_raw_logits = tf.layers.dense(task_raw_logits,
+                                              attention_dim,
+                                              activation=tf.nn.relu,
+                                              name=task_name + "_" + "dnn_last",
+                                              )
             raw_logits_list.append(task_raw_logits)
 
             if i > 0:
@@ -123,10 +131,6 @@ class AITM(MultiTower):
             else:
                 task_logits = task_raw_logits
 
-            if self._model_config.wide_towers:
-                wide_fea = tf.concat(self._wide_tower_features, axis=1)
-                task_logits = tf.concat([task_logits, wide_fea], axis=1)
-                logging.info("%s build_predict_graph, task:%s, task_logits.shape:%s" % (filename, task_name, str(task_logits.shape)))
             if self._model_config.bias_tower:
                 bias_fea = self.build_bias_input_layer(self._model_config.bias_tower.input_group)
                 task_logits = tf.concat([task_logits, bias_fea], axis=1)
