@@ -119,6 +119,7 @@ class ESMM(MultiTower):
                     alpha = tf.get_variable(name="alpha", shape=[1], dtype=tf.float32,
                                             initializer=tf.constant_initializer(0.5),
                                             )
+                    tf.summary.histogram("esmm/alpha", alpha)
             alpha = tf.clip_by_value(alpha, clip_value_min=0.0, clip_value_max=1.0)
             ctcvr_probs = tf.multiply(ctr_probs, tf.pow(cvr_probs, alpha), name="ctcvr_probs")
         else:
