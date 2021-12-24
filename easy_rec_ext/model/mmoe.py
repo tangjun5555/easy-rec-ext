@@ -64,6 +64,7 @@ class MMoE(MultiTower):
                 name="mmoe/gate_%d" % task_id
             )
             gate = tf.expand_dims(gate, -1)
+            tf.summary.histogram("mmoe/gate_%d_weights" % task_id, gate)
             task_input = tf.multiply(experts_fea, gate)
             task_input = tf.reduce_sum(task_input, axis=1)
             task_input_list.append(task_input)

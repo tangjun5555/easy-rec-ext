@@ -74,6 +74,7 @@ class AITM(MultiTower):
         # (N,L)
         a = tf.reduce_sum(tf.multiply(Q, K), axis=-1) / tf.sqrt(tf.cast(inputs.shape[-1], tf.float32))
         a = tf.nn.softmax(a, axis=1)
+        tf.summary.histogram("aitm/%s_attention_score" % name, a)
 
         # (N,L,K)
         outputs = tf.multiply(a[:, :, None], V)
