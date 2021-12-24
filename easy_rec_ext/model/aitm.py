@@ -123,6 +123,15 @@ class AITM(MultiTower):
             else:
                 task_logits = task_raw_logits
 
+            if self._model_config.wide_towers:
+                wide_fea = tf.concat(self._wide_tower_features, axis=1)
+                task_logits = tf.concat([task_logits, wide_fea], axis=1)
+                logging.info("%s build_predict_graph, task:%s, task_logits.shape:%s" % (filename, task_name, str(task_logits.shape)))
+            if self._model_config.bias_tower:
+                bias_fea = self.build_bias_input_layer(self._model_config.bias_tower.input_group)
+                task_logits = tf.concat([task_logits, bias_fea], axis=1)
+                logging.info("%s build_predict_graph, task:%s, task_logits.shape:%s" % (filename, task_name, str(task_logits.shape)))
+
             task_logits = tf.layers.dense(task_logits, 1, name="%s_logits" % task_name)
             task_probs = tf.sigmoid(task_logits, name="%s_probs" % task_name)
             prediction_dict["%s_probs" % task_name] = task_probs
