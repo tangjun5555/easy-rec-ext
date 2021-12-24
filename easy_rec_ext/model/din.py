@@ -40,6 +40,7 @@ class DINLayer(object):
             axis=-1
         )  # (B, seq_max_len, emb_dim*4)
 
+        assert dnn_config.hidden_units[-1] == 1
         din_net = self.dnn_net(din_net, dnn_config.hidden_units, name + "_score")
         scores = tf.reshape(din_net, [-1, 1, seq_max_len])  # (B, 1, ?)
 
