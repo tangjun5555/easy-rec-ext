@@ -38,6 +38,8 @@ class RankEstimator(tf.estimator.Estimator):
             model = MultiTower
         elif self._pipeline_config.model_config.model_class == "esmm":
             model = ESMM
+        elif self._pipeline_config.model_config.model_class == "esmm_v2":
+            model = ESMMV2
         elif self._pipeline_config.model_config.model_class == "aitm":
             model = AITM
         elif self._pipeline_config.model_config.model_class == "mmoe":
