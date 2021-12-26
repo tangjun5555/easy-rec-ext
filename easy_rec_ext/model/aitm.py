@@ -139,7 +139,7 @@ class AITM(MultiTower):
 
             task_logits = tf.layers.dense(task_logits, 1, name="%s_logits" % task_name)
             task_probs = tf.sigmoid(task_logits, name="%s_probs" % task_name)
-            prediction_dict["%s_probs" % task_name] = task_probs
+            prediction_dict["%s_probs" % task_name] = tf.reshape(task_probs, (-1,))
         self._add_to_prediction_dict(prediction_dict)
         return self._prediction_dict
 
