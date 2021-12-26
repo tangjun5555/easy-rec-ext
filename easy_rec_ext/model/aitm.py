@@ -83,11 +83,11 @@ class AITM(MultiTower):
     def build_predict_graph(self):
         task_tower_fea_arr = []
         task_all_fea = []
-        if self._model_config.aitm_model.share_fn_param == 1:
+        if self._model_config.aitm_model_config.share_fn_param == 1:
             tower_fea_arr = self.build_tower_fea_arr()
             all_fea = tf.concat(tower_fea_arr, axis=1)
-            for i in range(len(self._model_config.aitm_model.label_names)):
-                task_name = self._model_config.aitm_model.label_names[i]
+            for i in range(len(self._model_config.aitm_model_config.label_names)):
+                task_name = self._model_config.aitm_model_config.label_names[i]
                 task_tower_fea_arr.append(tower_fea_arr)
                 task_all_fea.append(all_fea)
                 logging.info("%s build_predict_graph, task:%s, tower_fea_arr.length:%s" % (
@@ -95,7 +95,7 @@ class AITM(MultiTower):
                 logging.info(
                     "%s build_predict_graph, task:%s, all_fea.shape:%s" % (filename, task_name, str(all_fea.shape)))
         else:
-            for task_name in self._model_config.aitm_model.label_names:
+            for task_name in self._model_config.aitm_model_config.label_names:
                 tower_fea_arr = self.build_tower_fea_arr(variable_scope="task_%s" % task_name)
                 all_fea = tf.concat(tower_fea_arr, axis=1)
                 task_tower_fea_arr.append(tower_fea_arr)
@@ -105,11 +105,11 @@ class AITM(MultiTower):
                 logging.info(
                     "%s build_predict_graph, task:%s, all_fea.shape:%s" % (filename, task_name, str(all_fea.shape)))
 
-        attention_dim = self._model_config.aitm_model.attention_dim
+        attention_dim = self._model_config.aitm_model_config.attention_dim
         raw_logits_list = [None]
         prediction_dict = dict()
-        for i in range(len(self._model_config.aitm_model.label_names)):
-            task_name = self._model_config.aitm_model.label_names[i]
+        for i in range(len(self._model_config.aitm_model_config.label_names)):
+            task_name = self._model_config.aitm_model_config.label_names[i]
             task_raw_logits = dnn.DNN(self._model_config.final_dnn,
                                       self._l2_reg,
                                       task_name + "_" + "final_dnn",
@@ -144,18 +144,18 @@ class AITM(MultiTower):
         return self._prediction_dict
 
     def build_loss_graph(self):
-        for i in range(len(self._model_config.aitm_model.label_names)):
-            task_name = self._model_config.aitm_model.label_names[i]
+        for i in range(len(self._model_config.aitm_model_config.label_names)):
+            task_name = self._model_config.aitm_model_config.label_names[i]
             task_probs = self._prediction_dict["%s_probs" % task_name]
-            logloss = self._model_config.aitm_model.loss_weight_dict.get(task_name, 1.0) * tf.losses.log_loss(
+            logloss = self._model_config.aitm_model_config.loss_weight_dict.get(task_name, 1.0) * tf.losses.log_loss(
                 labels=tf.cast(self._labels[task_name], tf.float32),
                 predictions=task_probs,
             )
             self._loss_dict["%s_cross_entropy_loss" % task_name] = logloss
 
             if i > 0:
-                prev_task_name = self._model_config.aitm_model.label_names[i - 1]
-                label_constraint_loss = self._model_config.aitm_model.label_constraint_loss_weight * tf.reduce_mean(
+                prev_task_name = self._model_config.aitm_model_config.label_names[i - 1]
+                label_constraint_loss = self._model_config.aitm_model_config.label_constraint_loss_weight * tf.reduce_mean(
                     tf.maximum(task_probs - self._prediction_dict["%s_probs" % prev_task_name],
                                tf.zeros_like(task_probs)), axis=0
                 )
@@ -175,8 +175,8 @@ class AITM(MultiTower):
     def build_metric_graph(self, eval_config):
         metric_dict = {}
 
-        for i in range(len(self._model_config.aitm_model.label_names)):
-            task_name = self._model_config.aitm_model.label_names[i]
+        for i in range(len(self._model_config.aitm_model_config.label_names)):
+            task_name = self._model_config.aitm_model_config.label_names[i]
             task_probs = self._prediction_dict["%s_probs" % task_name]
             task_label = self._labels[task_name]
 
