@@ -5,6 +5,7 @@
 
 import os
 import logging
+from collections import OrderedDict
 from typing import List, Dict
 from easy_rec_ext.model.multi_tower import MultiTower
 from easy_rec_ext.layers import dnn
@@ -107,7 +108,7 @@ class AITM(MultiTower):
 
         attention_dim = self._model_config.aitm_model_config.attention_dim
         raw_logits_list = [None]
-        prediction_dict = dict()
+        prediction_dict = OrderedDict()
         for i in range(len(self._model_config.aitm_model_config.label_names)):
             task_name = self._model_config.aitm_model_config.label_names[i]
             task_raw_logits = dnn.DNN(self._model_config.final_dnn,
@@ -173,7 +174,7 @@ class AITM(MultiTower):
         return self._loss_dict
 
     def build_metric_graph(self, eval_config):
-        metric_dict = {}
+        metric_dict = OrderedDict()
 
         for i in range(len(self._model_config.aitm_model_config.label_names)):
             task_name = self._model_config.aitm_model_config.label_names[i]

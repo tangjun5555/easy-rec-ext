@@ -5,6 +5,7 @@
 
 import os
 import logging
+from collections import OrderedDict
 import tensorflow as tf
 from easy_rec_ext.model.multi_tower import MultiTower
 from easy_rec_ext.layers import dnn
@@ -126,7 +127,7 @@ class ESMM(MultiTower):
             ctcvr_probs = tf.multiply(ctr_probs, cvr_probs, name="ctcvr_probs")
         all_probs = tf.concat([ctr_probs, cvr_probs, ctcvr_probs], axis=-1, name="all_probs")
 
-        prediction_dict = dict()
+        prediction_dict = OrderedDict()
         if self._model_config.esmm_model_config.formula == "pow":
             prediction_dict["alpha"] = alpha
         prediction_dict["ctr_probs"] = tf.reshape(ctr_probs, (-1,))
@@ -173,7 +174,7 @@ class ESMM(MultiTower):
         ctr_label = self._labels[self._model_config.esmm_model_config.ctr_label_name]
         ctcvr_label = self._labels[self._model_config.esmm_model_config.ctcvr_label_name]
 
-        metric_dict = {}
+        metric_dict = OrderedDict()
         for metric in eval_config.metric_set:
             if "auc" == metric.name:
                 metric_dict["ctr_auc"] = tf.metrics.auc(tf.to_int64(ctr_label), ctr_probs)

@@ -5,6 +5,7 @@
 
 import logging
 from abc import abstractmethod
+from collections import OrderedDict
 from easy_rec_ext.core import embedding_ops
 from easy_rec_ext.core import regularizers
 import easy_rec_ext.core.metrics as metrics_lib
@@ -38,8 +39,8 @@ class RankModel(object):
         self._emb_reg = regularizers.l2_regularizer(self._model_config.embedding_regularization)
         self._l2_reg = regularizers.l2_regularizer(self._model_config.l2_regularization)
 
-        self._prediction_dict = {}
-        self._loss_dict = {}
+        self._prediction_dict = OrderedDict()
+        self._loss_dict = OrderedDict()
 
         self._feature_groups_dict = {
             feature_group.group_name: feature_group
