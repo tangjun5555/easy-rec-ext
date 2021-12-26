@@ -156,8 +156,8 @@ class AITM(MultiTower):
             if i > 0:
                 prev_task_name = self._model_config.aitm_model_config.label_names[i - 1]
                 label_constraint_loss = self._model_config.aitm_model_config.label_constraint_loss_weight * tf.reduce_mean(
-                    tf.maximum(task_probs - self._prediction_dict["%s_probs" % prev_task_name],
-                               tf.zeros_like(task_probs)), axis=0
+                    tf.maximum(task_probs - self._prediction_dict["%s_probs" % prev_task_name], tf.zeros_like(task_probs)),
+                    axis=0
                 )
                 self._loss_dict["%s_%s_label_constraint_loss" % (prev_task_name, task_name)] = label_constraint_loss
 
