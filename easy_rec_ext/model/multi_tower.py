@@ -127,7 +127,7 @@ class MultiTower(RankModel):
 
             with tf.variable_scope(variable_scope, reuse=tf.AUTO_REUSE):
                 din_layer = DINLayer()
-                tower_fea = din_layer.din(tower.din_config, tower_fea, name="%s_din" % tower.input_group)
+                tower_fea = din_layer.din(tower.din_config.dnn_config, tower_fea, name="%s_din" % tower.input_group)
                 tower_fea_arr.append(tower_fea)
 
         for tower_id in range(self._bst_tower_num):

@@ -7,6 +7,7 @@ from typing import List
 from easy_rec_ext.layers.dnn import DNNConfig, DNNTower
 from easy_rec_ext.layers.sequence_pooling import SequencePoolingConfig
 from easy_rec_ext.layers.interaction import InteractionConfig
+from easy_rec_ext.model.din import DINTower
 from easy_rec_ext.model.esmm import ESMMModelConfig
 from easy_rec_ext.model.esmm_v2 import ESMMV2ModelConfig
 from easy_rec_ext.model.aitm import AITMModelConfig
@@ -463,39 +464,6 @@ class InteractionTower(BaseConfig):
     def handle(data):
         interaction_config = InteractionConfig.handle(data["interaction_config"])
         res = InteractionTower(data["input_group"], interaction_config)
-        return res
-
-
-class DINConfig(DNNConfig):
-    def __init__(self, hidden_units: List[int],
-                 activation: str = "tf.nn.relu",
-                 use_bn: bool = True,
-                 dropout_ratio=None
-                 ):
-        super(DINConfig, self).__init__(hidden_units, activation, use_bn, dropout_ratio)
-        assert hidden_units and hidden_units[-1] == 1
-
-    @staticmethod
-    def handle(data):
-        res = DINConfig(data["hidden_units"])
-        if "activation" in data:
-            res.activation = data["activation"]
-        if "use_bn" in data:
-            res.use_bn = data["use_bn"]
-        if "dropout_ratio" in data:
-            res.dropout_ratio = data["dropout_ratio"]
-        return res
-
-
-class DINTower(BaseConfig):
-    def __init__(self, input_group, din_config: DINConfig):
-        self.input_group = input_group
-        self.din_config = din_config
-
-    @staticmethod
-    def handle(data):
-        din_config = DINConfig.handle(data["din_config"])
-        res = DINTower(data["input_group"], din_config)
         return res
 
 

@@ -14,15 +14,36 @@ if tf.__version__ >= "2.0":
     tf = tf.compat.v1
 
 
-class DINLayer(object):
-    def dnn_net(self, net, dnn_units, name):
-        with tf.variable_scope(name_or_scope=name, reuse=tf.AUTO_REUSE):
-            for idx, units in enumerate(dnn_units):
-                net = tf.layers.dense(
-                    net, units=units, activation=tf.nn.relu, name="%s_%d" % (name, idx)
-                )
-        return net
+class DINConfig(object):
+    def __init__(self, dnn_config: dnn.DNNConfig):
+        self.dnn_config = dnn_config
 
+    @staticmethod
+    def handle(data):
+        dnn_config = dnn.DNNConfig.handle(data["dnn_config"])
+        res = DINConfig(dnn_config)
+        return res
+
+    def __str__(self):
+        return str(self.__dict__)
+
+
+class DINTower(object):
+    def __init__(self, input_group, din_config: DINConfig):
+        self.input_group = input_group
+        self.din_config = din_config
+
+    @staticmethod
+    def handle(data):
+        din_config = DINConfig.handle(data["din_config"])
+        res = DINTower(data["input_group"], din_config)
+        return res
+
+    def __str__(self):
+        return str(self.__dict__)
+
+
+class DINLayer(object):
     def din(self, dnn_config, deep_fea, name):
         cur_id, hist_id_col, seq_len = deep_fea["key"], deep_fea["hist_seq_emb"], deep_fea["hist_seq_len"]
 
@@ -41,7 +62,7 @@ class DINLayer(object):
         )  # (B, seq_max_len, emb_dim*4)
 
         assert dnn_config.hidden_units[-1] == 1
-        din_net = self.dnn_net(din_net, dnn_config.hidden_units, name + "_score")
+        din_net = dnn.DNN(dnn_config, None, name=name + "_attention")(din_net)
         scores = tf.reshape(din_net, [-1, 1, seq_max_len])  # (B, 1, ?)
 
         seq_len = tf.expand_dims(seq_len, 1)
@@ -108,7 +129,7 @@ class DIN(RankModel, DINLayer):
             tower_fea = self._din_tower_features[tower_id]
             tower = self._model_config.din_towers[tower_id]
             tower_name = tower.input_group
-            tower_fea = self.din(tower.din_config, tower_fea, name="%s_dnn" % tower_name)
+            tower_fea = self.din(tower.din_config.dnn_config, tower_fea, name="%s_dnn" % tower_name)
             tower_fea_arr.append(tower_fea)
 
         all_fea = tf.concat(tower_fea_arr, axis=1)
