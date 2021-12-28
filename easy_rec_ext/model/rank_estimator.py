@@ -34,6 +34,8 @@ class RankEstimator(tf.estimator.Estimator):
             model = DIN
         elif self._pipeline_config.model_config.model_class == "bst":
             model = BST
+        elif self._pipeline_config.model_config.model_class == "DIEN":
+            model = DIEN
         elif self._pipeline_config.model_config.model_class == "multi_tower":
             model = MultiTower
         elif self._pipeline_config.model_config.model_class == "esmm":
