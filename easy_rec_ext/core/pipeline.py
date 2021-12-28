@@ -4,6 +4,7 @@
 # desc:
 
 from typing import List
+from easy_rec_ext.layers.dnn import DNNConfig, DNNTower
 from easy_rec_ext.layers.sequence_pooling import SequencePoolingConfig
 from easy_rec_ext.layers.interaction import InteractionConfig
 from easy_rec_ext.model.esmm import ESMMModelConfig
@@ -450,41 +451,6 @@ class ExportConfig(BaseConfig):
     @staticmethod
     def handle(data):
         res = ExportConfig(data["export_dir"])
-        return res
-
-
-class DNNConfig(BaseConfig):
-    def __init__(self, hidden_units: List[int],
-                 activation: str = "tf.nn.relu",
-                 use_bn: bool = True,
-                 dropout_ratio: List[float] = None
-                 ):
-        self.hidden_units = hidden_units
-        self.activation = activation
-        self.use_bn = use_bn
-        self.dropout_ratio = dropout_ratio
-
-    @staticmethod
-    def handle(data):
-        res = DNNConfig(data["hidden_units"])
-        if "activation" in data:
-            res.activation = data["activation"]
-        if "use_bn" in data:
-            res.use_bn = data["use_bn"]
-        if "dropout_ratio" in data:
-            res.dropout_ratio = data["dropout_ratio"]
-        return res
-
-
-class DNNTower(BaseConfig):
-    def __init__(self, input_group: str, dnn_config: DNNConfig):
-        self.input_group = input_group
-        self.dnn_config = dnn_config
-
-    @staticmethod
-    def handle(data):
-        dnn_config = DNNConfig.handle(data["dnn_config"])
-        res = DNNTower(data["input_group"], dnn_config)
         return res
 
 
