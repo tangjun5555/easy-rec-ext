@@ -140,7 +140,7 @@ class MultiTower(RankModel):
                     tower_fea,
                     seq_size=tower.bst_config.seq_size,
                     head_count=tower.bst_config.multi_head_size,
-                    name=tower.input_group,
+                    name="%s_bst" % tower.input_group,
                 )
                 tower_fea_arr.append(tower_fea)
 

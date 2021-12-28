@@ -129,7 +129,7 @@ class DIN(RankModel, DINLayer):
             tower_fea = self._din_tower_features[tower_id]
             tower = self._model_config.din_towers[tower_id]
             tower_name = tower.input_group
-            tower_fea = self.din(tower.din_config.dnn_config, tower_fea, name="%s_dnn" % tower_name)
+            tower_fea = self.din(tower.din_config.dnn_config, tower_fea, name="%s_din" % tower_name)
             tower_fea_arr.append(tower_fea)
 
         all_fea = tf.concat(tower_fea_arr, axis=1)

@@ -12,6 +12,27 @@ if tf.__version__ >= "2.0":
 line_sep = "\n" + "##" * 20 + "\n"
 
 
+def test_27():
+    t1 = tf.constant(
+        value=[
+            [1.0] * 4,
+            [2.0] * 4,
+            [3.0] * 4
+        ],
+        dtype=tf.dtypes.float32,
+    )
+    t2 = tf.constant(
+        # value=[[10.0], [20.0], [30.0]],
+        value=[10, 20, 30],
+        dtype=tf.dtypes.float32,
+    )
+    r1 = tf.math.multiply(t1, t2)
+
+    print(t1)
+    print(t2)
+    print(r1)
+
+
 def test_26():
     t1 = tf.constant(
         value=[1.0, 2.0, 3.0],
