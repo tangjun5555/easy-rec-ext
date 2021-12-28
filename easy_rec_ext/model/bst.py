@@ -196,7 +196,6 @@ class BST(RankModel, BSTLayer):
         probs = tf.sigmoid(logits, name="probs")
 
         prediction_dict = dict()
-        prediction_dict["logits"] = logits
         prediction_dict["probs"] = probs
         self._add_to_prediction_dict(prediction_dict)
         return self._prediction_dict
