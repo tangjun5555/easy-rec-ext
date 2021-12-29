@@ -8,6 +8,7 @@ from easy_rec_ext.layers.dnn import DNNConfig, DNNTower
 from easy_rec_ext.layers.sequence_pooling import SequencePoolingConfig
 from easy_rec_ext.layers.interaction import InteractionConfig
 from easy_rec_ext.model.din import DINTower
+from easy_rec_ext.model.bst import BSTTower
 from easy_rec_ext.model.esmm import ESMMModelConfig
 from easy_rec_ext.model.esmm_v2 import ESMMV2ModelConfig
 from easy_rec_ext.model.aitm import AITMModelConfig
@@ -464,34 +465,6 @@ class InteractionTower(BaseConfig):
     def handle(data):
         interaction_config = InteractionConfig.handle(data["interaction_config"])
         res = InteractionTower(data["input_group"], interaction_config)
-        return res
-
-
-class BSTConfig(BaseConfig):
-    def __init__(self, seq_size, multi_head_size: int = 4, use_positional_encoding: int = 0):
-        self.seq_size = seq_size
-        self.multi_head_size = multi_head_size
-        self.use_positional_encoding = use_positional_encoding
-
-    @staticmethod
-    def handle(data):
-        res = BSTConfig(data["seq_size"])
-        if "multi_head_size" in data:
-            res.multi_head_size = data["multi_head_size"]
-        if "use_positional_encoding" in data:
-            res.use_positional_encoding = data["use_positional_encoding"]
-        return res
-
-
-class BSTTower(BaseConfig):
-    def __init__(self, input_group, bst_config: BSTConfig):
-        self.input_group = input_group
-        self.bst_config = bst_config
-
-    @staticmethod
-    def handle(data):
-        bst_config = BSTConfig.handle(data["bst_config"])
-        res = BSTTower(data["input_group"], bst_config)
         return res
 
 

@@ -139,8 +139,12 @@ class MultiTower(RankModel):
 
             with tf.variable_scope(variable_scope, reuse=tf.AUTO_REUSE):
                 din_layer = DINLayer()
-                tower_fea = din_layer.din(tower.din_config.dnn_config, tower_fea, name="%s_din" % tower.input_group,
-                                          return_target=tower.din_config.return_target)
+                tower_fea = din_layer.din(
+                    tower.din_config.dnn_config,
+                    tower_fea,
+                    name="%s_din" % tower.input_group,
+                    return_target=tower.din_config.return_target
+                )
                 tower_fea_arr.append(tower_fea)
 
         for tower_id in range(self._bst_tower_num):
@@ -154,6 +158,8 @@ class MultiTower(RankModel):
                     seq_size=tower.bst_config.seq_size,
                     head_count=tower.bst_config.multi_head_size,
                     name="%s_bst" % tower.input_group,
+                    use_positional_encoding=tower.bst_config.use_positional_encoding,
+                    return_target=tower.bst_config.return_target,
                 )
                 tower_fea_arr.append(tower_fea)
 

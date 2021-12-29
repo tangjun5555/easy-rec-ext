@@ -15,6 +15,44 @@ if tf.__version__ >= "2.0":
     tf = tf.compat.v1
 
 
+class BSTConfig(object):
+    def __init__(self, seq_size, multi_head_size: int = 4, use_positional_encoding: int = 0,
+                 return_target: bool = True):
+        self.seq_size = seq_size
+        self.multi_head_size = multi_head_size
+        self.use_positional_encoding = use_positional_encoding
+        self.return_target = return_target
+
+    @staticmethod
+    def handle(data):
+        res = BSTConfig(data["seq_size"])
+        if "multi_head_size" in data:
+            res.multi_head_size = data["multi_head_size"]
+        if "use_positional_encoding" in data:
+            res.use_positional_encoding = data["use_positional_encoding"]
+        if "return_target" in data:
+            res.return_target = data["return_target"]
+        return res
+
+    def __str__(self):
+        return str(self.__dict__)
+
+
+class BSTTower(object):
+    def __init__(self, input_group, bst_config: BSTConfig):
+        self.input_group = input_group
+        self.bst_config = bst_config
+
+    @staticmethod
+    def handle(data):
+        bst_config = BSTConfig.handle(data["bst_config"])
+        res = BSTTower(data["input_group"], bst_config)
+        return res
+
+    def __str__(self):
+        return str(self.__dict__)
+
+
 class BSTLayer(object):
     def dnn_net(self, net, dnn_units, name):
         with tf.variable_scope(name_or_scope=name, reuse=tf.AUTO_REUSE):
@@ -81,7 +119,7 @@ class BSTLayer(object):
         net = layer(net)
         return net
 
-    def bst(self, bst_fea, seq_size, head_count, name, use_positional_encoding=1):
+    def bst(self, bst_fea, seq_size, head_count, name, use_positional_encoding=1, return_target=True):
         cur_id, hist_id_col, seq_len = bst_fea["key"], bst_fea["hist_seq_emb"], bst_fea["hist_seq_len"]
 
         # emb_dim = tf.shape(hist_id_col)[2]
@@ -111,7 +149,9 @@ class BSTLayer(object):
 
         # bst_output = tf.reshape(net, [-1, seq_size * emb_dim])
         bst_output = tf.reduce_sum(net, axis=1, keepdims=False)
-        bst_output = tf.concat([bst_output, cur_id], axis=1)
+
+        if return_target:
+            bst_output = tf.concat([bst_output, cur_id], axis=1)
         logging.info("bst %s, bst_output.shape:%s" % (name, str(bst_output.shape)))
         return bst_output
 
@@ -175,8 +215,9 @@ class BST(RankModel, BSTLayer):
                 tower_fea,
                 seq_size=tower.bst_config.seq_size,
                 head_count=tower.bst_config.multi_head_size,
-                name=tower.input_group,
+                name="%s_bst" % tower.input_group,
                 use_positional_encoding=tower.bst_config.use_positional_encoding,
+                return_target=tower.bst_config.return_target,
             )
             tower_fea_arr.append(tower_fea)
 
