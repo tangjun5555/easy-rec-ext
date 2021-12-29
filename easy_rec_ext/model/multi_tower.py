@@ -173,6 +173,7 @@ class MultiTower(RankModel):
                     name="%s_dien" % tower.input_group,
                     deep_fea=tower_fea,
                     combine_mechanism=tower.dien_config.combine_mechanism,
+                    return_target=tower.dien_config.return_target,
                 )
                 tower_fea_arr.append(tower_fea)
 

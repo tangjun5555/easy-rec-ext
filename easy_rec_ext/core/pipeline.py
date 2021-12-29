@@ -9,6 +9,7 @@ from easy_rec_ext.layers.sequence_pooling import SequencePoolingConfig
 from easy_rec_ext.layers.interaction import InteractionConfig
 from easy_rec_ext.model.din import DINTower
 from easy_rec_ext.model.bst import BSTTower
+from easy_rec_ext.model.dien import DIENTower
 from easy_rec_ext.model.esmm import ESMMModelConfig
 from easy_rec_ext.model.esmm_v2 import ESMMV2ModelConfig
 from easy_rec_ext.model.aitm import AITMModelConfig
@@ -525,6 +526,7 @@ class ModelConfig(BaseConfig):
                  interaction_towers: List[InteractionTower] = None,
                  din_towers: List[DINTower] = None,
                  bst_towers: List[BSTTower] = None,
+                 dien_towers: List[DIENTower] = None,
 
                  final_dnn: DNNConfig = None,
                  bias_tower: BiasTower = None,
@@ -548,6 +550,7 @@ class ModelConfig(BaseConfig):
         self.interaction_towers = interaction_towers
         self.din_towers = din_towers
         self.bst_towers = bst_towers
+        self.dien_towers = dien_towers
 
         self.final_dnn = final_dnn
         self.bias_tower = bias_tower
@@ -598,6 +601,11 @@ class ModelConfig(BaseConfig):
             for tower in data["bst_towers"]:
                 bst_towers.append(BSTTower.handle(tower))
             res.bst_towers = bst_towers
+        if "dien_towers" in data:
+            dien_towers = []
+            for tower in data["dien_towers"]:
+                dien_towers.append(DIENTower.handle(tower))
+            res.dien_towers = dien_towers
 
         if "final_dnn" in data:
             res.final_dnn = DNNConfig.handle(data["final_dnn"])
