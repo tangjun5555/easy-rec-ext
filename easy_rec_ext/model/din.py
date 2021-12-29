@@ -15,13 +15,16 @@ if tf.__version__ >= "2.0":
 
 
 class DINConfig(object):
-    def __init__(self, dnn_config: dnn.DNNConfig):
+    def __init__(self, dnn_config: dnn.DNNConfig, return_target=True):
         self.dnn_config = dnn_config
+        self.return_target = return_target
 
     @staticmethod
     def handle(data):
         dnn_config = dnn.DNNConfig.handle(data["dnn_config"])
         res = DINConfig(dnn_config)
+        if "return_target" in data:
+            res.return_target = data["return_target"]
         return res
 
     def __str__(self):
@@ -44,7 +47,7 @@ class DINTower(object):
 
 
 class DINLayer(object):
-    def din(self, dnn_config, deep_fea, name):
+    def din(self, dnn_config, deep_fea, name, return_target=True):
         cur_id, hist_id_col, seq_len = deep_fea["key"], deep_fea["hist_seq_emb"], deep_fea["hist_seq_len"]
 
         seq_max_len = tf.shape(hist_id_col)[1]
@@ -74,7 +77,9 @@ class DINLayer(object):
         scores = tf.nn.softmax(scores)  # (B, 1, seq_max_len)
         din_output = tf.matmul(scores, hist_id_col)  # [B, 1, emb_dim]
         din_output = tf.reshape(din_output, [-1, emb_dim])  # [B, emb_dim]
-        din_output = tf.concat([din_output, cur_id], axis=1)
+
+        if return_target:
+            din_output = tf.concat([din_output, cur_id], axis=1)
         logging.info("din %s, din_output.shape:%s" % (name, str(din_output.shape)))
         return din_output
 
@@ -129,7 +134,8 @@ class DIN(RankModel, DINLayer):
             tower_fea = self._din_tower_features[tower_id]
             tower = self._model_config.din_towers[tower_id]
             tower_name = tower.input_group
-            tower_fea = self.din(tower.din_config.dnn_config, tower_fea, name="%s_din" % tower_name)
+            tower_fea = self.din(tower.din_config.dnn_config, tower_fea, name="%s_din" % tower_name,
+                                 return_target=tower.din_config.return_target)
             tower_fea_arr.append(tower_fea)
 
         all_fea = tf.concat(tower_fea_arr, axis=1)
