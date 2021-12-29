@@ -12,6 +12,21 @@ if tf.__version__ >= "2.0":
 line_sep = "\n" + "##" * 20 + "\n"
 
 
+def test_28():
+    t1 = tf.constant(
+        value=[
+            [-2 ** 32 + 1, 1, -2 ** 32 + 1],
+            [-2 ** 32 + 1, 5, -2 ** 32 + 1],
+            [-2 ** 32 + 1, 210, -2 ** 32 + 1],
+        ],
+        dtype=tf.dtypes.float32,
+    )
+    r1 = tf.nn.softmax(t1)
+
+    print(t1)
+    print(r1)
+
+
 def test_27():
     t1 = tf.constant(
         value=[

@@ -49,7 +49,6 @@ class DINTower(object):
 class DINLayer(object):
     def din(self, dnn_config, deep_fea, name, return_target=True):
         cur_id, hist_id_col, seq_len = deep_fea["key"], deep_fea["hist_seq_emb"], deep_fea["hist_seq_len"]
-
         seq_max_len = tf.shape(hist_id_col)[1]
         emb_dim = hist_id_col.shape[2]
 
@@ -68,6 +67,7 @@ class DINLayer(object):
         din_net = dnn.DNN(dnn_config, None, name=name + "_attention")(din_net)
         scores = tf.reshape(din_net, [-1, 1, seq_max_len])  # (B, 1, ?)
 
+        # mask
         seq_len = tf.expand_dims(seq_len, 1)
         mask = tf.sequence_mask(seq_len, seq_max_len)
         padding = tf.ones_like(scores) * (-2 ** 32 + 1)
@@ -75,6 +75,7 @@ class DINLayer(object):
 
         # Scale
         scores = tf.nn.softmax(scores)  # (B, 1, seq_max_len)
+
         din_output = tf.matmul(scores, hist_id_col)  # [B, 1, emb_dim]
         din_output = tf.reshape(din_output, [-1, emb_dim])  # [B, emb_dim]
 
