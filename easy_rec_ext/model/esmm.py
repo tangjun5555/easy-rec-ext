@@ -8,17 +8,16 @@ import logging
 from typing import List, Dict
 from collections import OrderedDict
 import tensorflow as tf
+import easy_rec_ext.core.metrics as metrics_lib
 from easy_rec_ext.model.multi_tower import MultiTower
 from easy_rec_ext.layers import dnn
-import easy_rec_ext.core.metrics as metrics_lib
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
-
 filename = str(os.path.basename(__file__)).split(".")[0]
 
 
-class ESMMV2ModelConfig(object):
+class ESMMModelConfig(object):
     def __init__(self, label_names: List[str],
                  share_fn_param: int = 0,
                  loss_weight_dict: Dict = None,
@@ -29,7 +28,7 @@ class ESMMV2ModelConfig(object):
 
     @staticmethod
     def handle(data):
-        res = ESMMV2ModelConfig(data["label_names"])
+        res = ESMMModelConfig(data["label_names"])
         if "share_fn_param" in data:
             res.share_fn_param = data["share_fn_param"]
         if "loss_weight_dict" in data:
@@ -40,7 +39,7 @@ class ESMMV2ModelConfig(object):
         return str(self.__dict__)
 
 
-class ESMMV2(MultiTower):
+class ESMM(MultiTower):
     def __init__(self,
                  model_config,
                  feature_config,
@@ -48,10 +47,10 @@ class ESMMV2(MultiTower):
                  labels=None,
                  is_training=False,
                  ):
-        super(ESMMV2, self).__init__(model_config, feature_config, features, labels, is_training)
+        super(ESMM, self).__init__(model_config, feature_config, features, labels, is_training)
 
     def build_predict_graph(self):
-        model_config = self._model_config.esmm_v2_model_config
+        model_config = self._model_config.esmm_model_config
 
         task_tower_fea_arr_list = []
         task_all_fea_list = []
@@ -110,7 +109,7 @@ class ESMMV2(MultiTower):
         return self._prediction_dict
 
     def build_loss_graph(self):
-        model_config = self._model_config.esmm_v2_model_config
+        model_config = self._model_config.esmm_model_config
 
         prev_probs = None
         for i in range(len(model_config.label_names)):
@@ -143,7 +142,7 @@ class ESMMV2(MultiTower):
         return self._loss_dict
 
     def build_metric_graph(self, eval_config):
-        model_config = self._model_config.esmm_v2_model_config
+        model_config = self._model_config.esmm_model_config
 
         metric_dict = OrderedDict()
         prev_probs = None
