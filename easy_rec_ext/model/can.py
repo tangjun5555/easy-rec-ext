@@ -18,12 +18,13 @@ filename = str(os.path.basename(__file__)).split(".")[0]
 
 
 class CANConfig(object):
-    def __init__(self, mlp_units: List[int]):
+    def __init__(self, mlp_units: List[int], item_vocab_size):
         self.mlp_units = mlp_units
+        self.item_vocab_size = item_vocab_size
 
     @staticmethod
     def handle(data):
-        res = CANConfig(data["mlp_units"])
+        res = CANConfig(data["mlp_units"], data["item_vocab_size"])
         return res
 
     def __str__(self):
@@ -58,7 +59,6 @@ class CANLayer(object):
                     server as the weight and bias
             item_vocab_size:
             mlp_units:
-
         Returns:
             2D tensor with shape: (batch_size, sum(mlp_units))
         """
@@ -134,17 +134,16 @@ class CAN(RankModel, CANLayer):
             tower_feature = self.build_input_layer(tower.input_group)
             self._dnn_tower_features.append(tower_feature)
 
-        self._can_tower_num = len(self._model_config.can_towers)
+        self._can_tower_num = len(self._model_config.can_towers) if self._model_config.can_towers else 0
         self._can_tower_features = []
         for tower_id in range(self._can_tower_num):
             tower = self._model_config.can_towers[tower_id]
             # TODO, item使用原始id
             group_feature = self.build_seq_att_input_layer(tower.input_group)
+            regularizers.apply_regularization(self._emb_reg, weights_list=[group_feature["hist_seq_emb"]])
             tower_feature = dict()
             tower_feature["user_value"] = group_feature["hist_seq_emb"]
             tower_feature["item_value"] = group_feature["key"]
-            regularizers.apply_regularization(self._emb_reg, weights_list=[tower_feature["item_value"]])
-            regularizers.apply_regularization(self._emb_reg, weights_list=[tower_feature["user_value"]])
             self._can_tower_features.append(tower_feature)
 
         logging.info("all tower num: {0}".format(self._dnn_tower_num + self._can_tower_num))

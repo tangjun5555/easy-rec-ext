@@ -3,6 +3,7 @@
 # time: 2021/7/30 4:41 下午
 # desc:
 
+import os
 import logging
 from abc import abstractmethod
 from collections import OrderedDict
@@ -15,6 +16,7 @@ import tensorflow as tf
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
+filename = str(os.path.basename(__file__)).split(".")[0]
 
 
 class RankModel(object):
@@ -110,6 +112,20 @@ class RankModel(object):
             outputs.append(group_input_dict[feature_field.input_name])
 
         outputs = tf.concat(outputs, axis=1)
+        return outputs
+
+    def build_cross_interaction_input_layer(self, feature_group):
+        outputs = {}
+        feature_group = self._feature_groups_dict[feature_group]
+        logging.info("%s build_cross_interaction_input_layer, feature_group:%s" % (filename, str(feature_group)))
+
+        user_outputs = []
+        item_outputs = []
+        for cross_interaction_map in feature_group.cross_interaction_map_list:
+            feature_field = self._feature_fields_dict[cross_interaction_map.user_key]
+
+        outputs["user_value"] = tf.concat(user_outputs, axis=1)
+        outputs["item_value"] = tf.concat(item_outputs, axis=1)
         return outputs
 
     def build_seq_att_input_layer(self, feature_group):

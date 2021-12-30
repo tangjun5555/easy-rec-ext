@@ -25,12 +25,14 @@ class InputField(BaseConfig):
     def __init__(self, input_name: str, input_type: str):
         self.input_name = input_name
         self.input_type = input_type
-        assert self.input_name, "input_name must not be empty"
-        assert self.input_type in ["int", "float", "string"], "input_type must in [int,float,string]"
 
     @staticmethod
     def handle(data):
-        res = InputField(data["input_name"], data["input_type"])
+        input_name = data["input_name"]
+        input_type = data["input_type"]
+        assert input_name, "input_name must not be empty"
+        assert input_type in ["int", "float", "string"], "input_type must in [int,float,string]"
+        res = InputField(input_name, input_type)
         return res
 
 
@@ -172,6 +174,22 @@ class SeqAttMap(BaseConfig):
     @staticmethod
     def handle(data):
         res = SeqAttMap(data["key"], data["hist_seq"])
+        return res
+
+
+class CrossInteractionMap(BaseConfig):
+    def __init__(self, user_key: str, item_key: str):
+        self.user_key = user_key
+        self.item_key = item_key
+
+    @staticmethod
+    def handle(data):
+        user_key = data["user_key"]
+        item_key = data["item_key"]
+        assert user_key
+        assert item_key
+        assert user_key != item_key
+        res = CrossInteractionMap(user_key, item_key)
         return res
 
 
