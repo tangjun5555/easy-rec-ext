@@ -11,7 +11,6 @@ from easy_rec_ext.model.din import DINTower
 from easy_rec_ext.model.bst import BSTTower
 from easy_rec_ext.model.dien import DIENTower
 from easy_rec_ext.model.esmm import ESMMModelConfig
-from easy_rec_ext.model.esmm_v2 import ESMMV2ModelConfig
 from easy_rec_ext.model.aitm import AITMModelConfig
 
 
@@ -516,7 +515,6 @@ class ModelConfig(BaseConfig):
                  feature_groups: List[FeatureGroup],
 
                  esmm_model_config: ESMMModelConfig = None,
-                 esmm_v2_model_config: ESMMV2ModelConfig = None,
                  aitm_model_config: AITMModelConfig = None,
                  mmoe_model_config: MMoEModelCofing = None,
                  ple_model_config: PLEModelCofing = None,
@@ -540,7 +538,6 @@ class ModelConfig(BaseConfig):
         self.feature_groups = feature_groups
 
         self.esmm_model_config = esmm_model_config
-        self.esmm_v2_model_config = esmm_v2_model_config
         self.aitm_model_config = aitm_model_config
         self.mmoe_model_config = mmoe_model_config
         self.ple_model_config = ple_model_config
@@ -570,8 +567,6 @@ class ModelConfig(BaseConfig):
 
         if "esmm_model_config" in data:
             res.esmm_model_config = ESMMModelConfig.handle(data["esmm_model_config"])
-        if "esmm_v2_model_config" in data:
-            res.esmm_v2_model_config = ESMMV2ModelConfig.handle(data["esmm_v2_model_config"])
         if "aitm_model_config" in data:
             res.aitm_model_config = AITMModelConfig.handle(data["aitm_model_config"])
         if "mmoe_model_config" in data:

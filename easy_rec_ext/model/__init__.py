@@ -8,7 +8,6 @@ from .bst import BST
 from .dien import DIEN
 from .multi_tower import MultiTower
 from .esmm import ESMM
-from .esmm_v2 import ESMMV2
 from .aitm import AITM
 from .mmoe import MMoE
 from .ple import PLE
