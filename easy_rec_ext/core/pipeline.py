@@ -10,6 +10,7 @@ from easy_rec_ext.layers.interaction import InteractionConfig
 from easy_rec_ext.model.din import DINTower
 from easy_rec_ext.model.bst import BSTTower
 from easy_rec_ext.model.dien import DIENTower
+from easy_rec_ext.model.can import CANTower
 from easy_rec_ext.model.esmm import ESMMModelConfig
 from easy_rec_ext.model.esmm_v2 import ESMMV2ModelConfig
 from easy_rec_ext.model.aitm import AITMModelConfig
@@ -527,6 +528,7 @@ class ModelConfig(BaseConfig):
                  din_towers: List[DINTower] = None,
                  bst_towers: List[BSTTower] = None,
                  dien_towers: List[DIENTower] = None,
+                 can_towers: List[CANTower] = None,
 
                  final_dnn: DNNConfig = None,
                  bias_tower: BiasTower = None,
@@ -551,6 +553,7 @@ class ModelConfig(BaseConfig):
         self.din_towers = din_towers
         self.bst_towers = bst_towers
         self.dien_towers = dien_towers
+        self.can_towers = can_towers
 
         self.final_dnn = final_dnn
         self.bias_tower = bias_tower
@@ -606,6 +609,11 @@ class ModelConfig(BaseConfig):
             for tower in data["dien_towers"]:
                 dien_towers.append(DIENTower.handle(tower))
             res.dien_towers = dien_towers
+        if "can_towers" in data:
+            can_towers = []
+            for tower in data["can_towers"]:
+                can_towers.append(CANTower.handle(tower))
+            res.can_towers = can_towers
 
         if "final_dnn" in data:
             res.final_dnn = DNNConfig.handle(data["final_dnn"])
@@ -626,9 +634,14 @@ class ModelConfig(BaseConfig):
 
 
 class PipelineConfig(BaseConfig):
-    def __init__(self, model_dir: str, input_config: InputConfig, feature_config: FeatureConfig
-                 , model_config: ModelConfig
-                 , train_config: TrainConfig = None, eval_config: EvalConfig = None, export_config: ExportConfig = None
+    def __init__(self,
+                 model_dir: str,
+                 input_config: InputConfig,
+                 feature_config: FeatureConfig,
+                 model_config: ModelConfig,
+                 train_config: TrainConfig = None,
+                 eval_config: EvalConfig = None,
+                 export_config: ExportConfig = None,
                  ):
         self.model_dir = model_dir
         self.input_config = input_config
