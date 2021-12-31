@@ -17,7 +17,13 @@ filename = str(os.path.basename(__file__)).split(".")[0]
 
 
 class DIENConfig(object):
-    def __init__(self, use_auxiliary_loss: int = 0, combine_mechanism: str = "AIGRU", return_target: bool = True):
+    def __init__(self,
+                 reverse_sequence: bool = True,
+                 use_auxiliary_loss: bool = False,
+                 combine_mechanism: str = "AIGRU",
+                 return_target: bool = True,
+                 ):
+        self.reverse_sequence = reverse_sequence
         self.use_auxiliary_loss = use_auxiliary_loss
         self.combine_mechanism = combine_mechanism
         self.return_target = return_target
@@ -25,10 +31,14 @@ class DIENConfig(object):
     @staticmethod
     def handle(data):
         res = DIENConfig()
+        if "reverse_sequence" in data:
+            res.reverse_sequence = data["reverse_sequence"]
         if "use_auxiliary_loss" in data:
             res.use_auxiliary_loss = data["use_auxiliary_loss"]
         if "combine_mechanism" in data:
-            res.combine_mechanism = data["combine_mechanism"]
+            combine_mechanism = data["combine_mechanism"]
+            assert combine_mechanism in ["AIGRU", "AGRU", "AUGRU"]
+            res.combine_mechanism = combine_mechanism
         if "return_target" in data:
             res.return_target = data["return_target"]
         return res
@@ -52,10 +62,18 @@ class DIENTower(object):
 
 
 class DIENLayer(object):
-    def dien(self, name, deep_fea, combine_mechanism, return_target=True):
+    def dien(self, name, deep_fea, reverse_sequence, combine_mechanism, return_target=True):
         cur_id, hist_id_col, seq_len = deep_fea["key"], deep_fea["hist_seq_emb"], deep_fea["hist_seq_len"]
         seq_max_len = hist_id_col.get_shape().as_list()[1]
         emb_dim = hist_id_col.get_shape().as_list()[2]
+
+        if reverse_sequence:
+            hist_id_col = tf.reverse_sequence(
+                input=hist_id_col,
+                seq_lengths=seq_len,
+                seq_axis=1,
+                batch_axis=0,
+            )
 
         hist_gru = self.interest_extractor(name, emb_dim, hist_id_col)
         final_state = self.interest_evolving(name, cur_id, seq_len, seq_max_len, emb_dim, hist_gru, combine_mechanism)
