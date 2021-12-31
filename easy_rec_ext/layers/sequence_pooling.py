@@ -15,13 +15,15 @@ filename = str(os.path.basename(__file__)).split(".")[0]
 
 
 class GRUConfig(object):
-    def __init__(self, gru_units: List[int], go_backwards: int):
+    def __init__(self, gru_units: List[int], reverse_sequence: bool = False):
         self.gru_units = gru_units
-        self.go_backwards = go_backwards
+        self.reverse_sequence = reverse_sequence
 
     @staticmethod
     def handle(data):
-        res = GRUConfig(data["gru_units"], data["go_backwards"])
+        res = GRUConfig(data["gru_units"])
+        if "reverse_sequence" in data:
+            res.reverse_sequence = data["reverse_sequence"]
         return res
 
 
@@ -68,9 +70,7 @@ class SequencePooling(object):
         seq_len_max = seq_value.get_shape().as_list()[1]
         embedding_size = seq_value.get_shape().as_list()[2]
 
-        seq_len = tf.expand_dims(seq_len, 1)
-
-        mask = tf.sequence_mask(seq_len, maxlen=seq_len_max, dtype=tf.dtypes.float32)
+        mask = tf.sequence_mask(tf.expand_dims(seq_len, 1), maxlen=seq_len_max, dtype=tf.dtypes.float32)
         mask = tf.transpose(mask, perm=(0, 2, 1))
         mask = tf.tile(mask, [1, 1, embedding_size])  # (batch_size, T, embedding_size)
 
@@ -84,17 +84,22 @@ class SequencePooling(object):
             hist = tf.reduce_sum(seq_value * mask, axis=1, keep_dims=False)
             return tf.div(hist, tf.cast(seq_len, tf.float32) + 1e-8)
         elif self.mode == "gru":
-            go_backwards = self.gru_config.go_backwards == 1
             gru_input = seq_value
+            if self.gru_config.reverse_sequence:
+                gru_input = tf.reverse_sequence(
+                    input=gru_input,
+                    seq_lengths=seq_len,
+                    seq_axis=1,
+                    batch_axis=0,
+                )
             for i, j in enumerate(self.gru_config.gru_units):
                 gru_input, gru_states = tf.keras.layers.GRU(
                     units=j,
-                    # stateful=True,
                     return_state=True,
-                    go_backwards=go_backwards,
-                    name='{}_gru_{}'.format(self.name, str(i)),
+                    name="{}_gru_{}".format(self.name, str(i)),
                 )(gru_input)
-                logging.info("%s %s, gru_input.shape:%s, gru_states:%s" % (filename, self.name, str(gru_input.shape), str(gru_states.shape)))
+                logging.info("%s %s, gru_input.shape:%s, gru_states:%s" % (
+                    filename, self.name, str(gru_input.shape), str(gru_states.shape)))
             return tf.reshape(gru_input, (-1, self.gru_config.gru_units[-1]))
         else:
             raise ValueError("mode:%s not supported." % self.mode)

@@ -12,6 +12,35 @@ if tf.__version__ >= "2.0":
 line_sep = "\n" + "##" * 20 + "\n"
 
 
+def test_29():
+    t1 = tf.constant(
+        value=[
+            [
+                [1.0] * 4,
+                [2.0] * 4,
+                [3.0] * 4
+            ],
+            [
+                [4.0] * 4,
+                [5.0] * 4,
+                [6.0] * 4
+            ],
+        ],
+        dtype=tf.dtypes.float32,
+    )
+    r1 = tf.reverse_sequence(
+        input=t1,
+        seq_lengths=[
+            2, 3
+        ],
+        seq_axis=1,
+        batch_axis=0,
+    )
+
+    print(t1)
+    print(r1)
+
+
 def test_28():
     t1 = tf.constant(
         value=[
