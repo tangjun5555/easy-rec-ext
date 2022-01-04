@@ -9,9 +9,9 @@ import logging
 from typing import List, Dict
 from collections import OrderedDict
 import tensorflow as tf
+import easy_rec_ext.core.metrics as metrics_lib
 from easy_rec_ext.layers import dnn
 from easy_rec_ext.model.multi_tower import MultiTower
-import easy_rec_ext.core.metrics as metrics_lib
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
