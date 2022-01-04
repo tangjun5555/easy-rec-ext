@@ -33,5 +33,11 @@ class SIMModelTower(object):
 
 
 class SIMModelLayer(object):
-    def sim(self, name, deep_fea):
+    def call(self, name, deep_fea):
+        pass
+
+    def general_search(self, ):
+        pass
+
+    def exact_search(self):
         pass
