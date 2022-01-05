@@ -46,7 +46,7 @@ class CANTower(object):
 
 
 class CANLayer(object):
-    def can(self, name, deep_fea, item_vocab_size, mlp_units):
+    def call(self, name, deep_fea, item_vocab_size, mlp_units):
         """
         Args:
             name:
@@ -138,12 +138,8 @@ class CAN(RankModel, CANLayer):
         self._can_tower_features = []
         for tower_id in range(self._can_tower_num):
             tower = self._model_config.can_towers[tower_id]
-            # TODO, item使用原始id
-            group_feature = self.build_seq_att_input_layer(tower.input_group)
-            regularizers.apply_regularization(self._emb_reg, weights_list=[group_feature["hist_seq_emb"]])
-            tower_feature = dict()
-            tower_feature["user_value"] = group_feature["hist_seq_emb"]
-            tower_feature["item_value"] = group_feature["key"]
+            tower_feature = self.build_cartesian_interaction_input_layer(tower.input_group, True)
+            regularizers.apply_regularization(self._emb_reg, weights_list=[tower_feature["user_value"]])
             self._can_tower_features.append(tower_feature)
 
         logging.info("all tower num: {0}".format(self._dnn_tower_num + self._can_tower_num))
@@ -175,11 +171,10 @@ class CAN(RankModel, CANLayer):
         for tower_id in range(self._can_tower_num):
             tower_fea = self._can_tower_features[tower_id]
             tower = self._model_config.can_towers[tower_id]
-            tower_name = tower.input_group
-            tower_fea = self.can(
-                name="%s_dien" % tower_name,
+            tower_fea = self.call(
+                name="%s_can" % tower.input_group,
                 deep_fea=tower_fea,
-                item_vocab_size=10,  # TODO
+                item_vocab_size=tower.can_config.item_vocab_size,
                 mlp_units=tower.can_config.mlp_units,
             )
             tower_fea_arr.append(tower_fea)

@@ -13,10 +13,10 @@ from easy_rec_ext.model.rank_model import RankModel
 from easy_rec_ext.model.din import DINLayer
 from easy_rec_ext.model.bst import BSTLayer
 from easy_rec_ext.model.dien import DIENLayer
+from easy_rec_ext.model.can import CANLayer
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
-
 filename = str(os.path.basename(__file__)).split(".")[0]
 
 
@@ -78,6 +78,14 @@ class MultiTower(RankModel):
             regularizers.apply_regularization(self._emb_reg, weights_list=[tower_feature["hist_seq_emb"]])
             self._dien_tower_features.append(tower_feature)
 
+        self._can_tower_num = len(self._model_config.can_towers) if self._model_config.can_towers else 0
+        self._can_tower_features = []
+        for tower_id in range(self._can_tower_num):
+            tower = self._model_config.can_towers[tower_id]
+            tower_feature = self.build_cartesian_interaction_input_layer(tower.input_group, True)
+            regularizers.apply_regularization(self._emb_reg, weights_list=[tower_feature["user_value"]])
+            self._can_tower_features.append(tower_feature)
+
         logging.info("all tower num: {0}".format(
             self._wide_tower_num
             + self._dnn_tower_num
@@ -85,6 +93,7 @@ class MultiTower(RankModel):
             + self._din_tower_num
             + self._bst_tower_num
             + self._dien_tower_num
+            + self._can_tower_num
         ))
         logging.info("wide tower num: {0}".format(self._wide_tower_num))
         logging.info("dnn tower num: {0}".format(self._dnn_tower_num))
@@ -92,6 +101,7 @@ class MultiTower(RankModel):
         logging.info("din tower num: {0}".format(self._din_tower_num))
         logging.info("bst tower num: {0}".format(self._bst_tower_num))
         logging.info("dien tower num: {0}".format(self._dien_tower_num))
+        logging.info("can tower num: {0}".format(self._can_tower_num))
 
     def build_tower_fea_arr(self, variable_scope=None):
         tower_fea_arr = []
@@ -174,6 +184,20 @@ class MultiTower(RankModel):
                     deep_fea=tower_fea,
                     combine_mechanism=tower.dien_config.combine_mechanism,
                     return_target=tower.dien_config.return_target,
+                )
+                tower_fea_arr.append(tower_fea)
+
+        for tower_id in range(self._can_tower_num):
+            tower_fea = self._can_tower_features[tower_id]
+            tower = self._model_config.can_towers[tower_id]
+
+            with tf.variable_scope(variable_scope, reuse=tf.AUTO_REUSE):
+                can_layer = CANLayer()
+                tower_fea = can_layer.call(
+                    name="%s_can" % tower.input_group,
+                    deep_fea=tower_fea,
+                    item_vocab_size=tower.can_config.item_vocab_size,
+                    mlp_units=tower.can_config.mlp_units,
                 )
                 tower_fea_arr.append(tower_fea)
 
