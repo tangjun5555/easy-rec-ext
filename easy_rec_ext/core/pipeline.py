@@ -123,11 +123,12 @@ class FeatureField(BaseConfig):
 
         self.sequence_pooling_config = sequence_pooling_config
 
-        assert self.feature_type in ["IdFeature", "RawFeature", "SequenceFeature"]
-
     @staticmethod
     def handle(data):
-        res = FeatureField(data["input_name"], data["feature_type"])
+        feature_type = data["feature_type"]
+        assert feature_type in ["IdFeature", "RawFeature", "SequenceFeature"]
+
+        res = FeatureField(data["input_name"], feature_type)
 
         if "raw_input_dim" in data:
             res.raw_input_dim = data["raw_input_dim"]
@@ -176,25 +177,26 @@ class SeqAttMap(BaseConfig):
         return res
 
 
-class CrossInteractionMap(BaseConfig):
-    def __init__(self, user_key: str, item_key: str):
-        self.user_key = user_key
+class CartesianInteractionMap(BaseConfig):
+    def __init__(self, user_keys: List[str], item_key: str):
+        self.user_keys = user_keys
         self.item_key = item_key
 
     @staticmethod
     def handle(data):
-        user_key = data["user_key"]
+        user_keys = data["user_keys"]
         item_key = data["item_key"]
-        assert user_key
+        assert user_keys
         assert item_key
-        assert user_key != item_key
-        res = CrossInteractionMap(user_key, item_key)
+        assert item_key not in user_keys
+        res = CartesianInteractionMap(user_keys, item_key)
         return res
 
 
 class FeatureGroup(BaseConfig):
     def __init__(self, group_name: str, feature_names: List[str] = None,
                  seq_att_map_list: List[SeqAttMap] = None, seq_att_projection_dim: int = 0,
+                 cartesian_interaction_map: CartesianInteractionMap = None,
                  ):
         self.group_name = group_name
         self.feature_names = feature_names
@@ -202,11 +204,15 @@ class FeatureGroup(BaseConfig):
         self.seq_att_map_list = seq_att_map_list
         self.seq_att_projection_dim = seq_att_projection_dim
 
+        self.cartesian_interaction_map = cartesian_interaction_map
+
     @staticmethod
     def handle(data):
         res = FeatureGroup(data["group_name"])
+
         if "feature_names" in data:
             res.feature_names = data["feature_names"]
+
         if "seq_att_map_list" in data:
             seq_att_map_list = []
             for seq_att_map in data["seq_att_map_list"]:
@@ -214,6 +220,9 @@ class FeatureGroup(BaseConfig):
             res.seq_att_map_list = seq_att_map_list
         if "seq_att_projection_dim" in data:
             res.seq_att_projection_dim = data["seq_att_projection_dim"]
+
+        if "cartesian_interaction_map" in data:
+            res.cartesian_interaction_map = CartesianInteractionMap.handle(data["cartesian_interaction_map"])
         return res
 
     @property
