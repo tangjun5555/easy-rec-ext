@@ -18,19 +18,13 @@ filename = str(os.path.basename(__file__)).split(".")[0]
 
 
 class ESMMModelConfig(object):
-    def __init__(self, label_names: List[str],
-                 share_fn_param: int = 0,
-                 loss_weight_dict: Dict = None,
-                 ):
+    def __init__(self, label_names: List[str], loss_weight_dict: Dict = None,):
         self.label_names = label_names
-        self.share_fn_param = share_fn_param
         self.loss_weight_dict = loss_weight_dict
 
     @staticmethod
     def handle(data):
         res = ESMMModelConfig(data["label_names"])
-        if "share_fn_param" in data:
-            res.share_fn_param = data["share_fn_param"]
         if "loss_weight_dict" in data:
             res.loss_weight_dict = data["loss_weight_dict"]
         return res
@@ -54,30 +48,17 @@ class ESMM(MultiTower):
 
         task_tower_fea_arr_list = []
         task_all_fea_list = []
-        if model_config.share_fn_param == 1:
-            tower_fea_arr = self.build_tower_fea_arr()
+        for i in range(len(model_config.label_names)):
+            task_name = model_config.label_names[i]
+            tower_fea_arr = self.build_tower_fea_arr(variable_scope="task_%s" % task_name)
             all_fea = tf.concat(tower_fea_arr, axis=1)
-            for i in range(len(model_config.label_names)):
-                task_name = model_config.label_names[i]
-                task_tower_fea_arr_list.append(tower_fea_arr)
-                task_all_fea_list.append(all_fea)
-                logging.info("%s build_predict_graph, task:%s, tower_fea_arr.length:%s" % (
-                    filename, task_name, str(len(tower_fea_arr))))
-                logging.info(
-                    "%s build_predict_graph, task:%s, all_fea.shape:%s" % (
-                        filename, task_name, str(all_fea.shape)))
-        else:
-            for i in range(len(model_config.label_names)):
-                task_name = model_config.label_names[i]
-                tower_fea_arr = self.build_tower_fea_arr(variable_scope="task_%s" % task_name)
-                all_fea = tf.concat(tower_fea_arr, axis=1)
-                task_tower_fea_arr_list.append(tower_fea_arr)
-                task_all_fea_list.append(all_fea)
-                logging.info("%s build_predict_graph, task:%s, tower_fea_arr.length:%s" % (
-                    filename, task_name, str(len(tower_fea_arr))))
-                logging.info(
-                    "%s build_predict_graph, task:%s, all_fea.shape:%s" % (
-                        filename, task_name, str(all_fea.shape)))
+            task_tower_fea_arr_list.append(tower_fea_arr)
+            task_all_fea_list.append(all_fea)
+            logging.info("%s build_predict_graph, task:%s, tower_fea_arr.length:%s" % (
+                filename, task_name, str(len(tower_fea_arr))))
+            logging.info(
+                "%s build_predict_graph, task:%s, all_fea.shape:%s" % (
+                    filename, task_name, str(all_fea.shape)))
 
         task_probs_list = []
         prediction_dict = OrderedDict()
