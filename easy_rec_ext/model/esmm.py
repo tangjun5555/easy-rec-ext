@@ -143,16 +143,43 @@ class ESMM(MultiTower):
 
     def build_metric_graph(self, eval_config):
         model_config = self._model_config.esmm_model_config
-
         metric_dict = OrderedDict()
+
         prev_probs = None
         for i in range(len(model_config.label_names)):
             task_name = model_config.label_names[i]
             task_probs = self._prediction_dict["%s_probs" % task_name]
-            if i > 0:
-                task_probs = tf.multiply(prev_probs, task_probs)
-            prev_probs = task_probs
             task_label = self._labels[task_name]
+
+            if i > 0:
+                pre_task_name = model_config.label_names[i - 1]
+                task_mask = self._labels[pre_task_name] > 0
+                task_label_mask = tf.boolean_mask(task_label, task_mask)
+                task_probs_mask = tf.boolean_mask(task_probs, task_mask)
+
+                for metric in eval_config.metric_set:
+                    if "auc" == metric.name:
+                        metric_dict["%s_auc_mask" % task_name] = tf.metrics.auc(
+                            labels=tf.to_int64(task_label_mask),
+                            predictions=task_probs_mask,
+                        )
+                    elif "gauc" == metric.name:
+                        gids = tf.squeeze(self._feature_dict[metric.gid_field], axis=1)
+                        metric_dict["%s_gauc_mask" % task_name] = metrics_lib.gauc(
+                            labels=tf.to_int64(task_label_mask),
+                            predictions=task_probs_mask,
+                            gids=gids,
+                            reduction=metric.reduction,
+                        )
+                    elif "pcopc" == metric.name:
+                        metric_dict["%s_pcopc_mask" % task_name] = metrics_lib.pcopc(
+                            labels=tf.to_float(task_label_mask),
+                            predictions=task_probs_mask,
+                        )
+
+                task_probs = tf.multiply(prev_probs, task_probs)
+
+            prev_probs = task_probs
 
             for metric in eval_config.metric_set:
                 if "auc" == metric.name:
@@ -165,4 +192,5 @@ class ESMM(MultiTower):
                     )
                 elif "pcopc" == metric.name:
                     metric_dict["%s_pcopc" % task_name] = metrics_lib.pcopc(tf.to_float(task_label), task_probs)
+
         return metric_dict
