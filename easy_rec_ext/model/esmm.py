@@ -11,6 +11,7 @@ import tensorflow as tf
 import easy_rec_ext.core.metrics as metrics_lib
 from easy_rec_ext.model.multi_tower import MultiTower
 from easy_rec_ext.layers import dnn
+from easy_rec_ext.model.star import StarTopologyFCNLayer, AuxiliaryNetworkLayer as STARAuxiliaryNetworkLayer
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
@@ -83,9 +84,22 @@ class ESMM(MultiTower):
         prediction_dict = OrderedDict()
         for i in range(len(model_config.label_names)):
             task_name = model_config.label_names[i]
-            task_logits = dnn.DNN(self._model_config.final_dnn, self._l2_reg,
-                                  task_name + "_" + "final_dnn", self._is_training
-                                  )(task_all_fea_list[i])
+
+            if self._model_config.star_model_config:
+                star_model_config = self._model_config.star_model_config
+                domain_id = self.get_id_feature(
+                    star_model_config.domain_input_group, star_model_config.domain_id_col,
+                    use_raw_id=True
+                )
+                task_logits = StarTopologyFCNLayer().call(
+                    name=task_name + "_" + "star_fcn", deep_fea=task_all_fea_list[i], domain_id=domain_id,
+                    domain_size=self._model_config.star_model_config.domain_size,
+                    mlp_units=self._model_config.final_dnn.hidden_units,
+                )
+            else:
+                task_logits = dnn.DNN(self._model_config.final_dnn, self._l2_reg,
+                                      task_name + "_" + "final_dnn", self._is_training
+                                      )(task_all_fea_list[i])
 
             if self._model_config.wide_towers:
                 wide_fea = tf.concat(self._wide_tower_features, axis=1)
@@ -98,7 +112,19 @@ class ESMM(MultiTower):
                 logging.info("%s build_predict_graph, task:%s, task_logits.shape:%s" % (
                     filename, task_name, str(task_logits.shape)))
 
-            task_logits = tf.layers.dense(task_logits, 1, name="%s_logits" % task_name)
+            if self._model_config.star_model_config:
+                star_model_config = self._model_config.star_model_config
+                task_logits = STARAuxiliaryNetworkLayer().call(
+                    name=task_name + "_" + "star_aux", deep_fea=task_logits,
+                    domain_fea=self.get_id_feature(
+                        star_model_config.domain_input_group, star_model_config.domain_id_col,
+                        use_raw_id=False
+                    ),
+                    mlp_units=star_model_config.auxiliary_network_mlp_units,
+                )
+            else:
+                task_logits = tf.layers.dense(task_logits, 1, name="%s_logits" % task_name)
+
             task_probs = tf.sigmoid(task_logits, name="%s_probs" % task_name)
             task_probs_list.append(task_probs)
             prediction_dict["%s_probs" % task_name] = tf.reshape(task_probs, (-1,))

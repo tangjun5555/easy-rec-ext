@@ -17,27 +17,20 @@ filename = str(os.path.basename(__file__)).split(".")[0]
 
 
 class STARModelConfig(object):
-    def __init__(self, domain_input_group: str,
+    def __init__(self,
+                 domain_input_group: str,
                  domain_id_col: str,
                  domain_size: int,
-                 use_star_topology_fcn_layer: bool = True,
-                 use_auxiliary_network_layer: bool = True,
                  auxiliary_network_mlp_units: List[int] = (32, 16),
                  ):
         self.domain_input_group = domain_input_group
         self.domain_id_col = domain_id_col
         self.domain_size = domain_size
-        self.use_star_topology_fcn_layer = use_star_topology_fcn_layer
-        self.use_auxiliary_network_layer = use_auxiliary_network_layer
         self.auxiliary_network_mlp_units = auxiliary_network_mlp_units
 
     @staticmethod
     def handle(data):
         res = STARModelConfig(data["domain_input_group"], data["domain_id_col"], data["domain_size"])
-        if "use_star_topology_fcn_layer" in data:
-            res.use_star_topology_fcn_layer = data["use_star_topology_fcn_layer"]
-        if "use_auxiliary_network_layer" in data:
-            res.use_auxiliary_network_layer = data["use_auxiliary_network_layer"]
         if "auxiliary_network_mlp_units" in data:
             res.auxiliary_network_mlp_units = data["auxiliary_network_mlp_units"]
         return res
