@@ -13,10 +13,11 @@ from easy_rec_ext.model.rank_model import RankModel
 from easy_rec_ext.model.din import DINLayer
 from easy_rec_ext.model.bst import BSTLayer
 from easy_rec_ext.model.dien import DIENLayer
+from easy_rec_ext.model.can import CANLayer
+from easy_rec_ext.model.star import StarTopologyFCNLayer, AuxiliaryNetworkLayer as STARAuxiliaryNetworkLayer
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
-
 filename = str(os.path.basename(__file__)).split(".")[0]
 
 
@@ -78,6 +79,14 @@ class MultiTower(RankModel):
             regularizers.apply_regularization(self._emb_reg, weights_list=[tower_feature["hist_seq_emb"]])
             self._dien_tower_features.append(tower_feature)
 
+        self._can_tower_num = len(self._model_config.can_towers) if self._model_config.can_towers else 0
+        self._can_tower_features = []
+        for tower_id in range(self._can_tower_num):
+            tower = self._model_config.can_towers[tower_id]
+            tower_feature = self.build_cartesian_interaction_input_layer(tower.input_group, True)
+            regularizers.apply_regularization(self._emb_reg, weights_list=[tower_feature["user_value"]])
+            self._can_tower_features.append(tower_feature)
+
         logging.info("all tower num: {0}".format(
             self._wide_tower_num
             + self._dnn_tower_num
@@ -85,6 +94,7 @@ class MultiTower(RankModel):
             + self._din_tower_num
             + self._bst_tower_num
             + self._dien_tower_num
+            + self._can_tower_num
         ))
         logging.info("wide tower num: {0}".format(self._wide_tower_num))
         logging.info("dnn tower num: {0}".format(self._dnn_tower_num))
@@ -92,6 +102,7 @@ class MultiTower(RankModel):
         logging.info("din tower num: {0}".format(self._din_tower_num))
         logging.info("bst tower num: {0}".format(self._bst_tower_num))
         logging.info("dien tower num: {0}".format(self._dien_tower_num))
+        logging.info("can tower num: {0}".format(self._can_tower_num))
 
     def build_tower_fea_arr(self, variable_scope=None):
         tower_fea_arr = []
@@ -177,31 +188,70 @@ class MultiTower(RankModel):
                 )
                 tower_fea_arr.append(tower_fea)
 
+        for tower_id in range(self._can_tower_num):
+            tower_fea = self._can_tower_features[tower_id]
+            tower = self._model_config.can_towers[tower_id]
+
+            with tf.variable_scope(variable_scope, reuse=tf.AUTO_REUSE):
+                can_layer = CANLayer()
+                tower_fea = can_layer.call(
+                    name="%s_can" % tower.input_group,
+                    deep_fea=tower_fea,
+                    item_vocab_size=tower.can_config.item_vocab_size,
+                    mlp_units=tower.can_config.mlp_units,
+                )
+                tower_fea_arr.append(tower_fea)
+
         return tower_fea_arr
 
     def build_predict_graph(self):
         tower_fea_arr = self.build_tower_fea_arr()
-        logging.info("%s build_predict_graph, all_fea.length:%s" % (filename, str(len(tower_fea_arr))))
+        logging.info("%s build_predict_graph, tower_fea_arr.length:%s" % (filename, str(len(tower_fea_arr))))
 
         all_fea = tf.concat(tower_fea_arr, axis=1)
-        final_dnn_layer = dnn.DNN(self._model_config.final_dnn, self._l2_reg, "final_dnn", self._is_training)
-        all_fea = final_dnn_layer(all_fea)
-        logging.info("build_predict_graph, logits.shape:%s" % (str(all_fea.shape)))
+        logging.info("%s build_predict_graph, all_fea.shape:%s" % (filename, str(all_fea.shape)))
+
+        if self._model_config.star_model_config:
+            star_model_config = self._model_config.star_model_config
+            domain_id = self.get_id_feature(
+                star_model_config.domain_input_group, star_model_config.domain_id_col,
+                use_raw_id=True
+            )
+            all_fea = StarTopologyFCNLayer().call(
+                name="star_fcn", deep_fea=all_fea, domain_id=domain_id,
+                domain_size=self._model_config.star_model_config.domain_size,
+                mlp_units=self._model_config.final_dnn.hidden_units,
+            )
+        else:
+            all_fea = dnn.DNN(self._model_config.final_dnn, self._l2_reg, "final_dnn", self._is_training)(all_fea)
+        logging.info("%s build_predict_graph, all_fea.shape:%s" % (filename, str(all_fea.shape)))
 
         if self._model_config.wide_towers:
             wide_fea = tf.concat(self._wide_tower_features, axis=1)
             all_fea = tf.concat([all_fea, wide_fea], axis=1)
-            logging.info("build_predict_graph, logits.shape:%s" % (str(all_fea.shape)))
+            logging.info("%s build_predict_graph, with wide tower, all_fea.shape:%s" % (filename, str(all_fea.shape)))
         if self._model_config.bias_tower:
             bias_fea = self.build_bias_input_layer(self._model_config.bias_tower.input_group)
             all_fea = tf.concat([all_fea, bias_fea], axis=1)
-            logging.info("build_predict_graph, logits.shape:%s" % (str(all_fea.shape)))
-        logits = tf.layers.dense(all_fea, 1, name="logits")
+            logging.info("%s build_predict_graph, with bias tower, all_fea.shape:%s" % (filename, str(all_fea.shape)))
+
+        if self._model_config.star_model_config:
+            star_model_config = self._model_config.star_model_config
+            logits = STARAuxiliaryNetworkLayer().call(
+                name="star_aux", deep_fea=all_fea,
+                domain_fea=self.get_id_feature(
+                    star_model_config.domain_input_group, star_model_config.domain_id_col,
+                    use_raw_id=False
+                ),
+                mlp_units=star_model_config.auxiliary_network_mlp_units,
+            )
+        else:
+            logits = tf.layers.dense(all_fea, 1, name="logits")
+
         logits = tf.reshape(logits, (-1,))
         probs = tf.sigmoid(logits, name="probs")
 
         prediction_dict = dict()
-        prediction_dict["logits"] = logits
         prediction_dict["probs"] = probs
         self._add_to_prediction_dict(prediction_dict)
         return self._prediction_dict

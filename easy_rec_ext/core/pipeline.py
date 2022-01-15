@@ -10,8 +10,10 @@ from easy_rec_ext.layers.interaction import InteractionConfig
 from easy_rec_ext.model.din import DINTower
 from easy_rec_ext.model.bst import BSTTower
 from easy_rec_ext.model.dien import DIENTower
+from easy_rec_ext.model.can import CANTower
 from easy_rec_ext.model.esmm import ESMMModelConfig
 from easy_rec_ext.model.aitm import AITMModelConfig
+from easy_rec_ext.model.star import STARModelConfig
 
 
 class BaseConfig(object):
@@ -23,12 +25,14 @@ class InputField(BaseConfig):
     def __init__(self, input_name: str, input_type: str):
         self.input_name = input_name
         self.input_type = input_type
-        assert self.input_name, "input_name must not be empty"
-        assert self.input_type in ["int", "float", "string"], "input_type must in [int,float,string]"
 
     @staticmethod
     def handle(data):
-        res = InputField(data["input_name"], data["input_type"])
+        input_name = data["input_name"]
+        input_type = data["input_type"]
+        assert input_name, "input_name must not be empty"
+        assert input_type in ["int", "float", "string"], "input_type must in [int,float,string]"
+        res = InputField(input_name, input_type)
         return res
 
 
@@ -120,11 +124,12 @@ class FeatureField(BaseConfig):
 
         self.sequence_pooling_config = sequence_pooling_config
 
-        assert self.feature_type in ["IdFeature", "RawFeature", "SequenceFeature"]
-
     @staticmethod
     def handle(data):
-        res = FeatureField(data["input_name"], data["feature_type"])
+        feature_type = data["feature_type"]
+        assert feature_type in ["IdFeature", "RawFeature", "SequenceFeature"]
+
+        res = FeatureField(data["input_name"], feature_type)
 
         if "raw_input_dim" in data:
             res.raw_input_dim = data["raw_input_dim"]
@@ -173,9 +178,26 @@ class SeqAttMap(BaseConfig):
         return res
 
 
+class CartesianInteractionMap(BaseConfig):
+    def __init__(self, user_keys: List[str], item_key: str):
+        self.user_keys = user_keys
+        self.item_key = item_key
+
+    @staticmethod
+    def handle(data):
+        user_keys = data["user_keys"]
+        item_key = data["item_key"]
+        assert user_keys
+        assert item_key
+        assert item_key not in user_keys
+        res = CartesianInteractionMap(user_keys, item_key)
+        return res
+
+
 class FeatureGroup(BaseConfig):
     def __init__(self, group_name: str, feature_names: List[str] = None,
                  seq_att_map_list: List[SeqAttMap] = None, seq_att_projection_dim: int = 0,
+                 cartesian_interaction_map: CartesianInteractionMap = None,
                  ):
         self.group_name = group_name
         self.feature_names = feature_names
@@ -183,11 +205,15 @@ class FeatureGroup(BaseConfig):
         self.seq_att_map_list = seq_att_map_list
         self.seq_att_projection_dim = seq_att_projection_dim
 
+        self.cartesian_interaction_map = cartesian_interaction_map
+
     @staticmethod
     def handle(data):
         res = FeatureGroup(data["group_name"])
+
         if "feature_names" in data:
             res.feature_names = data["feature_names"]
+
         if "seq_att_map_list" in data:
             seq_att_map_list = []
             for seq_att_map in data["seq_att_map_list"]:
@@ -195,6 +221,9 @@ class FeatureGroup(BaseConfig):
             res.seq_att_map_list = seq_att_map_list
         if "seq_att_projection_dim" in data:
             res.seq_att_projection_dim = data["seq_att_projection_dim"]
+
+        if "cartesian_interaction_map" in data:
+            res.cartesian_interaction_map = CartesianInteractionMap.handle(data["cartesian_interaction_map"])
         return res
 
     @property
@@ -525,9 +554,11 @@ class ModelConfig(BaseConfig):
                  din_towers: List[DINTower] = None,
                  bst_towers: List[BSTTower] = None,
                  dien_towers: List[DIENTower] = None,
+                 can_towers: List[CANTower] = None,
 
                  final_dnn: DNNConfig = None,
                  bias_tower: BiasTower = None,
+                 star_model_config: STARModelConfig = None,
 
                  embedding_regularization: float = 0.0,
                  l2_regularization: float = 0.0001,
@@ -548,9 +579,11 @@ class ModelConfig(BaseConfig):
         self.din_towers = din_towers
         self.bst_towers = bst_towers
         self.dien_towers = dien_towers
+        self.can_towers = can_towers
 
         self.final_dnn = final_dnn
         self.bias_tower = bias_tower
+        self.star_model_config = star_model_config
 
         self.embedding_regularization = embedding_regularization
         self.l2_regularization = l2_regularization
@@ -601,11 +634,18 @@ class ModelConfig(BaseConfig):
             for tower in data["dien_towers"]:
                 dien_towers.append(DIENTower.handle(tower))
             res.dien_towers = dien_towers
+        if "can_towers" in data:
+            can_towers = []
+            for tower in data["can_towers"]:
+                can_towers.append(CANTower.handle(tower))
+            res.can_towers = can_towers
 
         if "final_dnn" in data:
             res.final_dnn = DNNConfig.handle(data["final_dnn"])
         if "bias_tower" in data:
             res.bias_tower = BiasTower.handle(data["bias_tower"])
+        if "star_model_config" in data:
+            res.star_model_config = STARModelConfig.handle(data["star_model_config"])
 
         if "embedding_regularization" in data:
             res.embedding_regularization = data["embedding_regularization"]
@@ -621,9 +661,14 @@ class ModelConfig(BaseConfig):
 
 
 class PipelineConfig(BaseConfig):
-    def __init__(self, model_dir: str, input_config: InputConfig, feature_config: FeatureConfig
-                 , model_config: ModelConfig
-                 , train_config: TrainConfig = None, eval_config: EvalConfig = None, export_config: ExportConfig = None
+    def __init__(self,
+                 model_dir: str,
+                 input_config: InputConfig,
+                 feature_config: FeatureConfig,
+                 model_config: ModelConfig,
+                 train_config: TrainConfig = None,
+                 eval_config: EvalConfig = None,
+                 export_config: ExportConfig = None,
                  ):
         self.model_dir = model_dir
         self.input_config = input_config

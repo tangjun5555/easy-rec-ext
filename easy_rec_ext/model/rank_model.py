@@ -3,6 +3,7 @@
 # time: 2021/7/30 4:41 下午
 # desc:
 
+import os
 import logging
 from abc import abstractmethod
 from collections import OrderedDict
@@ -15,6 +16,7 @@ import tensorflow as tf
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
+filename = str(os.path.basename(__file__)).split(".")[0]
 
 
 class RankModel(object):
@@ -99,12 +101,13 @@ class RankModel(object):
         return metric_dict
 
     def build_input_layer(self, feature_group):
-        group_input_dict = self.build_group_input_dict(feature_group)
+        logging.info("%s build_input_layer, feature_group:%s" % (filename, str(feature_group)))
         outputs = []
 
+        group_input_dict = self.build_group_input_dict(feature_group)
         feature_group = self._feature_groups_dict[feature_group]
-        feature_fields_num = len(feature_group.feature_name_list) if feature_group.feature_name_list else 0
 
+        feature_fields_num = len(feature_group.feature_name_list) if feature_group.feature_name_list else 0
         for i in range(feature_fields_num):
             feature_field = self._feature_fields_dict[feature_group.feature_name_list[i]]
             outputs.append(group_input_dict[feature_field.input_name])
@@ -112,12 +115,52 @@ class RankModel(object):
         outputs = tf.concat(outputs, axis=1)
         return outputs
 
-    def build_seq_att_input_layer(self, feature_group):
-        group_input_dict = self.build_group_input_dict(feature_group)
+    def get_id_feature(self, feature_group, feature_name, use_raw_id=False):
+        assert feature_name in self._feature_fields_dict[feature_name]
+        feature_field = self._feature_fields_dict[feature_name]
+        assert feature_field.feature_type in ["IdFeature"]
+
+        if use_raw_id:
+            return self._feature_dict[feature_field.input_name]
+        else:
+            group_input_dict = self.build_group_input_dict(feature_group)
+            return group_input_dict[feature_field.input_name]
+
+    def build_cartesian_interaction_input_layer(self, feature_group, item_use_raw_id=False):
+        logging.info("%s build_cross_interaction_input_layer, feature_group:%s" % (filename, str(feature_group)))
         outputs = {}
 
+        group_input_dict = self.build_group_input_dict(feature_group)
         feature_group = self._feature_groups_dict[feature_group]
-        logging.info("build_seq_att_input_layer, feature_group:%s" % str(feature_group))
+
+        user_outputs = []
+        for user_key in feature_group.cartesian_interaction_map.user_keys:
+            feature_field = self._feature_fields_dict[user_key]
+            assert feature_field.feature_type in ["IdFeature", "SequenceFeature"]
+
+            values = group_input_dict[feature_field.input_name]
+            if feature_field.feature_type == "IdFeature":
+                values = tf.expand_dims(values, axis=1)
+                user_outputs.append(values)
+            elif feature_field.feature_type == "SequenceFeature":
+                user_outputs.append(values)
+        outputs["user_value"] = tf.concat(user_outputs, axis=1)
+
+        feature_field = self._feature_fields_dict[feature_group.cartesian_interaction_map.item_key]
+        assert feature_field.feature_type in ["IdFeature"]
+        if item_use_raw_id:
+            outputs["item_value"] = self._feature_dict[feature_field.input_name]
+        else:
+            values = group_input_dict[feature_field.input_name]
+            outputs["item_value"] = values
+        return outputs
+
+    def build_seq_att_input_layer(self, feature_group):
+        logging.info("%s build_seq_att_input_layer, feature_group:%s" % (filename, str(feature_group)))
+        outputs = {}
+
+        group_input_dict = self.build_group_input_dict(feature_group)
+        feature_group = self._feature_groups_dict[feature_group]
 
         key_outputs = []
         hist_seq_emb_outputs = []
@@ -164,6 +207,7 @@ class RankModel(object):
         return outputs
 
     def build_bias_input_layer(self, feature_group):
+        logging.info("%s build_bias_input_layer, feature_group:%s" % (filename, str(feature_group)))
         feature_group = self._feature_groups_dict[feature_group]
         feature_fields_num = len(feature_group.feature_name_list) if feature_group.feature_name_list else 0
         for i in range(feature_fields_num):
@@ -173,23 +217,26 @@ class RankModel(object):
         return self.build_input_layer(feature_group.group_name)
 
     def build_wide_input_layer(self, feature_group):
+        logging.info("%s build_wide_input_layer, feature_group:%s" % (filename, str(feature_group)))
         feature_group = self._feature_groups_dict[feature_group]
         feature_fields_num = len(feature_group.feature_name_list) if feature_group.feature_name_list else 0
         for i in range(feature_fields_num):
             feature_field = self._feature_fields_dict[feature_group.feature_name_list[i]]
+            assert feature_field.feature_type in ["IdFeature", "RawFeature"]
             if feature_field.feature_type == "IdFeature":
                 assert feature_field.one_hot, "build_wide_input_layer IdFeature one_hot must be 1"
-            if feature_field.feature_type == "RawFeature":
+            elif feature_field.feature_type == "RawFeature":
                 assert not feature_field.raw_input_embedding_type, "build_wide_input_layer one_hot can't use raw_input_embedding_type"
         return self.build_input_layer(feature_group.group_name)
 
     def build_interaction_input_layer(self, feature_group):
-        group_input_dict = self.build_group_input_dict(feature_group)
+        logging.info("%s build_interaction_input_layer, feature_group:%s" % (filename, str(feature_group)))
         outputs = []
 
+        group_input_dict = self.build_group_input_dict(feature_group)
         feature_group = self._feature_groups_dict[feature_group]
-        feature_fields_num = len(feature_group.feature_name_list) if feature_group.feature_name_list else 0
 
+        feature_fields_num = len(feature_group.feature_name_list) if feature_group.feature_name_list else 0
         for i in range(feature_fields_num):
             feature_field = self._feature_fields_dict[feature_group.feature_name_list[i]]
             if feature_field.feature_type == "RawFeature":
@@ -198,7 +245,7 @@ class RankModel(object):
                     tf.reshape(group_input_dict[feature_field.input_name],
                                [-1, feature_field.raw_input_dim, feature_field.embedding_dim])
                 )
-            else:
+            elif feature_field.feature_type == "IdFeature":
                 values = group_input_dict[feature_field.input_name]
                 values = tf.expand_dims(values, axis=1)
                 outputs.append(values)
