@@ -14,6 +14,7 @@ from easy_rec_ext.model.din import DINLayer
 from easy_rec_ext.model.bst import BSTLayer
 from easy_rec_ext.model.dien import DIENLayer
 from easy_rec_ext.model.can import CANLayer
+from easy_rec_ext.model.star import StarTopologyFCNLayer, AuxiliaryNetworkLayer as STARAuxiliaryNetworkLayer
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
@@ -205,27 +206,52 @@ class MultiTower(RankModel):
 
     def build_predict_graph(self):
         tower_fea_arr = self.build_tower_fea_arr()
-        logging.info("%s build_predict_graph, all_fea.length:%s" % (filename, str(len(tower_fea_arr))))
+        logging.info("%s build_predict_graph, tower_fea_arr.length:%s" % (filename, str(len(tower_fea_arr))))
 
         all_fea = tf.concat(tower_fea_arr, axis=1)
-        final_dnn_layer = dnn.DNN(self._model_config.final_dnn, self._l2_reg, "final_dnn", self._is_training)
-        all_fea = final_dnn_layer(all_fea)
-        logging.info("build_predict_graph, logits.shape:%s" % (str(all_fea.shape)))
+        logging.info("%s build_predict_graph, all_fea.shape:%s" % (filename, str(all_fea.shape)))
+
+        if self._model_config.star_model_config:
+            star_model_config = self._model_config.star_model_config
+            domain_id = self.get_id_feature(
+                star_model_config.domain_input_group, star_model_config.domain_id_col,
+                use_raw_id=True
+            )
+            all_fea = StarTopologyFCNLayer().call(
+                name="star_fcn", deep_fea=all_fea, domain_id=domain_id,
+                domain_size=self._model_config.star_model_config.domain_size,
+                mlp_units=self._model_config.final_dnn.hidden_units,
+            )
+        else:
+            all_fea = dnn.DNN(self._model_config.final_dnn, self._l2_reg, "final_dnn", self._is_training)(all_fea)
+        logging.info("%s build_predict_graph, all_fea.shape:%s" % (filename, str(all_fea.shape)))
 
         if self._model_config.wide_towers:
             wide_fea = tf.concat(self._wide_tower_features, axis=1)
             all_fea = tf.concat([all_fea, wide_fea], axis=1)
-            logging.info("build_predict_graph, logits.shape:%s" % (str(all_fea.shape)))
+            logging.info("%s build_predict_graph, with wide tower, all_fea.shape:%s" % (filename, str(all_fea.shape)))
         if self._model_config.bias_tower:
             bias_fea = self.build_bias_input_layer(self._model_config.bias_tower.input_group)
             all_fea = tf.concat([all_fea, bias_fea], axis=1)
-            logging.info("build_predict_graph, logits.shape:%s" % (str(all_fea.shape)))
-        logits = tf.layers.dense(all_fea, 1, name="logits")
+            logging.info("%s build_predict_graph, with bias tower, all_fea.shape:%s" % (filename, str(all_fea.shape)))
+
+        if self._model_config.star_model_config:
+            star_model_config = self._model_config.star_model_config
+            logits = STARAuxiliaryNetworkLayer().call(
+                name="star_aux", deep_fea=all_fea,
+                domain_fea=self.get_id_feature(
+                    star_model_config.domain_input_group, star_model_config.domain_id_col,
+                    use_raw_id=False
+                ),
+                mlp_units=star_model_config.auxiliary_network_mlp_units,
+            )
+        else:
+            logits = tf.layers.dense(all_fea, 1, name="logits")
+
         logits = tf.reshape(logits, (-1,))
         probs = tf.sigmoid(logits, name="probs")
 
         prediction_dict = dict()
-        prediction_dict["logits"] = logits
         prediction_dict["probs"] = probs
         self._add_to_prediction_dict(prediction_dict)
         return self._prediction_dict
