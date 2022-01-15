@@ -16,8 +16,19 @@ filename = str(os.path.basename(__file__)).split(".")[0]
 
 
 class STARModelConfig(object):
-    def __init__(self):
-        pass
+    def __init__(self, use_star_topology_fcn_layer: bool = True,
+                 use_auxiliary_network_layer: bool = True):
+        self.use_star_topology_fcn_layer = use_star_topology_fcn_layer
+        self.use_auxiliary_network_layer = use_auxiliary_network_layer
+
+    @staticmethod
+    def handle(data):
+        res = STARModelConfig()
+        if "use_star_topology_fcn_layer" in data:
+            res.use_star_topology_fcn_layer = data["use_star_topology_fcn_layer"]
+        if "use_auxiliary_network_layer" in data:
+            res.use_auxiliary_network_layer = data["use_auxiliary_network_layer"]
+        return res
 
     def __str__(self):
         return str(self.__dict__)
@@ -37,6 +48,8 @@ class StarTopologyFCNLayer(object):
             weight_w_dim.append([x, y])
             weight_b_dim.append(1)
             x = y
+
+        logging.info("%s call, input_dimension:%d, mlp_units:%s" % (filename, input_dimension, str(mlp_units)))
 
         domain_weight_embedding = embedding_ops.get_embedding_variable(
             name=name + "_domain",
@@ -75,7 +88,7 @@ class StarTopologyFCNLayer(object):
         return h
 
 
-class STARAuxiliaryNetworkLayer(object):
+class AuxiliaryNetworkLayer(object):
     def call(self, name, deep_fea, domain_fea, mlp_units):
         raw_logit = tf.layers.dense(deep_fea, 1, name=name + "_raw_logit")
 
@@ -84,7 +97,7 @@ class STARAuxiliaryNetworkLayer(object):
             unit = mlp_units[i]
             domain_logit = tf.layers.dense(domain_logit, unit,
                                            activation=tf.nn.relu,
-                                           name=name + "_domain_logit_" + str(i+1),
+                                           name=name + "_domain_logit_" + str(i + 1),
                                            )
         domain_logit = tf.layers.dense(deep_fea, 1, name=name + "_domain_logit")
 

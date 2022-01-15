@@ -13,6 +13,7 @@ from easy_rec_ext.model.dien import DIENTower
 from easy_rec_ext.model.can import CANTower
 from easy_rec_ext.model.esmm import ESMMModelConfig
 from easy_rec_ext.model.aitm import AITMModelConfig
+from easy_rec_ext.model.star import STARModelConfig
 
 
 class BaseConfig(object):
@@ -557,6 +558,7 @@ class ModelConfig(BaseConfig):
 
                  final_dnn: DNNConfig = None,
                  bias_tower: BiasTower = None,
+                 star_model_config: STARModelConfig = None,
 
                  embedding_regularization: float = 0.0,
                  l2_regularization: float = 0.0001,
@@ -581,6 +583,7 @@ class ModelConfig(BaseConfig):
 
         self.final_dnn = final_dnn
         self.bias_tower = bias_tower
+        self.star_model_config = star_model_config
 
         self.embedding_regularization = embedding_regularization
         self.l2_regularization = l2_regularization
@@ -641,6 +644,8 @@ class ModelConfig(BaseConfig):
             res.final_dnn = DNNConfig.handle(data["final_dnn"])
         if "bias_tower" in data:
             res.bias_tower = BiasTower.handle(data["bias_tower"])
+        if "star_model_config" in data:
+            res.star_model_config = STARModelConfig.handle(data["star_model_config"])
 
         if "embedding_regularization" in data:
             res.embedding_regularization = data["embedding_regularization"]
