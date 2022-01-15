@@ -14,6 +14,7 @@ from easy_rec_ext.model.din import DINLayer
 from easy_rec_ext.model.bst import BSTLayer
 from easy_rec_ext.model.dien import DIENLayer
 from easy_rec_ext.model.can import CANLayer
+from easy_rec_ext.model.star import StarTopologyFCNLayer, AuxiliaryNetworkLayer as STARAuxiliaryNetworkLayer
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
@@ -210,7 +211,19 @@ class MultiTower(RankModel):
         all_fea = tf.concat(tower_fea_arr, axis=1)
         logging.info("%s build_predict_graph, all_fea.shape:%s" % (filename, str(all_fea.shape)))
 
-        all_fea = dnn.DNN(self._model_config.final_dnn, self._l2_reg, "final_dnn", self._is_training)(all_fea)
+        if self._model_config.star_model_config:
+            star_model_config = self._model_config.star_model_config
+            domain_id = self.get_id_feature(
+                star_model_config.domain_input_group, star_model_config.domain_id_col,
+                use_raw_id=True
+            )
+            all_fea = StarTopologyFCNLayer().call(
+                name="star_fcn", deep_fea=all_fea, domain_id=domain_id,
+                domain_size=self._model_config.star_model_config.domain_size,
+                mlp_units=self._model_config.final_dnn.hidden_units,
+            )
+        else:
+            all_fea = dnn.DNN(self._model_config.final_dnn, self._l2_reg, "final_dnn", self._is_training)(all_fea)
         logging.info("%s build_predict_graph, all_fea.shape:%s" % (filename, str(all_fea.shape)))
 
         if self._model_config.wide_towers:
@@ -222,7 +235,19 @@ class MultiTower(RankModel):
             all_fea = tf.concat([all_fea, bias_fea], axis=1)
             logging.info("%s build_predict_graph, with bias tower, all_fea.shape:%s" % (filename, str(all_fea.shape)))
 
-        logits = tf.layers.dense(all_fea, 1, name="logits")
+        if self._model_config.star_model_config:
+            star_model_config = self._model_config.star_model_config
+            logits = STARAuxiliaryNetworkLayer().call(
+                name="star_aux", deep_fea=all_fea,
+                domain_fea=self.get_id_feature(
+                    star_model_config.domain_input_group, star_model_config.domain_id_col,
+                    use_raw_id=False
+                ),
+                mlp_units=star_model_config.auxiliary_network_mlp_units,
+            )
+        else:
+            logits = tf.layers.dense(all_fea, 1, name="logits")
+
         logits = tf.reshape(logits, (-1,))
         probs = tf.sigmoid(logits, name="probs")
 

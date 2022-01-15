@@ -115,6 +115,17 @@ class RankModel(object):
         outputs = tf.concat(outputs, axis=1)
         return outputs
 
+    def get_id_feature(self, feature_group, feature_name, use_raw_id=False):
+        assert feature_name in self._feature_fields_dict[feature_name]
+        feature_field = self._feature_fields_dict[feature_name]
+        assert feature_field.feature_type in ["IdFeature"]
+
+        if use_raw_id:
+            return self._feature_dict[feature_field.input_name]
+        else:
+            group_input_dict = self.build_group_input_dict(feature_group)
+            return group_input_dict[feature_field.input_name]
+
     def build_cartesian_interaction_input_layer(self, feature_group, item_use_raw_id=False):
         logging.info("%s build_cross_interaction_input_layer, feature_group:%s" % (filename, str(feature_group)))
         outputs = {}
