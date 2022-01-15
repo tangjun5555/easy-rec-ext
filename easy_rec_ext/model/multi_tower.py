@@ -205,27 +205,28 @@ class MultiTower(RankModel):
 
     def build_predict_graph(self):
         tower_fea_arr = self.build_tower_fea_arr()
-        logging.info("%s build_predict_graph, all_fea.length:%s" % (filename, str(len(tower_fea_arr))))
+        logging.info("%s build_predict_graph, tower_fea_arr.length:%s" % (filename, str(len(tower_fea_arr))))
 
         all_fea = tf.concat(tower_fea_arr, axis=1)
-        final_dnn_layer = dnn.DNN(self._model_config.final_dnn, self._l2_reg, "final_dnn", self._is_training)
-        all_fea = final_dnn_layer(all_fea)
-        logging.info("build_predict_graph, logits.shape:%s" % (str(all_fea.shape)))
+        logging.info("%s build_predict_graph, all_fea.shape:%s" % (filename, str(all_fea.shape)))
+
+        all_fea = dnn.DNN(self._model_config.final_dnn, self._l2_reg, "final_dnn", self._is_training)(all_fea)
+        logging.info("%s build_predict_graph, all_fea.shape:%s" % (filename, str(all_fea.shape)))
 
         if self._model_config.wide_towers:
             wide_fea = tf.concat(self._wide_tower_features, axis=1)
             all_fea = tf.concat([all_fea, wide_fea], axis=1)
-            logging.info("build_predict_graph, logits.shape:%s" % (str(all_fea.shape)))
+            logging.info("%s build_predict_graph, with wide tower, all_fea.shape:%s" % (filename, str(all_fea.shape)))
         if self._model_config.bias_tower:
             bias_fea = self.build_bias_input_layer(self._model_config.bias_tower.input_group)
             all_fea = tf.concat([all_fea, bias_fea], axis=1)
-            logging.info("build_predict_graph, logits.shape:%s" % (str(all_fea.shape)))
+            logging.info("%s build_predict_graph, with bias tower, all_fea.shape:%s" % (filename, str(all_fea.shape)))
+
         logits = tf.layers.dense(all_fea, 1, name="logits")
         logits = tf.reshape(logits, (-1,))
         probs = tf.sigmoid(logits, name="probs")
 
         prediction_dict = dict()
-        prediction_dict["logits"] = logits
         prediction_dict["probs"] = probs
         self._add_to_prediction_dict(prediction_dict)
         return self._prediction_dict
