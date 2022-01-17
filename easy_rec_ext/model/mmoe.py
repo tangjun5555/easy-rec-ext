@@ -83,7 +83,6 @@ class MMoE(MultiTower):
             tower_output = tf.sigmoid(tower_output, name="%s_probs" % tower_name)
             tower_outputs[tower_name] = tf.reshape(tower_output, (-1,))
             tower_outputs_list.append(tower_output)
-        tower_outputs["all_probs"] = tf.concat(tower_outputs_list, axis=-1, name="all_probs")
         self._add_to_prediction_dict(tower_outputs)
         return self._prediction_dict
 

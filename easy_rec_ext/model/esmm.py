@@ -129,8 +129,6 @@ class ESMM(MultiTower):
             task_probs_list.append(task_probs)
             prediction_dict["%s_probs" % task_name] = tf.reshape(task_probs, (-1,))
 
-        all_probs = tf.concat(task_probs_list, axis=-1, name="all_probs")
-        prediction_dict["all_probs"] = all_probs
         self._add_to_prediction_dict(prediction_dict)
         return self._prediction_dict
 
