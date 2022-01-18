@@ -12,6 +12,24 @@ if tf.__version__ >= "2.0":
 line_sep = "\n" + "##" * 20 + "\n"
 
 
+def test_29():
+    t1 = tf.constant(
+        value=[
+            [1.0] * 4,
+            [2.0] * 4,
+            [3.0] * 4
+        ],
+        dtype=tf.dtypes.float32,
+    )
+
+    r1 = t1 * 10.0
+    r2 = tf.nn.dropout(t1, keep_prob=0.5)
+
+    print(t1)
+    print(r1)
+    print(r2)
+
+
 def test_28():
     t1 = tf.constant(
         value=[

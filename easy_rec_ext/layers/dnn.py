@@ -18,11 +18,13 @@ class DNNConfig(object):
                  activation: str = "tf.nn.relu",
                  use_bn: bool = True,
                  dropout_ratio: List[float] = None,
+                 dropout_type: str = "dropout",
                  ):
         self.hidden_units = hidden_units
         self.activation = activation
         self.use_bn = use_bn
         self.dropout_ratio = dropout_ratio
+        self.dropout_type = dropout_type
 
     @staticmethod
     def handle(data):
@@ -33,6 +35,9 @@ class DNNConfig(object):
             res.use_bn = data["use_bn"]
         if "dropout_ratio" in data:
             res.dropout_ratio = data["dropout_ratio"]
+        if "dropout_type" in data:
+            assert data["dropout_type"] in ["dropout", "inverted_dropout"]
+            res.dropout_type = data["dropout_type"]
         return res
 
     def __str__(self):
@@ -79,6 +84,10 @@ class DNN(object):
     def dropout_ratio(self):
         return self._config.dropout_ratio
 
+    @property
+    def dropout_type(self):
+        return self._config.dropout_type
+
     def __call__(self, deep_fea):
         for i, unit in enumerate(self.hidden_units):
             deep_fea = tf.layers.dense(
@@ -98,13 +107,19 @@ class DNN(object):
             deep_fea = self.activation(
                 deep_fea, name="%s/dnn_%d/act" % (self._name, i)
             )
-            if self.dropout_ratio and isinstance(self.dropout_ratio, list) and \
-                len(self.dropout_ratio) > 0 and self._is_training:
-                assert self.dropout_ratio[i] < 1, \
-                    "invalid dropout_ratio: %.3f" % self.dropout_ratio[i]
-                deep_fea = tf.nn.dropout(
-                    deep_fea,
-                    keep_prob=1 - self.dropout_ratio[i],
-                    name="%s/%d/dropout" % (self._name, i),
-                )
+            if self.dropout_ratio and isinstance(self.dropout_ratio, list):
+                assert len(self.dropout_ratio) == len(self.hidden_units)
+                if self._is_training:
+                    assert 0.0 < self.dropout_ratio[i] < 1.0, "invalid dropout_ratio: %.3f" % self.dropout_ratio[i]
+                    keep_prob = 1 - self.dropout_ratio[i]
+                    deep_fea = tf.nn.dropout(
+                        deep_fea,
+                        keep_prob=keep_prob,
+                        name="%s/%d/dropout" % (self._name, i),
+                    )
+                    if self.dropout_type == "inverted_dropout":
+                        deep_fea = deep_fea / keep_prob
+                else:
+                    if self.dropout_type == "dropout":
+                        deep_fea = self.dropout_ratio[i] * deep_fea
         return deep_fea
