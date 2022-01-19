@@ -439,8 +439,8 @@ class ModelConfig(BaseConfig):
                  bias_tower: BiasTower = None,
                  star_model_config: STARModelConfig = None,
 
-                 embedding_regularization: float = 0.0,
-                 l2_regularization: float = 0.0001,
+                 embedding_regularization: float = 5e-05,
+                 l2_regularization: float = 5e-7,
                  use_dynamic_embedding: bool = False,
                  pretrain_variable_dir: str = None,
                  ):
