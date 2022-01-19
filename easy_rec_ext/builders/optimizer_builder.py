@@ -129,6 +129,30 @@ class AdagradOptimizer(object):
         return str(self.__dict__)
 
 
+class RMSPropOptimizer(object):
+    def __init__(self, learning_rate=LearningRate(), decay=0.9, momentum=0.0, epsilon=1e-10):
+        self.learning_rate = learning_rate
+        self.decay = decay
+        self.momentum = momentum
+        self.epsilon = epsilon
+
+    @staticmethod
+    def handle(data):
+        res = RMSPropOptimizer()
+        if "learning_rate" in data:
+            res.learning_rate = LearningRate.handle(data["learning_rate"])
+        if "decay" in data:
+            res.decay = data["decay"]
+        if "momentum" in data:
+            res.momentum = data["momentum"]
+        if "epsilon" in data:
+            res.epsilon = data["epsilon"]
+        return res
+
+    def __str__(self):
+        return str(self.__dict__)
+
+
 class AdamOptimizer(object):
     def __init__(self, learning_rate=LearningRate(), beta1=0.9, beta2=0.999, epsilon=1e-8):
         self.learning_rate = learning_rate
@@ -158,12 +182,14 @@ class Optimizer(object):
                  sgd_optimizer=SgdOptimizer(),
                  momentum_optimizer=MomentumOptimizer(),
                  adagrad_optimizer=AdagradOptimizer(),
-                 adam_optimizer=AdamOptimizer()
+                 rmsprop_optimizer=RMSPropOptimizer(),
+                 adam_optimizer=AdamOptimizer(),
                  ):
         self.optimizer_type = optimizer_type
         self.sgd_optimizer = sgd_optimizer
         self.momentum_optimizer = momentum_optimizer
         self.adagrad_optimizer = adagrad_optimizer
+        self.rmsprop_optimizer = rmsprop_optimizer
         self.adam_optimizer = adam_optimizer
 
     @staticmethod
@@ -177,6 +203,8 @@ class Optimizer(object):
             res.momentum_optimizer = MomentumOptimizer.handle(data["momentum_optimizer"])
         if "adagrad_optimizer" in data:
             res.adagrad_optimizer = AdagradOptimizer.handle(data["adagrad_optimizer"])
+        if "rmsprop_optimizer" in data:
+            res.rmsprop_optimizer = RMSPropOptimizer.handle(data["rmsprop_optimizer"])
         if "adam_optimizer" in data:
             res.adam_optimizer = AdamOptimizer.handle(data["adam_optimizer"])
         return res
@@ -220,6 +248,12 @@ def build(optimizer_config):
         learning_rate = _create_learning_rate(config.learning_rate)
         summary_vars.append(learning_rate)
         optimizer = tf.train.AdagradOptimizer(learning_rate, initial_accumulator_value=config.initial_accumulator_value)
+
+    if optimizer_config.optimizer_type == "rmsprop_optimizer":
+        config = optimizer_config.rmsprop_optimizer
+        learning_rate = _create_learning_rate(config.learning_rate)
+        summary_vars.append(learning_rate)
+        optimizer = tf.train.RMSPropOptimizer(learning_rate, decay=0.9, momentum=0.0, epsilon=1e-10)
 
     if optimizer_config.optimizer_type == "adam_optimizer":
         config = optimizer_config.adam_optimizer
