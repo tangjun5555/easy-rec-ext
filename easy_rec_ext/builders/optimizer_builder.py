@@ -100,7 +100,7 @@ class MomentumOptimizer(object):
 
     @staticmethod
     def handle(data):
-        res = AdagradOptimizer()
+        res = MomentumOptimizer()
         if "learning_rate" in data:
             res.learning_rate = LearningRate.handle(data["learning_rate"])
         if "momentum" in data:
