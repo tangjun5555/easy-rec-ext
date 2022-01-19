@@ -4,6 +4,7 @@
 # desc:
 
 from typing import List
+from easy_rec_ext.builders.optimizer_builder import Optimizer
 from easy_rec_ext.layers.dnn import DNNConfig, DNNTower
 from easy_rec_ext.layers.sequence_pooling import SequencePoolingConfig
 from easy_rec_ext.layers.interaction import InteractionConfig
@@ -240,128 +241,6 @@ class FeatureGroup(BaseConfig):
             return res
         else:
             return []
-
-
-class ConstantLearningRate(BaseConfig):
-    def __init__(self, learning_rate=0.01):
-        self.learning_rate = learning_rate
-
-    @staticmethod
-    def handle(data):
-        res = ConstantLearningRate()
-        if "learning_rate" in data:
-            res.learning_rate = data["learning_rate"]
-        return res
-
-
-class ExponentialDecayLearningRate(BaseConfig):
-    def __init__(self, initial_learning_rate=0.01, decay_steps=20000, decay_factor=0.95, min_learning_rate=0.0001):
-        self.initial_learning_rate = initial_learning_rate
-        self.decay_steps = decay_steps
-        self.decay_factor = decay_factor
-        self.min_learning_rate = min_learning_rate
-
-    @staticmethod
-    def handle(data):
-        res = ExponentialDecayLearningRate()
-        if "initial_learning_rate" in data:
-            res.initial_learning_rate = data["initial_learning_rate"]
-        if "decay_steps" in data:
-            res.decay_steps = data["decay_steps"]
-        if "decay_factor" in data:
-            res.decay_factor = data["decay_factor"]
-        if "min_learning_rate" in data:
-            res.min_learning_rate = data["min_learning_rate"]
-        return res
-
-
-class LearningRate(BaseConfig):
-    def __init__(self, learning_rate_type="exponential_decay_learning_rate",
-                 constant_learning_rate=ConstantLearningRate(),
-                 exponential_decay_learning_rate=ExponentialDecayLearningRate()
-                 ):
-        self.learning_rate_type = learning_rate_type
-        self.constant_learning_rate = constant_learning_rate
-        self.exponential_decay_learning_rate = exponential_decay_learning_rate
-
-    @staticmethod
-    def handle(data):
-        res = LearningRate()
-        if "learning_rate_type" in data:
-            res.learning_rate_type = data["learning_rate_type"]
-        if "constant_learning_rate" in data:
-            res.constant_learning_rate = ConstantLearningRate.handle(data["constant_learning_rate"])
-        if "exponential_decay_learning_rate" in data:
-            res.exponential_decay_learning_rate = ExponentialDecayLearningRate.handle(
-                data["exponential_decay_learning_rate"])
-        return res
-
-
-class SgdOptimizer(BaseConfig):
-    def __init__(self, learning_rate=LearningRate()):
-        self.learning_rate = learning_rate
-
-    @staticmethod
-    def handle(data):
-        res = SgdOptimizer()
-        if "learning_rate" in data:
-            res.learning_rate = LearningRate.handle(data["learning_rate"])
-        return res
-
-
-class AdagradOptimizer(BaseConfig):
-    def __init__(self, learning_rate=LearningRate()):
-        self.learning_rate = learning_rate
-
-    @staticmethod
-    def handle(data):
-        res = AdagradOptimizer()
-        if "learning_rate" in data:
-            res.learning_rate = LearningRate.handle(data["learning_rate"])
-        return res
-
-
-class AdamOptimizer(BaseConfig):
-    def __init__(self, learning_rate=LearningRate(), beta1=0.9, beta2=0.999):
-        self.learning_rate = learning_rate
-        self.beta1 = beta1
-        self.beta2 = beta2
-
-    @staticmethod
-    def handle(data):
-        res = AdamOptimizer()
-        if "learning_rate" in data:
-            res.learning_rate = LearningRate.handle(data["learning_rate"])
-        if "beta1" in data:
-            res.beta1 = data["beta1"]
-        if "beta2" in data:
-            res.beta2 = data["beta2"]
-        return res
-
-
-class Optimizer(BaseConfig):
-    def __init__(self, optimizer_type="sgd_optimizer",
-                 sgd_optimizer=SgdOptimizer(),
-                 adagrad_optimizer=AdagradOptimizer(),
-                 adam_optimizer=AdamOptimizer()
-                 ):
-        self.optimizer_type = optimizer_type
-        self.sgd_optimizer = sgd_optimizer
-        self.adagrad_optimizer = adagrad_optimizer
-        self.adam_optimizer = adam_optimizer
-
-    @staticmethod
-    def handle(data):
-        res = Optimizer()
-        if "optimizer_type" in data:
-            res.optimizer_type = data["optimizer_type"]
-        if "sgd_optimizer" in data:
-            res.sgd_optimizer = SgdOptimizer.handle(data["sgd_optimizer"])
-        if "adagrad_optimizer" in data:
-            res.adagrad_optimizer = AdagradOptimizer.handle(data["adagrad_optimizer"])
-        if "adam_optimizer" in data:
-            res.adam_optimizer = AdamOptimizer.handle(data["adam_optimizer"])
-        return res
 
 
 class TrainConfig(BaseConfig):
