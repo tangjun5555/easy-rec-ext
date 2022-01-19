@@ -94,7 +94,7 @@ class SgdOptimizer(object):
 
 
 class MomentumOptimizer(object):
-    def __init__(self, learning_rate=LearningRate(), momentum=0.5):
+    def __init__(self, learning_rate=LearningRate(), momentum=0.9):
         self.learning_rate = learning_rate
         self.momentum = momentum
 
