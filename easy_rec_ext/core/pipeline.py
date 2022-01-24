@@ -275,8 +275,16 @@ class TrainConfig(BaseConfig):
 
 
 class EvalMetric(BaseConfig):
-    def __init__(self, name):
+    def __init__(self, name: str):
         self.name = name
+
+    @staticmethod
+    def handle(data):
+        res = EvalMetric(data["name"])
+        return res
+
+    def __str__(self):
+        return "EvalMetric[%s]" % self.name
 
 
 class AUC(EvalMetric):
@@ -290,7 +298,7 @@ class AUC(EvalMetric):
 
 
 class GroupAUC(EvalMetric):
-    def __init__(self, gid_field: str, reduction="mean_by_sample_num"):
+    def __init__(self, gid_field: str, reduction: str = "mean_by_sample_num"):
         """
         Args:
             gid_field: group ids, A int or string `Tensor` whose shape matches `predictions`.
@@ -310,6 +318,9 @@ class GroupAUC(EvalMetric):
             res.reduction = data["reduction"]
         return res
 
+    def __str__(self):
+        return "EvalMetric[gauc@%s]" % self.gid_field
+
 
 class PCOPC(EvalMetric):
     def __init__(self):
@@ -321,36 +332,62 @@ class PCOPC(EvalMetric):
         return res
 
 
+class RecallAtK(EvalMetric):
+    def __init__(self, topk: int = 100):
+        super(RecallAtK, self).__init__("recall_at_k")
+        self.topk = topk
+
+    @staticmethod
+    def handle(data):
+        res = RecallAtK()
+        if "topk" in data:
+            res.topk = data["topk"]
+        return res
+
+    def __str__(self):
+        return "EvalMetric[recall@%d]" % self.topk
+
+
+class PrecisionAtK(EvalMetric):
+    def __init__(self, topk: int = 100):
+        super(PrecisionAtK, self).__init__("precision_at_k")
+        self.topk = topk
+
+    @staticmethod
+    def handle(data):
+        res = PrecisionAtK()
+        if "topk" in data:
+            res.topk = data["topk"]
+        return res
+
+    def __str__(self):
+        return "EvalMetric[precision@%d]" % self.topk
+
+
 class EvalConfig(BaseConfig):
     def __init__(self,
-                 auc: AUC = None,
-                 gauc: GroupAUC = None,
-                 pcopc: PCOPC = None
+                 metric_set,
                  ):
-        metric_set = []
-        if auc:
-            metric_set.append(auc)
-        if gauc and gauc.gid_field:
-            metric_set.append(gauc)
-        if pcopc:
-            metric_set.append(pcopc)
         self.metric_set = metric_set
 
     @staticmethod
     def handle(data):
-        if "auc" in data:
-            auc = AUC.handle(data["auc"])
-        else:
-            auc = None
-        if "gauc" in data:
-            gauc = GroupAUC.handle(data["gauc"])
-        else:
-            gauc = None
-        if "pcopc" in data:
-            pcopc = PCOPC.handle(data["pcopc"])
-        else:
-            pcopc = None
-        res = EvalConfig(auc, gauc, pcopc)
+        metric_set = []
+        for metric in data["metric_set"]:
+            eval_metric = EvalMetric.handle(metric)
+            if eval_metric.name == "auc":
+                metric_set.append(AUC.handle(metric))
+            elif eval_metric.name == "gauc":
+                metric_set.append(GroupAUC.handle(metric))
+            elif eval_metric.name == "pcopc":
+                metric_set.append(PCOPC.handle(metric))
+            elif eval_metric.name == "recall_at_k":
+                metric_set.append(RecallAtK.handle(metric))
+            elif eval_metric.name == "precision_at_k":
+                metric_set.append(PrecisionAtK.handle(metric))
+            else:
+                raise NotImplemented
+        res = EvalConfig(metric_set=metric_set)
         return res
 
 

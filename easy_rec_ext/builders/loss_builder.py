@@ -6,7 +6,6 @@
 import os
 import logging
 from enum import Enum, unique
-
 import tensorflow as tf
 
 if tf.__version__ >= "2.0":
@@ -17,8 +16,19 @@ filename = str(os.path.basename(__file__)).split(".")[0]
 @unique
 class LossType(Enum):
     CROSS_ENTROPY_LOSS = 0
-    L2_LOSS = 1
+    SOFTMAX_CROSS_ENTROPY_LOSS = 1
     PAIRWISE_LOSS = 2
+
+    @staticmethod
+    def handle(value):
+        if value == "CROSS_ENTROPY_LOSS":
+            return LossType.CROSS_ENTROPY_LOSS
+        elif value == "SOFTMAX_CROSS_ENTROPY_LOSS":
+            return LossType.SOFTMAX_CROSS_ENTROPY_LOSS
+        elif value == "PAIRWISE_LOSS":
+            return LossType.PAIRWISE_LOSS
+        else:
+            return None
 
 
 def build_pairwise_loss(labels, logits):
