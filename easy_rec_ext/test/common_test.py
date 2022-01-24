@@ -12,6 +12,33 @@ if tf.__version__ >= "2.0":
 line_sep = "\n" + "##" * 20 + "\n"
 
 
+def test_30():
+    tf.disable_eager_execution()
+    label = tf.constant(
+        value=[
+            [1],
+            [1],
+            [1],
+            [1]
+        ],
+        dtype=tf.dtypes.int64,
+    )
+    probs = tf.constant(
+        value=[
+            [0.1],
+            [0.2],
+            [0.3],
+            [0.4]
+        ]
+    )
+
+    with tf.Session() as sess:
+        r1 = tf.metrics.recall_at_k(label, probs, k=2)
+        r2 = tf.metrics.recall_at_k(label, probs, k=1)
+        print(sess.run(r1))
+        print(sess.run(r2))
+
+
 def test_29():
     t1 = tf.constant(
         value=[
