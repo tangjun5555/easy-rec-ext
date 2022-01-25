@@ -102,7 +102,7 @@ class InputConfig(BaseConfig):
 
 class FeatureField(BaseConfig):
     def __init__(self,
-                 input_name: str, feature_type: str,
+                 input_name: str, feature_type: str, feature_name: str = None,
                  raw_input_dim: int = 1, raw_input_embedding_type: str = None,
                  one_hot: int = 0,
                  embedding_name: str = None, embedding_dim: int = 16,
@@ -111,6 +111,7 @@ class FeatureField(BaseConfig):
                  ):
         self.input_name = input_name
         self.feature_type = feature_type
+        self.feature_name = feature_name if feature_name else input_name
 
         self.raw_input_dim = raw_input_dim
         self.raw_input_embedding_type = raw_input_embedding_type
@@ -128,9 +129,12 @@ class FeatureField(BaseConfig):
     @staticmethod
     def handle(data):
         feature_type = data["feature_type"]
-        assert feature_type in ["IdFeature", "RawFeature", "SequenceFeature"]
+        assert feature_type in ["AuxiliaryFeature", "IdFeature", "RawFeature", "SequenceFeature"]
 
         res = FeatureField(data["input_name"], feature_type)
+
+        if "feature_name" in data:
+            res.feature_name = data["feature_name"] if data["feature_name"] else res.input_name
 
         if "raw_input_dim" in data:
             res.raw_input_dim = data["raw_input_dim"]

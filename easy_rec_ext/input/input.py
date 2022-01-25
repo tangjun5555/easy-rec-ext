@@ -122,7 +122,7 @@ class Input(object):
         parsed_dict = {}
         for fc in self._feature_config.feature_fields:
             if fc.feature_type == "SequenceFeature":
-                field = field_dict[fc.input_name]
+                field = field_dict[fc.feature_name]
                 parsed_dict[fc.input_name] = tf.strings.split(field, "|")
                 if fc.hash_bucket_size <= 0:
                     parsed_dict[fc.input_name] = tf.sparse.SparseTensor(
@@ -140,26 +140,26 @@ class Input(object):
                 parsed_dict[fc.input_name] = tf.sparse.to_dense(parsed_dict[fc.input_name])
 
             elif fc.feature_type == "RawFeature":
-                if field_dict[fc.input_name].dtype == tf.string:
+                if field_dict[fc.feature_name].dtype == tf.string:
                     if fc.raw_input_dim > 1:
-                        tmp_fea = tf.string_split(field_dict[fc.input_name], "|")
+                        tmp_fea = tf.string_split(field_dict[fc.feature_name], "|")
                         tmp_vals = tf.string_to_number(tmp_fea.values, tf.float32,
                                                        name="multi_raw_fea_to_flt_%s" % fc.input_name)
                         parsed_dict[fc.input_name] = tf.sparse_to_dense(
                             tmp_fea.indices,
-                            [tf.shape(field_dict[fc.input_name])[0], fc.raw_input_dim],
+                            [tf.shape(field_dict[fc.feature_name])[0], fc.raw_input_dim],
                             tmp_vals,
                             default_value=0,
                         )
                     else:
-                        parsed_dict[fc.input_name] = tf.string_to_number(field_dict[fc.input_name], tf.float32)
+                        parsed_dict[fc.input_name] = tf.string_to_number(field_dict[fc.feature_name], tf.float32)
                         parsed_dict[fc.input_name] = tf.expand_dims(parsed_dict[fc.input_name], axis=1)
                 else:
-                    parsed_dict[fc.input_name] = tf.to_float(field_dict[fc.input_name])
+                    parsed_dict[fc.input_name] = tf.to_float(field_dict[fc.feature_name])
                     parsed_dict[fc.input_name] = tf.expand_dims(parsed_dict[fc.input_name], axis=1)
 
             elif fc.feature_type == "IdFeature":
-                parsed_dict[fc.input_name] = field_dict[fc.input_name]
+                parsed_dict[fc.input_name] = field_dict[fc.feature_name]
                 if fc.hash_bucket_size <= 0:
                     if parsed_dict[fc.input_name].dtype == tf.string:
                         parsed_dict[fc.input_name] = tf.string_to_number(parsed_dict[fc.input_name], tf.dtypes.int64,
@@ -178,7 +178,7 @@ class Input(object):
                         )
                 parsed_dict[fc.input_name] = tf.expand_dims(parsed_dict[fc.input_name], axis=1)
             else:
-                parsed_dict[fc.input_name] = field_dict[fc.input_name]
+                parsed_dict[fc.input_name] = field_dict[fc.feature_name]
 
         for input_id, input_name in enumerate(self._label_fields):
             if input_name not in field_dict:
