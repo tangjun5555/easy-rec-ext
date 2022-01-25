@@ -17,15 +17,18 @@ filename = str(os.path.basename(__file__)).split(".")[0]
 
 class DSSMModelConfig(object):
     def __init__(self, user_input_groups: List[str], item_input_groups: List[str],
+                 user_field: str, item_field: str,
                  scale_sim: bool = True,
                  ):
         self.user_input_groups = user_input_groups
         self.item_input_groups = item_input_groups
+        self.user_field = user_field
+        self.item_field = item_field
         self.scale_sim = scale_sim
 
     @staticmethod
     def handle(data):
-        res = DSSMModelConfig(data["user_input_groups"], data["item_input_groups"])
+        res = DSSMModelConfig(data["user_input_groups"], data["item_input_groups"], data["user_field"], data["item_field"])
         if "scale_sim" in data:
             res.scale_sim = data["scale_sim"]
         return res
@@ -168,7 +171,7 @@ class DSSM(MatchModel, DSSMModel):
         user_emb = self.norm(user_emb)
         item_emb = self.norm(item_emb)
         user_item_sim = self.sim(user_emb, item_emb)
-        
+
         if dssm_model_config.scale_sim:
             sim_w = tf.get_variable(
                 "scale_sim_w",
@@ -179,21 +182,24 @@ class DSSM(MatchModel, DSSMModel):
             sim_b = tf.get_variable(
                 "scale_sim_b",
                 dtype=tf.float32,
-                shape=(1, ),
+                shape=(1,),
                 initializer=tf.zeros_initializer()
             )
             user_item_sim = tf.matmul(user_item_sim, tf.abs(sim_w)) + sim_b
-        
+
         user_item_sim = tf.nn.sigmoid(user_item_sim)
         user_item_sim = tf.reshape(user_item_sim, (-1,))
 
         prediction_dict = dict()
         prediction_dict["probs"] = user_item_sim
+
+        prediction_dict["user_id"] = self._feature_dict[dssm_model_config.user_field]
         prediction_dict["user_emb"] = tf.reduce_join(
             tf.as_string(user_emb),
             axis=-1,
             separator=",",
         )
+        prediction_dict["item_id"] = self._feature_dict[dssm_model_config.item_field]
         prediction_dict["item_emb"] = tf.reduce_join(
             tf.as_string(item_emb),
             axis=-1,
