@@ -17,10 +17,10 @@ if tf.__version__ >= "2.0":
     tf = tf.compat.v1
 
 
-class RankEstimator(tf.estimator.Estimator):
+class ModelEstimator(tf.estimator.Estimator):
     def __init__(self, pipeline_config, run_config):
         self._pipeline_config = pipeline_config
-        super(RankEstimator, self).__init__(
+        super(ModelEstimator, self).__init__(
             model_fn=self._model_fn,
             model_dir=self._pipeline_config.model_dir,
             config=run_config,
@@ -29,15 +29,18 @@ class RankEstimator(tf.estimator.Estimator):
         )
 
     @property
-    def _rank_model(self):
+    def _real_model(self):
         if self._pipeline_config.model_config.model_class == "din":
             model = DIN
         elif self._pipeline_config.model_config.model_class == "bst":
             model = BST
         elif self._pipeline_config.model_config.model_class == "DIEN":
             model = DIEN
+        elif self._pipeline_config.model_config.model_class == "can":
+            model = CAN
         elif self._pipeline_config.model_config.model_class == "multi_tower":
             model = MultiTower
+
         elif self._pipeline_config.model_config.model_class == "esmm":
             model = ESMM
         elif self._pipeline_config.model_config.model_class == "aitm":
@@ -46,12 +49,16 @@ class RankEstimator(tf.estimator.Estimator):
             model = MMoE
         elif self._pipeline_config.model_config.model_class == "ple":
             model = PLE
+
+        elif self._pipeline_config.model_config.model_class == "dssm":
+            model = DSSM
+
         else:
             raise ValueError("model_class:%s not supported." % self._pipeline_config.model_config.model_class)
         return model
 
     def _train_model_fn(self, features, labels, run_config):
-        model = self._rank_model(
+        model = self._real_model(
             self._pipeline_config.model_config,
             self._pipeline_config.feature_config,
             features,
@@ -239,7 +246,7 @@ class RankEstimator(tf.estimator.Estimator):
 
     def _eval_model_fn(self, features, labels, run_config):
         start = time.time()
-        model = self._rank_model(
+        model = self._real_model(
             self._pipeline_config.model_config,
             self._pipeline_config.feature_config,
             features,
@@ -270,7 +277,7 @@ class RankEstimator(tf.estimator.Estimator):
         )
 
     def _export_model_fn(self, features, run_config):
-        model = self._rank_model(
+        model = self._real_model(
             self._pipeline_config.model_config,
             self._pipeline_config.feature_config,
             features,

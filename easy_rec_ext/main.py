@@ -12,7 +12,7 @@ from easy_rec_ext.core.pipeline import PipelineConfig
 from easy_rec_ext.core.exporter import FinalExporter
 from easy_rec_ext.builders import distribute_strategy_builder
 from easy_rec_ext.input import CSVInput, TFRecordInput, OSSInput
-from easy_rec_ext.model.rank_estimator import RankEstimator
+from easy_rec_ext.model.model_estimator import ModelEstimator
 from easy_rec_ext.utils import estimator_util, config_util
 
 import tensorflow as tf
@@ -168,7 +168,7 @@ def _create_estimator(pipeline_config, distribution=None):
         eval_distribute=distribution,
         session_config=session_config,
     )
-    estimator = RankEstimator(pipeline_config, run_config)
+    estimator = ModelEstimator(pipeline_config, run_config)
     return estimator, run_config
 
 
