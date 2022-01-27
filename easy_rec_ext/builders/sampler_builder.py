@@ -4,4 +4,26 @@
 # desc:
 
 
+class BaseSampler(object):
+    pass
 
+
+class GlobalRandomNegativeSampler(BaseSampler):
+    """
+    全局随机负采样
+    """
+    pass
+
+
+class InBatchNegativeSampler(BaseSampler):
+    """
+    in-batch负采样
+    """
+    pass
+
+
+class CrossBatchNegativeSampler(BaseSampler):
+    """
+    cross-batch负采样
+    """
+    pass
