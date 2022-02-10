@@ -92,7 +92,7 @@ class MMoE(MultiTower):
             tower_label = self._labels[tower_name]
             tower_loss = tf.losses.log_loss(
                 labels=tf.cast(tower_label, tf.float32),
-                predictions=self._prediction_dict[tower_name],
+                predictions=self._prediction_dict["%s_probs" % tower_name],
             )
             self._loss_dict["%s_cross_entropy_loss" % tower_name] = tower_loss
 
@@ -111,7 +111,7 @@ class MMoE(MultiTower):
         for i in range(self._model_config.mmoe_model_config.num_task):
             tower_name = self._model_config.mmoe_model_config.label_names[i]
             tower_label = self._labels[tower_name]
-            tower_output = self._prediction_dict[tower_name]
+            tower_output = self._prediction_dict["%s_probs" % tower_name]
             for metric in eval_config.metric_set:
                 if "auc" == metric.name:
                     metric_dict["%s_auc" % tower_name] = tf.metrics.auc(tf.to_int64(tower_label), tower_output)
