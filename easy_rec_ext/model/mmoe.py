@@ -12,7 +12,6 @@ import easy_rec_ext.core.metrics as metrics_lib
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
-
 filename = str(os.path.basename(__file__)).split(".")[0]
 
 
@@ -69,32 +68,30 @@ class MMoE(MultiTower):
             task_input = tf.reduce_sum(task_input, axis=1)
             task_input_list.append(task_input)
 
-        tower_outputs = {}
-        tower_outputs_list = []
+        prediction_dict = {}
         for i in range(self._model_config.mmoe_model_config.num_task):
-            tower_name = self._model_config.mmoe_model_config.label_names[i]
-            tower_dnn = dnn.DNN(self._model_config.final_dnn,
-                                self._l2_reg,
-                                "%s_final_dnn" % tower_name,
-                                self._is_training,
-                                )
-            tower_output = tower_dnn(task_input_list[i])
-            tower_output = tf.layers.dense(tower_output, 1, name="%s_logits" % tower_name)
-            tower_output = tf.sigmoid(tower_output, name="%s_probs" % tower_name)
-            tower_outputs["%s_probs" % tower_name] = tf.reshape(tower_output, (-1,))
-            tower_outputs_list.append(tower_output)
-        self._add_to_prediction_dict(tower_outputs)
+            task_name = self._model_config.mmoe_model_config.label_names[i]
+            task_output = dnn.DNN(self._model_config.final_dnn,
+                                  self._l2_reg,
+                                  "%s_final_dnn" % task_name,
+                                  self._is_training,
+                                  )(task_input_list[i])
+            task_output = tf.layers.dense(task_output, 1, name="%s_logits" % task_name)
+            task_output = tf.sigmoid(task_output, name="%s_probs" % task_name)
+            prediction_dict["%s_probs" % task_name] = tf.reshape(task_output, (-1,))
+        self._add_to_prediction_dict(prediction_dict)
         return self._prediction_dict
 
     def build_loss_graph(self):
         for i in range(self._model_config.mmoe_model_config.num_task):
-            tower_name = self._model_config.mmoe_model_config.label_names[i]
-            tower_label = self._labels[tower_name]
-            tower_loss = tf.losses.log_loss(
-                labels=tf.cast(tower_label, tf.float32),
-                predictions=self._prediction_dict["%s_probs" % tower_name],
+            task_name = self._model_config.mmoe_model_config.label_names[i]
+            task_label = self._labels[task_name]
+            task_output = self._prediction_dict["%s_probs" % task_name]
+            task_loss = tf.losses.log_loss(
+                labels=tf.cast(task_label, tf.float32),
+                predictions=task_output,
             )
-            self._loss_dict["%s_cross_entropy_loss" % tower_name] = tower_loss
+            self._loss_dict["%s_cross_entropy_loss" % task_name] = task_loss
 
         regularization_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
         if regularization_losses:
@@ -109,20 +106,20 @@ class MMoE(MultiTower):
     def build_metric_graph(self, eval_config):
         metric_dict = dict()
         for i in range(self._model_config.mmoe_model_config.num_task):
-            tower_name = self._model_config.mmoe_model_config.label_names[i]
-            tower_label = self._labels[tower_name]
-            tower_output = self._prediction_dict["%s_probs" % tower_name]
+            task_name = self._model_config.mmoe_model_config.label_names[i]
+            task_label = self._labels[task_name]
+            task_output = self._prediction_dict["%s_probs" % task_name]
             for metric in eval_config.metric_set:
                 if "auc" == metric.name:
-                    metric_dict["%s_auc" % tower_name] = tf.metrics.auc(tf.to_int64(tower_label), tower_output)
+                    metric_dict["%s_auc" % task_name] = tf.metrics.auc(tf.to_int64(task_label), task_output)
                 elif "gauc" == metric.name:
                     gids = tf.squeeze(self._feature_dict[metric.gid_field], axis=1)
-                    metric_dict["%s_gauc" % tower_name] = metrics_lib.gauc(
-                        tf.to_int64(tower_label),
-                        tower_output,
+                    metric_dict["%s_gauc" % task_name] = metrics_lib.gauc(
+                        tf.to_int64(task_label),
+                        task_output,
                         gids=gids,
                         reduction=metric.reduction
                     )
                 elif "pcopc" == metric.name:
-                    metric_dict["%s_pcopc" % tower_name] = metrics_lib.pcopc(tf.to_float(tower_label), tower_output)
+                    metric_dict["%s_pcopc" % task_name] = metrics_lib.pcopc(tf.to_float(task_label), task_output)
         return metric_dict
