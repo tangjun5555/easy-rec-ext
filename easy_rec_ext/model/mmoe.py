@@ -76,6 +76,18 @@ class MMoE(MultiTower):
                                   "%s_final_dnn" % task_name,
                                   self._is_training,
                                   )(task_input_list[i])
+
+            if self._model_config.wide_towers:
+                wide_fea = tf.concat(self._wide_tower_features, axis=1)
+                task_output = tf.concat([task_output, wide_fea], axis=1)
+                logging.info("%s build_predict_graph, task:%s, task_output.shape:%s" % (
+                filename, task_name, str(task_output.shape)))
+            if self._model_config.bias_tower:
+                bias_fea = self.build_bias_input_layer(self._model_config.bias_tower.input_group)
+                task_output = tf.concat([task_output, bias_fea], axis=1)
+                logging.info("%s build_predict_graph, task:%s, task_output.shape:%s" % (
+                filename, task_name, str(task_output.shape)))
+
             task_output = tf.layers.dense(task_output, 1, name="%s_logits" % task_name)
             task_output = tf.sigmoid(task_output, name="%s_probs" % task_name)
             prediction_dict["%s_probs" % task_name] = tf.reshape(task_output, (-1,))
