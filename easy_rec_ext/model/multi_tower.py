@@ -154,7 +154,8 @@ class MultiTower(RankModel):
                     tower.din_config.dnn_config,
                     tower_fea,
                     name="%s_din" % tower.input_group,
-                    return_target=tower.din_config.return_target
+                    return_target=tower.din_config.return_target,
+                    limit_sqe_size=tower.din_config.limit_sqe_size,
                 )
                 tower_fea_arr.append(tower_fea)
 
