@@ -7,6 +7,7 @@ import os
 import logging
 from typing import List
 import tensorflow as tf
+from easy_rec_ext.core import embedding_ops
 from easy_rec_ext.layers import dnn
 from easy_rec_ext.model.match_model import MatchModel
 
@@ -18,19 +19,26 @@ filename = str(os.path.basename(__file__)).split(".")[0]
 class DSSMModelConfig(object):
     def __init__(self, user_input_groups: List[str], item_input_groups: List[str],
                  user_field: str, item_field: str,
-                 scale_sim: bool = True,
+                 scale_sim: bool = True, use_user_scale_weight=False, use_item_scale_weight=False,
                  ):
         self.user_input_groups = user_input_groups
         self.item_input_groups = item_input_groups
         self.user_field = user_field
         self.item_field = item_field
         self.scale_sim = scale_sim
+        self.use_user_scale_weight = use_user_scale_weight
+        self.use_item_scale_weight = use_item_scale_weight
 
     @staticmethod
     def handle(data):
-        res = DSSMModelConfig(data["user_input_groups"], data["item_input_groups"], data["user_field"], data["item_field"])
+        res = DSSMModelConfig(data["user_input_groups"], data["item_input_groups"], data["user_field"],
+                              data["item_field"])
         if "scale_sim" in data:
             res.scale_sim = data["scale_sim"]
+        if "use_user_scale_weight" in data:
+            res.user_size = data["use_user_scale_weight"]
+        if "use_item_scale_weight" in data:
+            res.item_size = data["use_item_scale_weight"]
         return res
 
     def __str__(self):
@@ -49,16 +57,6 @@ class DSSMModel(object):
         return user_item_sim
 
     def list_wise_sim(self, user_emb, item_emb, hard_neg_indices=None):
-        """
-        TODO
-        Args:
-            user_emb:
-            item_emb:
-            hard_neg_indices:
-
-        Returns:
-
-        """
         batch_size = tf.shape(user_emb)[0]
 
         if hard_neg_indices is not None:
@@ -173,18 +171,47 @@ class DSSM(MatchModel, DSSMModel):
         user_item_sim = self.sim(user_emb, item_emb)
 
         if dssm_model_config.scale_sim:
-            sim_w = tf.get_variable(
-                "scale_sim_w",
-                dtype=tf.float32,
-                shape=(1, 1),
-                initializer=tf.ones_initializer(),
-            )
-            sim_b = tf.get_variable(
-                "scale_sim_b",
-                dtype=tf.float32,
-                shape=(1,),
-                initializer=tf.zeros_initializer()
-            )
+            if dssm_model_config.use_user_scale_weight:
+                user_feature_field = self._feature_fields_dict[dssm_model_config.user_field]
+                user_id = self._feature_dict[dssm_model_config.user_field]
+                embedding_weights = embedding_ops.get_embedding_variable(
+                    name="scale_sim_w",
+                    dim=1,
+                    vocab_size=user_feature_field.num_buckets if user_feature_field.num_buckets > 0 else user_feature_field.hash_bucket_size,
+                    key_is_string=False,
+                )
+                sim_w = embedding_ops.safe_embedding_lookup(
+                    embedding_weights, user_id
+                )
+            else:
+                sim_w = tf.get_variable(
+                    "scale_sim_w",
+                    dtype=tf.float32,
+                    shape=(1, 1),
+                    initializer=tf.ones_initializer(),
+                )
+
+            if dssm_model_config.use_item_scale_weight:
+                item_feature_field = self._feature_fields_dict[dssm_model_config.item_field]
+                item_id = self._feature_dict[dssm_model_config.item_field]
+                embedding_weights = embedding_ops.get_embedding_variable(
+                    name="scale_sim_b",
+                    dim=1,
+                    vocab_size=item_feature_field.num_buckets if item_feature_field.num_buckets > 0 else item_feature_field.hash_bucket_size,
+                    key_is_string=False,
+                )
+                sim_b = embedding_ops.safe_embedding_lookup(
+                    embedding_weights, item_id
+                )
+                sim_b = tf.squeeze(sim_b, axis=-1)
+            else:
+                sim_b = tf.get_variable(
+                    "scale_sim_b",
+                    dtype=tf.float32,
+                    shape=(1,),
+                    initializer=tf.zeros_initializer()
+                )
+
             user_item_sim = tf.matmul(user_item_sim, tf.abs(sim_w)) + sim_b
 
         user_item_sim = tf.nn.sigmoid(user_item_sim)

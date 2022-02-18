@@ -15,9 +15,10 @@ if tf.__version__ >= "2.0":
 
 
 class DINConfig(object):
-    def __init__(self, dnn_config: dnn.DNNConfig, return_target=True):
+    def __init__(self, dnn_config: dnn.DNNConfig, return_target=True, limit_sqe_size=None):
         self.dnn_config = dnn_config
         self.return_target = return_target
+        self.limit_sqe_size = limit_sqe_size
 
     @staticmethod
     def handle(data):
@@ -25,6 +26,8 @@ class DINConfig(object):
         res = DINConfig(dnn_config)
         if "return_target" in data:
             res.return_target = data["return_target"]
+        if "limit_sqe_size" in data:
+            res.limit_sqe_size = data["limit_sqe_size"]
         return res
 
     def __str__(self):
@@ -47,8 +50,23 @@ class DINTower(object):
 
 
 class DINLayer(object):
-    def din(self, dnn_config, deep_fea, name, return_target=True):
+    def din(self, dnn_config, deep_fea, name, return_target=True, limit_sqe_size=None):
         cur_id, hist_id_col, seq_len = deep_fea["key"], deep_fea["hist_seq_emb"], deep_fea["hist_seq_len"]
+
+        if limit_sqe_size and limit_sqe_size > 0:
+            cur_batch_max_seq_len = tf.shape(hist_id_col)[1]
+            hist_id_col = tf.cond(
+                tf.constant(limit_sqe_size) > cur_batch_max_seq_len,
+                lambda: tf.pad(hist_id_col, [[0, 0], [0, limit_sqe_size - cur_batch_max_seq_len], [0, 0]],
+                               "CONSTANT"),
+                lambda: tf.slice(hist_id_col, [0, 0, 0], [-1, limit_sqe_size, -1])
+            )
+            seq_len = tf.where(
+                tf.math.less_equal(seq_len, limit_sqe_size),
+                seq_len,
+                limit_sqe_size * tf.ones_like(seq_len),
+            )
+
         seq_max_len = tf.shape(hist_id_col)[1]
         emb_dim = hist_id_col.shape[2]
 
@@ -120,13 +138,12 @@ class DIN(RankModel, DINLayer):
         for tower_id in range(self._dnn_tower_num):
             tower_fea = self._dnn_tower_features[tower_id]
             tower = self._model_config.dnn_towers[tower_id]
-            tower_name = tower.input_group
             tower_fea = tf.layers.batch_normalization(
                 tower_fea,
                 training=self._is_training,
                 trainable=True,
-                name="%s_fea_bn" % tower_name)
-            dnn_layer = dnn.DNN(tower.dnn_config, self._l2_reg, "%s_dnn" % tower_name,
+                name="%s_fea_bn" % tower.input_group)
+            dnn_layer = dnn.DNN(tower.dnn_config, self._l2_reg, "%s_dnn" % tower.input_group,
                                 self._is_training)
             tower_fea = dnn_layer(tower_fea)
             tower_fea_arr.append(tower_fea)
@@ -134,9 +151,12 @@ class DIN(RankModel, DINLayer):
         for tower_id in range(self._din_tower_num):
             tower_fea = self._din_tower_features[tower_id]
             tower = self._model_config.din_towers[tower_id]
-            tower_name = tower.input_group
-            tower_fea = self.din(tower.din_config.dnn_config, tower_fea, name="%s_din" % tower_name,
-                                 return_target=tower.din_config.return_target)
+            tower_fea = self.din(tower.din_config.dnn_config,
+                                 tower_fea,
+                                 name="%s_din" % tower.input_group,
+                                 return_target=tower.din_config.return_target,
+                                 limit_sqe_size=tower.din_config.limit_sqe_size,
+                                 )
             tower_fea_arr.append(tower_fea)
 
         all_fea = tf.concat(tower_fea_arr, axis=1)
