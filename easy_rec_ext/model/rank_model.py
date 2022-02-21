@@ -308,7 +308,19 @@ class RankModel(object):
 
             elif feature_field.feature_type == "SequenceFeature":
                 hist_seq = self._feature_dict[feature_field.input_name]
-                hist_seq_len = tf.where(tf.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
+                if feature_field.limit_seq_size and feature_field.limit_seq_size > 0:
+                    cur_batch_max_seq_len = tf.shape(hist_seq)[1]
+                    hist_seq = tf.cond(
+                        tf.constant(feature_field.limit_seq_size) > cur_batch_max_seq_len,
+                        lambda: tf.pad(hist_seq,
+                                       [[0, 0], [0, feature_field.limit_seq_size - cur_batch_max_seq_len], [0, 0]],
+                                       mode="CONSTANT",
+                                       constant_values=-1,
+                                       ),
+                        lambda: tf.slice(hist_seq, [0, 0, 0], [-1, feature_field.limit_seq_size, -1])
+                    )
+
+                hist_seq_len = tf.where(tf.math.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
                 hist_seq_len = tf.reduce_sum(hist_seq_len, axis=1, keep_dims=False)
 
                 embedding_weights = embedding_ops.get_embedding_variable(
