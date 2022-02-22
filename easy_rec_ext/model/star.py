@@ -54,7 +54,8 @@ class StarTopologyFCNLayer(object):
             weight_b_dim.append(1)
             x = y
 
-        logging.info("%s call, input_dimension:%d, mlp_units:%s" % (filename, input_dimension, str(mlp_units)))
+        logging.info("%s call, name:%d, domain_size:%d, domain_weight_dim:%d, input_dimension:%d, mlp_units:%s" % (
+            filename, name, domain_size, domain_weight_dim, input_dimension, str(mlp_units)))
 
         domain_weight_embedding = embedding_ops.get_embedding_variable(
             name=name + "_domain",
