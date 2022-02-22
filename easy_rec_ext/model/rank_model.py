@@ -116,7 +116,6 @@ class RankModel(object):
         return outputs
 
     def get_id_feature(self, feature_group, feature_name, use_raw_id=False):
-        assert feature_name in self._feature_fields_dict[feature_name]
         feature_field = self._feature_fields_dict[feature_name]
         assert feature_field.feature_type in ["IdFeature"]
 
