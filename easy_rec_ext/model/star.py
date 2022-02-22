@@ -62,6 +62,7 @@ class StarTopologyFCNLayer(object):
             dim=domain_weight_dim,
             vocab_size=domain_size,
         )
+        logging.info("%s call, domain_weight_embedding.shape:%s" % (filename, str(tf.shape(domain_weight_embedding))))
         domain_weight_value = embedding_ops.safe_embedding_lookup(
             domain_weight_embedding, domain_id,
         )
