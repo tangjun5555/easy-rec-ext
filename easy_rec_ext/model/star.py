@@ -62,8 +62,6 @@ class StarTopologyFCNLayer(object):
             dim=domain_weight_dim,
             vocab_size=domain_size,
         )
-        logging.info("%s call, domain_weight_embedding.shape:%s, domain_id.shape:%s" % (
-            filename, str(domain_weight_embedding.get_shape().as_list()), str(domain_id.get_shape().as_list())))
         domain_weight_value = embedding_ops.safe_embedding_lookup(
             domain_weight_embedding, domain_id,
         )
@@ -74,11 +72,19 @@ class StarTopologyFCNLayer(object):
             shape=[1, domain_weight_dim]
         )
 
+        logging.info(
+            "%s call, domain_weight_embedding.shape:%s, domain_id.shape:%s, domain_weight_value.shape:%s, share_weight_value.shape:%s" % (
+                filename, str(domain_weight_embedding.get_shape().as_list()), str(domain_id.get_shape().as_list())
+                , str(domain_weight_value.get_shape().as_list()), str(share_weight_value.get_shape().as_list())
+            ))
+
         mlp_weight, mlp_bias = [], []
         idx = 0
         for w, b in zip(weight_w_dim, weight_b_dim):
             domain_w = tf.slice(domain_weight_value, [0, idx], [-1, w[0] * w[1]])
+            domain_w = tf.reshape(domain_w, [w[0], w[1]])
             share_w = tf.slice(share_weight_value, [0, idx], [-1, w[0] * w[1]])
+            share_w = tf.reshape(share_w, [w[0], w[1]])
             mlp_weight.append(tf.multiply(domain_w, share_w))
             idx += w[0] * w[1]
 
