@@ -313,11 +313,11 @@ class RankModel(object):
                     hist_seq = tf.cond(
                         tf.constant(feature_field.limit_seq_size) > cur_batch_max_seq_len,
                         lambda: tf.pad(hist_seq,
-                                       [[0, 0], [0, feature_field.limit_seq_size - cur_batch_max_seq_len], [0, 0]],
+                                       [[0, 0], [0, feature_field.limit_seq_size - cur_batch_max_seq_len]],
                                        mode="CONSTANT",
                                        constant_values=-1,
                                        ),
-                        lambda: tf.slice(hist_seq, [0, 0, 0], [-1, feature_field.limit_seq_size, -1])
+                        lambda: tf.slice(hist_seq, [0, 0], [-1, feature_field.limit_seq_size])
                     )
 
                 hist_seq_len = tf.where(tf.math.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
