@@ -21,12 +21,15 @@ filename = str(os.path.basename(__file__)).split(".")[0]
 class ESMMModelConfig(object):
     def __init__(self, label_names: List[str],
                  loss_weight_dict: Dict = None,
-                 share_fn_param: bool = False, fn_param_dict=None
+                 share_fn_param: bool = False,
+                 fn_param_dict=None,
+                 need_stop_gradient: bool = False,
                  ):
         self.label_names = label_names
         self.share_fn_param = share_fn_param
         self.loss_weight_dict = loss_weight_dict
         self.fn_param_dict = fn_param_dict
+        self.need_stop_gradient = need_stop_gradient
 
     @staticmethod
     def handle(data):
@@ -37,6 +40,8 @@ class ESMMModelConfig(object):
             res.loss_weight_dict = data["loss_weight_dict"]
         if "fn_param_dict" in data:
             res.fn_param_dict = data["fn_param_dict"]
+        if "need_stop_gradient" in data:
+            res.need_stop_gradient = data["need_stop_gradient"]
         return res
 
     def __str__(self):
@@ -78,7 +83,8 @@ class ESMM(MultiTower):
                     if model_config.fn_param_dict[task_name] in tower_outputs:
                         tower_fea_arr = tower_outputs[model_config.fn_param_dict[task_name]]
                     else:
-                        tower_fea_arr = self.build_tower_fea_arr(variable_scope="task_%s" % model_config.fn_param_dict[task_name])
+                        tower_fea_arr = self.build_tower_fea_arr(
+                            variable_scope="task_%s" % model_config.fn_param_dict[task_name])
                         tower_outputs[model_config.fn_param_dict[task_name]] = tower_fea_arr
                 else:
                     tower_fea_arr = self.build_tower_fea_arr(variable_scope="task_%s" % task_name)
@@ -163,6 +169,8 @@ class ESMM(MultiTower):
             task_name = model_config.label_names[i]
             task_probs = self._prediction_dict["%s_probs" % task_name]
             if i > 0:
+                if model_config.need_stop_gradient:
+                    prev_probs = tf.stop_gradient(prev_probs)
                 real_probs = tf.multiply(prev_probs, task_probs)
                 logloss = model_config.loss_weight_dict.get(task_name, 1.0) * tf.losses.log_loss(
                     labels=tf.cast(self._labels[task_name], tf.float32),
