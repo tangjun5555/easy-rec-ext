@@ -4,12 +4,59 @@
 # desc:
 
 import os
+import numpy as np
 import tensorflow as tf
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
 
 line_sep = "\n" + "##" * 20 + "\n"
+
+
+def test_32():
+    from easy_rec_ext.utils import string_ops
+    input_tensor = tf.constant(
+        value=[
+            "monday",
+            "tuesday",
+            "wednesday",
+            "thursday",
+            "friday",
+            "saturday",
+            "sunday"
+        ],
+        dtype=tf.dtypes.string,
+    )
+    r1 = string_ops.string_to_hash_bucket(input_tensor, 50)
+    print(r1)
+
+
+def test_31():
+    tf.disable_eager_execution()
+    x = tf.placeholder(tf.float32, [3, 2])
+    y1 = tf.placeholder(tf.float32, [3, 3])
+    y2 = tf.placeholder(tf.float32, [3, 4])
+    w1 = tf.Variable(tf.ones([2, 3]))
+    w2 = tf.Variable(tf.ones([3, 4]))
+
+    hidden = tf.matmul(x, w1)
+    # hidden = tf.stop_gradient(tf.matmul(x, w1))
+    # output = tf.matmul(tf.stop_gradient(hidden), w2)
+    loss = tf.reduce_sum(tf.matmul(hidden, w2) - y2) + tf.reduce_sum(hidden - y1)
+    # loss = tf.reduce_sum(tf.matmul(tf.stop_gradient(hidden), w2) - y2) + tf.reduce_sum(hidden - y1)
+    train_op = tf.train.GradientDescentOptimizer(1).minimize(loss)
+
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+        print("---Before Gradient Descent---")
+        print("w1:\n", w1.eval(), "\nw2:\n", w2.eval())
+        sess.run(train_op, feed_dict={x: np.ones(shape=(3, 2)),
+                                      y1: np.ones(shape=(3, 3)),
+                                      y2: np.ones(shape=(3, 4))
+                                      }
+                 )
+        print("---After Gradient Descent---")
+        print("w1:\n", w1.eval(), "\nw2:\n", w2.eval())
 
 
 def test_30():
