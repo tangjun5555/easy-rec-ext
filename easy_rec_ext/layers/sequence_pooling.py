@@ -65,23 +65,12 @@ class SequencePooling(object):
         Output shape
             - 2D tensor with shape: (batch_size, embedding_size)
         """
-        seq_len_max = seq_value.get_shape().as_list()[1]
-        embedding_size = seq_value.get_shape().as_list()[2]
-
-        seq_len = tf.expand_dims(seq_len, 1)
-
-        mask = tf.sequence_mask(seq_len, maxlen=seq_len_max, dtype=tf.dtypes.float32)
-        mask = tf.transpose(mask, perm=(0, 2, 1))
-        mask = tf.tile(mask, [1, 1, embedding_size])  # (batch_size, T, embedding_size)
-
         if self.mode == "max":
-            hist = seq_value - (1 - mask) * 1e9
-            return tf.reduce_max(hist, axis=1, keep_dims=False)
+            return tf.reduce_max(seq_value, axis=1, keep_dims=False)
         elif self.mode == "sum":
-            hist = tf.reduce_sum(seq_value * mask, axis=1, keep_dims=False)
-            return hist
+            return tf.reduce_sum(seq_value, axis=1, keep_dims=False)
         elif self.mode == "mean":
-            hist = tf.reduce_sum(seq_value * mask, axis=1, keep_dims=False)
+            hist = tf.reduce_sum(seq_value, axis=1, keep_dims=False)
             return tf.div(hist, tf.cast(seq_len, tf.float32) + 1e-8)
         elif self.mode == "gru":
             go_backwards = self.gru_config.go_backwards == 1
