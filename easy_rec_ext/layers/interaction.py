@@ -7,7 +7,6 @@ import os
 import logging
 
 import tensorflow as tf
-from easy_rec_ext.core import embedding_ops
 from easy_rec_ext.utils import variable_util
 
 tf = tf.compat.v1
@@ -100,7 +99,7 @@ class OuterProduct(object):
         embed_size = input_value.get_shape().as_list()[2]
         num_pairs = int(field_num * (field_num - 1) / 2)
         logging.info("OuterProduct, name:%s, field_num:%d, embed_size:%d, num_pairs:%d" % (
-        self.name, field_num, embed_size, num_pairs))
+            self.name, field_num, embed_size, num_pairs))
 
         row = []
         col = []
@@ -127,3 +126,19 @@ class OuterProduct(object):
 
         kp = tf.math.reduce_sum(p * q * kernel, -1)
         return kp
+
+
+class SENETLayer(object):
+    """
+    SENETLayer used in FiBiNET.
+
+    References
+        - [FiBiNET: Combining Feature Importance and Bilinear feature Interaction for Click-Through Rate Prediction]
+            (https://arxiv.org/pdf/1905.09433.pdf)
+    """
+
+    def __init__(self, name):
+        self.name = name
+
+    def __call__(self, *args, **kwargs):
+        pass
