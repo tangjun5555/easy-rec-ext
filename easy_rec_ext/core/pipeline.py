@@ -12,6 +12,7 @@ from easy_rec_ext.model.din import DINTower
 from easy_rec_ext.model.bst import BSTTower
 from easy_rec_ext.model.dien import DIENTower
 from easy_rec_ext.model.can import CANTower
+from easy_rec_ext.model.mmoe import MMoEModelCofing
 from easy_rec_ext.model.esmm import ESMMModelConfig
 from easy_rec_ext.model.aitm import AITMModelConfig
 from easy_rec_ext.model.star import STARModelConfig
@@ -418,20 +419,6 @@ class InteractionTower(BaseConfig):
     def handle(data):
         interaction_config = InteractionConfig.handle(data["interaction_config"])
         res = InteractionTower(data["input_group"], interaction_config)
-        return res
-
-
-class MMoEModelCofing(BaseConfig):
-    def __init__(self, label_names: List[str], num_expert: int, expert_dnn_config: DNNConfig):
-        self.label_names = label_names
-        self.num_task = len(label_names)
-        self.num_expert = num_expert
-        self.expert_dnn_config = expert_dnn_config
-
-    @staticmethod
-    def handle(data):
-        expert_dnn_config = DNNConfig.handle(data["expert_dnn_config"])
-        res = MMoEModelCofing(data["label_names"], data["num_expert"], expert_dnn_config)
         return res
 
 
