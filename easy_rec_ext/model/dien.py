@@ -86,6 +86,8 @@ class DIENLayer(object):
         return hist_gru
 
     def AIGRU(self, name, seq_max_len, emb_dim, hist_gru, hist_attention):
+        logging.info("%s AIGRU, hist_gru.shape:%s, hist_attention.shape:%s" % (
+            filename, str(hist_gru.shape), str(hist_attention.shape)))
         final_state = tf.math.multiply(hist_gru, tf.reshape(hist_attention, (-1, seq_max_len, 1)))
         final_state = tf.keras.layers.GRU(
             units=emb_dim,
