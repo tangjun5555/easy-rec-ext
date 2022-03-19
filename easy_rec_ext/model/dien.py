@@ -81,6 +81,8 @@ class DIENLayer(object):
             return_sequences=True,
             name="%s_interest_extractor_gru" % name,
         )(hist_id_col)
+        logging.info("%s interest_extractor, hist_id_col.shape:%s, hist_gru.shape:%s" % (
+            filename, str(hist_id_col.shape), str(hist_gru.shape)))
         return hist_gru
 
     def AIGRU(self, name, seq_max_len, emb_dim, hist_gru, hist_attention):
