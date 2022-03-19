@@ -17,14 +17,19 @@ filename = str(os.path.basename(__file__)).split(".")[0]
 
 
 class DIENConfig(object):
-    def __init__(self, use_auxiliary_loss: int = 0, combine_mechanism: str = "AIGRU", return_target: bool = True):
+    def __init__(self, seq_size: int,
+                 use_auxiliary_loss: int = 0,
+                 combine_mechanism: str = "AIGRU",
+                 return_target: bool = True,
+                 ):
+        self.seq_size = seq_size
         self.use_auxiliary_loss = use_auxiliary_loss
         self.combine_mechanism = combine_mechanism
         self.return_target = return_target
 
     @staticmethod
     def handle(data):
-        res = DIENConfig()
+        res = DIENConfig(data["seq_size"])
         if "use_auxiliary_loss" in data:
             res.use_auxiliary_loss = data["use_auxiliary_loss"]
         if "combine_mechanism" in data:
@@ -52,9 +57,8 @@ class DIENTower(object):
 
 
 class DIENLayer(object):
-    def dien(self, name, deep_fea, combine_mechanism, return_target=True):
+    def dien(self, name, deep_fea, seq_max_len, combine_mechanism, return_target=True):
         cur_id, hist_id_col, seq_len = deep_fea["key"], deep_fea["hist_seq_emb"], deep_fea["hist_seq_len"]
-        seq_max_len = hist_id_col.get_shape().as_list()[1]
         emb_dim = hist_id_col.get_shape().as_list()[2]
 
         hist_gru = self.interest_extractor(name, emb_dim, hist_id_col)
@@ -187,6 +191,7 @@ class DIEN(RankModel, DIENLayer):
             tower_fea = self.dien(
                 name="%s_dien" % tower_name,
                 deep_fea=tower_fea,
+                seq_max_len=tower.dien_config.seq_size,
                 combine_mechanism=tower.dien_config.combine_mechanism,
                 return_target=tower.dien_config.return_target,
             )
