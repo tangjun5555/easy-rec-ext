@@ -220,6 +220,7 @@ class MatchModel(object):
                         mode=feature_field.sequence_pooling_config.mode,
                         gru_config=feature_field.sequence_pooling_config.gru_config,
                         lstm_config=feature_field.sequence_pooling_config.lstm_config,
+                        self_att_config=feature_field.sequence_pooling_config.self_att_config,
                     )(values, hist_seq_len)
 
             else:
