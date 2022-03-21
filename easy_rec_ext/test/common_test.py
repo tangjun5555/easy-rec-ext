@@ -585,9 +585,8 @@ def test_04():
     input_tensor = tf.constant(
         value=[
             ["431645d82843f859"],
-            ["431645d82843f859"],
             [""],
-            [""]
+            ["-1"]
         ],
         dtype=tf.dtypes.string
     )
