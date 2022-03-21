@@ -6,16 +6,15 @@
 import os
 import logging
 from typing import List
-
 import tensorflow as tf
 
-tf = tf.compat.v1
-
+if tf.__version__ >= "2.0":
+    tf = tf.compat.v1
 filename = str(os.path.basename(__file__)).split(".")[0]
 
 
 class GRUConfig(object):
-    def __init__(self, gru_units: List[int], go_backwards: int):
+    def __init__(self, gru_units: List[int], go_backwards: bool):
         self.gru_units = gru_units
         self.go_backwards = go_backwards
 
@@ -47,8 +46,7 @@ class SequencePooling(object):
 
     Arguments
         name: str.
-        mode: str. Pooling operation to be used, can be sum, mean or max.
-        gru_config: str.
+        mode: str. Pooling operation to be used.
     """
 
     def __init__(self, name, mode="sum", gru_config: GRUConfig = None):
@@ -73,15 +71,13 @@ class SequencePooling(object):
             hist = tf.reduce_sum(seq_value, axis=1, keep_dims=False)
             return tf.div(hist, tf.cast(seq_len, tf.float32) + 1e-8)
         elif self.mode == "gru":
-            go_backwards = self.gru_config.go_backwards == 1
             gru_input = seq_value
             for i, j in enumerate(self.gru_config.gru_units):
                 gru_input, gru_states = tf.keras.layers.GRU(
                     units=j,
-                    # stateful=True,
                     return_state=True,
-                    go_backwards=go_backwards,
-                    name='{}_gru_{}'.format(self.name, str(i)),
+                    go_backwards=self.gru_config.go_backwards,
+                    name="{}_gru_{}".format(self.name, str(i)),
                 )(gru_input)
                 logging.info("%s %s, gru_input.shape:%s, gru_states:%s" % (filename, self.name, str(gru_input.shape), str(gru_states.shape)))
             return tf.reshape(gru_input, (-1, self.gru_config.gru_units[-1]))
