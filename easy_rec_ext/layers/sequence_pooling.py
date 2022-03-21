@@ -7,6 +7,7 @@ import os
 import logging
 from typing import List
 import tensorflow as tf
+from easy_rec_ext.layers.multihead_attention import MultiHeadSelfAttention
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
@@ -27,14 +28,30 @@ class RNNConfig(object):
         return res
 
 
+class MultiHeadSelfAttentionConfig(object):
+    def __init__(self, head_num, head_size, use_res=False):
+        self.head_num = head_num
+        self.head_size = head_size
+        self.use_res = use_res
+
+    @staticmethod
+    def handle(data):
+        res = MultiHeadSelfAttentionConfig(data["head_num"], data["head_size"])
+        if "use_res" in data:
+            res.use_res = data["use_res"]
+        return res
+
+
 class SequencePoolingConfig(object):
     def __init__(self, mode: str = "sum",
                  gru_config: RNNConfig = None,
                  lstm_config: RNNConfig = None,
+                 self_att_config: MultiHeadSelfAttentionConfig = None,
                  ):
         self.mode = mode
         self.gru_config = gru_config
         self.lstm_config = lstm_config
+        self.self_att_config = self_att_config
 
     @staticmethod
     def handle(data):
@@ -45,6 +62,8 @@ class SequencePoolingConfig(object):
             res.gru_config = RNNConfig.handle(data["gru_config"])
         if "lstm_config" in data:
             res.lstm_config = RNNConfig.handle(data["lstm_config"])
+        if "self_att_config" in data:
+            res.self_att_config = MultiHeadSelfAttentionConfig.handle(data["self_att_config"])
         return res
 
 
@@ -58,11 +77,16 @@ class SequencePooling(object):
         mode: str. Pooling operation to be used.
     """
 
-    def __init__(self, name, mode="sum", gru_config: RNNConfig = None, lstm_config: RNNConfig = None, ):
+    def __init__(self, name, mode="sum",
+                 gru_config: RNNConfig = None,
+                 lstm_config: RNNConfig = None,
+                 self_att_config: MultiHeadSelfAttentionConfig = None
+                 ):
         self.name = name
         self.mode = mode
         self.gru_config = gru_config
         self.lstm_config = lstm_config
+        self.self_att_config = self_att_config
 
     def __call__(self, seq_value, seq_len):
         """
@@ -118,5 +142,15 @@ class SequencePooling(object):
             )(lstm_input)
             logging.info("%s %s, lstm_input.shape:%s" % (filename, self.name, str(lstm_input.shape)))
             return lstm_input
+        elif self.mode == "self_att":
+            self_att_output = MultiHeadSelfAttention(
+                name=self.name + "_" + "self_att",
+                head_num=self.self_att_config.head_num,
+                head_size=self.self_att_config.head_size,
+                l2_reg=None,
+                use_res=self.self_att_config.use_res,
+            )(seq_value)
+            logging.info("%s %s, self_att_output.shape:%s" % (filename, self.name, str(self_att_output.shape)))
+            return self_att_output
         else:
             raise ValueError("mode:%s not supported." % self.mode)
