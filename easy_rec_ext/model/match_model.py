@@ -114,14 +114,11 @@ class MatchModel(object):
                     gids=gids,
                     reduction=metric.reduction,
                 )
+            elif "pcopc" == metric.name:
+                label = tf.to_float(self._labels[self._label_name])
+                metric_dict[str(metric)] = metrics_lib.pcopc(label, self._prediction_dict["probs"])
             elif "recall_at_k" == metric.name:
                 metric_dict[str(metric)] = tf.metrics.recall_at_k(
-                    label,
-                    self._prediction_dict["probs"],
-                    metric.topk,
-                )
-            elif "precision_at_k" == metric.name:
-                metric_dict[str(metric)] = tf.metrics.precision_at_k(
                     label,
                     self._prediction_dict["probs"],
                     metric.topk,
