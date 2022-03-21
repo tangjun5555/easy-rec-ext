@@ -219,6 +219,7 @@ class MatchModel(object):
                         name=feature_field.input_name + "_pooling",
                         mode=feature_field.sequence_pooling_config.mode,
                         gru_config=feature_field.sequence_pooling_config.gru_config,
+                        lstm_config=feature_field.sequence_pooling_config.lstm_config,
                     )(values, hist_seq_len)
 
             else:
