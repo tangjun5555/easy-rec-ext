@@ -13,21 +13,28 @@ if tf.__version__ >= "2.0":
 filename = str(os.path.basename(__file__)).split(".")[0]
 
 
-class GRUConfig(object):
-    def __init__(self, gru_units: List[int], go_backwards: bool):
-        self.gru_units = gru_units
+class RNNConfig(object):
+    def __init__(self, hidden_units: List[int], go_backwards: bool = False):
+        assert hidden_units and hidden_units[0] > 0
+        self.hidden_units = hidden_units
         self.go_backwards = go_backwards
 
     @staticmethod
     def handle(data):
-        res = GRUConfig(data["gru_units"], data["go_backwards"])
+        res = RNNConfig(data["hidden_units"])
+        if "go_backwards" in data:
+            res.go_backwards = data["go_backwards"]
         return res
 
 
 class SequencePoolingConfig(object):
-    def __init__(self, mode: str = "sum", gru_config: GRUConfig = None):
+    def __init__(self, mode: str = "sum",
+                 gru_config: RNNConfig = None,
+                 lstm_config: RNNConfig = None,
+                 ):
         self.mode = mode
         self.gru_config = gru_config
+        self.lstm_config = lstm_config
 
     @staticmethod
     def handle(data):
@@ -35,7 +42,9 @@ class SequencePoolingConfig(object):
         if "mode" in data:
             res.mode = data["mode"]
         if "gru_config" in data:
-            res.gru_config = GRUConfig.handle(data["gru_config"])
+            res.gru_config = RNNConfig.handle(data["gru_config"])
+        if "lstm_config" in data:
+            res.lstm_config = RNNConfig.handle(data["lstm_config"])
         return res
 
 
@@ -49,10 +58,11 @@ class SequencePooling(object):
         mode: str. Pooling operation to be used.
     """
 
-    def __init__(self, name, mode="sum", gru_config: GRUConfig = None):
+    def __init__(self, name, mode="sum", gru_config: RNNConfig = None, lstm_config: RNNConfig = None, ):
         self.name = name
         self.mode = mode
         self.gru_config = gru_config
+        self.lstm_config = lstm_config
 
     def __call__(self, seq_value, seq_len):
         """
@@ -72,14 +82,41 @@ class SequencePooling(object):
             return tf.div(hist, tf.cast(seq_len, tf.float32) + 1e-8)
         elif self.mode == "gru":
             gru_input = seq_value
-            for i, j in enumerate(self.gru_config.gru_units):
-                gru_input, gru_states = tf.keras.layers.GRU(
-                    units=j,
-                    return_state=True,
-                    go_backwards=self.gru_config.go_backwards,
-                    name="{}_gru_{}".format(self.name, str(i)),
-                )(gru_input)
-                logging.info("%s %s, gru_input.shape:%s, gru_states:%s" % (filename, self.name, str(gru_input.shape), str(gru_states.shape)))
-            return tf.reshape(gru_input, (-1, self.gru_config.gru_units[-1]))
+            if len(self.gru_config.hidden_units) > 1:
+                for i, j in enumerate(self.gru_config.hidden_units[:-1]):
+                    gru_input = tf.keras.layers.GRU(
+                        units=j,
+                        return_sequences=True,
+                        go_backwards=self.gru_config.go_backwards,
+                        name="{}_gru_{}".format(self.name, str(i)),
+                    )(gru_input)
+                    logging.info(
+                        "%s %s, i:%d, j:%d, gru_input.shape:%s" % (filename, self.name, i, j, str(gru_input.shape)))
+            gru_input = tf.keras.layers.GRU(
+                units=self.gru_config.hidden_units[-1],
+                go_backwards=self.gru_config.go_backwards,
+                name="{}_gru_{}".format(self.name, str(len(self.gru_config.hidden_units) - 1)),
+            )(gru_input)
+            logging.info("%s %s, gru_input.shape:%s" % (filename, self.name, str(gru_input.shape)))
+            return gru_input
+        elif self.mode == "lstm":
+            lstm_input = seq_value
+            if len(self.lstm_config.hidden_units) > 1:
+                for i, j in enumerate(self.lstm_config.hidden_units[:-1]):
+                    lstm_input = tf.keras.layers.LSTM(
+                        units=j,
+                        return_sequences=True,
+                        go_backwards=self.lstm_config.go_backwards,
+                        name="{}_lstm_{}".format(self.name, str(i)),
+                    )(lstm_input)
+                    logging.info(
+                        "%s %s, i:%d, j:%d, lstm_input.shape:%s" % (filename, self.name, i, j, str(lstm_input.shape)))
+            lstm_input = tf.keras.layers.LSTM(
+                units=self.lstm_config.hidden_units[-1],
+                go_backwards=self.lstm_config.go_backwards,
+                name="{}_lstm_{}".format(self.name, str(len(self.lstm_config.hidden_units) - 1)),
+            )(lstm_input)
+            logging.info("%s %s, lstm_input.shape:%s" % (filename, self.name, str(lstm_input.shape)))
+            return lstm_input
         else:
             raise ValueError("mode:%s not supported." % self.mode)
