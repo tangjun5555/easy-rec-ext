@@ -190,8 +190,8 @@ class MatchModel(object):
                 hist_seq = self._feature_dict[feature_field.input_name]
                 if hist_seq.dtype == tf.dtypes.string:
                     hist_seq_len = tf.where(tf.math.logical_or(tf.equal(hist_seq, ""), tf.equal(hist_seq, "-1")),
-                                            tf.zeros(shape=hist_seq.shape, dtype=tf.dtypes.int64),
-                                            tf.ones(shape=hist_seq.shape, dtype=tf.dtypes.int64),
+                                            tf.zeros_like(tf.string_to_hash_bucket_fast(hist_seq, 10)),
+                                            tf.ones_like(tf.string_to_hash_bucket_fast(hist_seq, 10)),
                                             )
                 else:
                     hist_seq_len = tf.where(tf.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
