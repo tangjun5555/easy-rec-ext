@@ -5,14 +5,7 @@
 
 import os
 import logging
-
 import tensorflow as tf
-
-if tf.__version__ >= "2.0":
-    gfile = tf.compat.v1.gfile
-    tf = tf.compat.v1
-else:
-    gfile = tf.gfile
 
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import ops
@@ -25,8 +18,14 @@ from tensorflow.python.ops import sparse_ops
 from tensorflow.python.ops import init_ops
 
 import tensorflow_recommenders_addons as tfra
-
 from easy_rec_ext.utils import variable_util
+
+if tf.__version__ >= "2.0":
+    gfile = tf.compat.v1.gfile
+    tf = tf.compat.v1
+else:
+    gfile = tf.gfile
+filename = str(os.path.basename(__file__)).split(".")[0]
 
 
 def get_embedding_variable(name, dim, vocab_size=None, key_is_string=False):
@@ -155,14 +154,16 @@ def safe_embedding_lookup(params,
                           max_norm=None):
     assert ids.get_shape().as_list()[-1] == 1
     if ids.dtype == tf.dtypes.string:
-        # assert len(ids.get_shape().as_list()) == 2 and ids.get_shape().as_list()[-1] == 1
-        condition = tf.math.equal(ids, "")
+        condition = tf.math.logical_or(tf.equal(ids, ""), tf.equal(ids, "-1"))
         values = tfra.dynamic_embedding.embedding_lookup_unique(
             params,
             ids
         )
         values = tf.squeeze(values, axis=1)
-        condition = tf.concat([condition] * values.get_shape().as_list()[-1], axis=1)
+        logging.info("%s safe_embedding_lookup, ids.shape:%s, condition:%s, values:%s" % (
+            filename, str(ids.shape), str(condition.shape), str(values.shape)
+        ))
+        condition = tf.concat([condition] * values.get_shape().as_list()[-1], axis=-1)
         zeros = tf.zeros_like(values)
         return tf.where(
             condition,
@@ -276,7 +277,7 @@ def safe_embedding_lookup_sparse(embedding_weights,
         sparse_ids = sparse_tensor.SparseTensor(
             indices=indices, values=values, dense_shape=sparse_ids.dense_shape)
 
-        if "use_dynamic_embedding" in os.environ and os.environ["use_dynamic_embedding"] == "1":
+        if os.environ["use_dynamic_embedding"] == "1":
             result = tfra.dynamic_embedding.safe_embedding_lookup_sparse(
                 embedding_weights,
                 sparse_ids,
