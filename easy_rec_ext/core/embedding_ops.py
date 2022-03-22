@@ -159,10 +159,10 @@ def safe_embedding_lookup(params,
             params,
             ids
         )
-        values = tf.squeeze(values, axis=1)
         logging.info("%s safe_embedding_lookup, ids.shape:%s, condition:%s, values:%s" % (
             filename, str(ids.shape), str(condition.shape), str(values.shape)
         ))
+        values = tf.squeeze(values, axis=-2)
         condition = tf.concat([condition] * values.get_shape().as_list()[-1], axis=-1)
         zeros = tf.zeros_like(values)
         return tf.where(
