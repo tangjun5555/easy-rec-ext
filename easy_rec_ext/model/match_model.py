@@ -152,29 +152,19 @@ class MatchModel(object):
 
             if feature_field.feature_type == "IdFeature":
                 input_ids = self._feature_dict[feature_field.input_name]
-
                 if feature_field.one_hot == 1:
                     if feature_field.num_buckets > 0:
                         values = tf.one_hot(input_ids, feature_field.num_buckets)
                     else:
                         values = tf.one_hot(input_ids, feature_field.hash_bucket_size)
                     values = tf.squeeze(values, axis=[1])
-
                 else:
-                    if input_ids.dtype == tf.dtypes.string:
-                        embedding_weights = embedding_ops.get_embedding_variable(
-                            name=feature_field.embedding_name,
-                            dim=feature_field.embedding_dim,
-                            vocab_size=feature_field.num_buckets if feature_field.num_buckets > 0 else feature_field.hash_bucket_size,
-                            key_is_string=True,
-                        )
-                    else:
-                        embedding_weights = embedding_ops.get_embedding_variable(
-                            name=feature_field.embedding_name,
-                            dim=feature_field.embedding_dim,
-                            vocab_size=feature_field.num_buckets if feature_field.num_buckets > 0 else feature_field.hash_bucket_size,
-                            key_is_string=False,
-                        )
+                    embedding_weights = embedding_ops.get_embedding_variable(
+                        name=feature_field.embedding_name,
+                        dim=feature_field.embedding_dim,
+                        vocab_size=feature_field.num_buckets if feature_field.num_buckets > 0 else feature_field.hash_bucket_size,
+                        key_is_string=input_ids.dtype == tf.dtypes.string,
+                    )
                     values = embedding_ops.safe_embedding_lookup(
                         embedding_weights, input_ids
                     )
@@ -205,7 +195,7 @@ class MatchModel(object):
                     name=feature_field.embedding_name,
                     dim=feature_field.embedding_dim,
                     vocab_size=feature_field.num_buckets if feature_field.num_buckets > 0 else feature_field.hash_bucket_size,
-                    key_is_string=False,
+                    key_is_string=hist_seq.dtype == tf.dtypes.string,
                 )
                 values = embedding_ops.safe_embedding_lookup(
                     embedding_weights, tf.expand_dims(hist_seq, -1)
