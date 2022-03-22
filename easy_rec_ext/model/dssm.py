@@ -218,18 +218,8 @@ class DSSM(MatchModel, DSSMModel):
         prediction_dict["probs"] = tf.reshape(user_item_sim, (-1,), name="probs")
 
         prediction_dict["user_id"] = tf.identity(self._feature_dict[dssm_model_config.user_field], name="user_id")
-        prediction_dict["user_emb"] = tf.reduce_join(
-            tf.as_string(user_emb),
-            axis=-1,
-            separator=",",
-            name="user_emb",
-        )
+        prediction_dict["user_vector"] = tf.identity(user_emb, name="user_vector")
         prediction_dict["item_id"] = tf.identity(self._feature_dict[dssm_model_config.item_field], name="item_id")
-        prediction_dict["item_emb"] = tf.reduce_join(
-            tf.as_string(item_emb),
-            axis=-1,
-            separator=",",
-            name="item_emb",
-        )
+        prediction_dict["item_vector"] = tf.identity(item_emb, name="item_vector")
         self._add_to_prediction_dict(prediction_dict)
         return self._prediction_dict
