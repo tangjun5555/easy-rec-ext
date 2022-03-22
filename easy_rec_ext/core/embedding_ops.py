@@ -153,8 +153,9 @@ def safe_embedding_lookup(params,
                           name=None,
                           partition_strategy="div",
                           max_norm=None):
+    assert ids.get_shape().as_list()[-1] == 1
     if ids.dtype == tf.dtypes.string:
-        assert len(ids.get_shape().as_list()) == 2 and ids.get_shape().as_list()[-1] == 1
+        # assert len(ids.get_shape().as_list()) == 2 and ids.get_shape().as_list()[-1] == 1
         condition = tf.math.equal(ids, "")
         values = tfra.dynamic_embedding.embedding_lookup_unique(
             params,
