@@ -8,6 +8,7 @@ from easy_rec_ext.builders.optimizer_builder import Optimizer
 from easy_rec_ext.layers.dnn import DNNConfig, DNNTower
 from easy_rec_ext.layers.sequence_pooling import SequencePoolingConfig
 from easy_rec_ext.layers.interaction import InteractionConfig
+from easy_rec_ext.model.dssm import DSSMModelConfig
 from easy_rec_ext.model.din import DINTower
 from easy_rec_ext.model.bst import BSTTower
 from easy_rec_ext.model.dien import DIENTower
@@ -454,6 +455,10 @@ class ModelConfig(BaseConfig):
     def __init__(self, model_class: str,
                  feature_groups: List[FeatureGroup],
 
+                 # Match Model Config
+                 dssm_model_config: DSSMModelConfig = None,
+
+                 # Multi-Task Rank Model Config
                  esmm_model_config: ESMMModelConfig = None,
                  aitm_model_config: AITMModelConfig = None,
                  mmoe_model_config: MMoEModelCofing = None,
@@ -478,6 +483,8 @@ class ModelConfig(BaseConfig):
                  ):
         self.model_class = model_class
         self.feature_groups = feature_groups
+
+        self.dssm_model_config = dssm_model_config
 
         self.esmm_model_config = esmm_model_config
         self.aitm_model_config = aitm_model_config
@@ -508,6 +515,9 @@ class ModelConfig(BaseConfig):
         for feature_group in data["feature_groups"]:
             feature_groups.append(FeatureGroup.handle(feature_group))
         res = ModelConfig(data["model_class"], feature_groups)
+
+        if "dssm_model_config" in data:
+            res.dssm_model_config = DSSMModelConfig.handle(data["dssm_model_config"])
 
         if "esmm_model_config" in data:
             res.esmm_model_config = ESMMModelConfig.handle(data["esmm_model_config"])
