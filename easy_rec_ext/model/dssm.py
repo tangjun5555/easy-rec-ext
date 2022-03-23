@@ -211,6 +211,8 @@ class DSSM(MatchModel, DSSMModel):
                     shape=(1,),
                     initializer=tf.zeros_initializer()
                 )
+            tf.summary.histogram("dssm/sim_w", sim_w)
+            tf.summary.histogram("dssm/sim_b", sim_b)
             user_item_sim = tf.matmul(user_item_sim, tf.abs(sim_w)) + sim_b
 
         user_item_sim = tf.nn.sigmoid(user_item_sim)
