@@ -12,6 +12,7 @@ from easy_rec_ext.core import embedding_ops
 from easy_rec_ext.core import regularizers
 import easy_rec_ext.core.metrics as metrics_lib
 from easy_rec_ext.layers.sequence_pooling import SequencePooling
+from easy_rec_ext.layers.senet import SENetLayer
 
 import tensorflow as tf
 
@@ -140,6 +141,11 @@ class MatchModel(object):
             outputs.append(group_input_dict[feature_field.input_name])
 
         outputs = tf.concat(outputs, axis=1)
+        if feature_group.senet_layer_config is not None:
+            outputs = SENetLayer(
+                name=feature_group.group_name + "_senet",
+                reduction_ratio=feature_group.senet_layer_config.reduction_ratio,
+            )(outputs)
         return outputs
 
     def build_group_input_dict(self, feature_group):

@@ -205,10 +205,23 @@ class CartesianInteractionMap(BaseConfig):
         return res
 
 
+class SENetLayerConfig(BaseConfig):
+    def __init__(self, reduction_ratio=2):
+        self.reduction_ratio = reduction_ratio
+
+    @staticmethod
+    def handle(data):
+        res = SENetLayerConfig()
+        if "reduction_ratio" in data:
+            res.reduction_ratio = data["reduction_ratio"]
+        return res
+
+
 class FeatureGroup(BaseConfig):
     def __init__(self, group_name: str, feature_names: List[str] = None,
                  seq_att_map_list: List[SeqAttMap] = None, seq_att_projection_dim: int = 0,
                  cartesian_interaction_map: CartesianInteractionMap = None,
+                 senet_layer_config: SENetLayerConfig = None,
                  ):
         self.group_name = group_name
         self.feature_names = feature_names
@@ -217,6 +230,8 @@ class FeatureGroup(BaseConfig):
         self.seq_att_projection_dim = seq_att_projection_dim
 
         self.cartesian_interaction_map = cartesian_interaction_map
+
+        self.senet_layer_config = senet_layer_config
 
     @staticmethod
     def handle(data):
@@ -235,6 +250,9 @@ class FeatureGroup(BaseConfig):
 
         if "cartesian_interaction_map" in data:
             res.cartesian_interaction_map = CartesianInteractionMap.handle(data["cartesian_interaction_map"])
+
+        if "senet_layer_config" in data:
+            res.senet_layer_config = SENetLayerConfig.handle(data["senet_layer_config"])
         return res
 
     @property
