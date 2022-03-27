@@ -142,10 +142,13 @@ class MatchModel(object):
 
         outputs = tf.concat(outputs, axis=1)
         if feature_group.senet_layer_config is not None:
+            embedding_dim = outputs.get_shape().as_list()[-1] // feature_fields_num
+            outputs = tf.reshape(outputs, (-1, feature_fields_num, embedding_dim))
             outputs = SENetLayer(
                 name=feature_group.group_name + "_senet",
                 reduction_ratio=feature_group.senet_layer_config.reduction_ratio,
             )(outputs)
+            outputs = tf.reshape(outputs, (-1, feature_fields_num * embedding_dim))
         return outputs
 
     def build_group_input_dict(self, feature_group):
