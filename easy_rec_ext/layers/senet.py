@@ -15,10 +15,12 @@ filename = str(os.path.basename(__file__)).split(".")[0]
 
 class SENetLayer(object):
     """
-    squeeze_excitation_layer
+    Squeeze-and-Excitation Network Layer
     """
-    def __init__(self, name, reduction_ratio=2):
+    def __init__(self, name, squeeze_fun="mean", reduction_ratio=2):
         self.name = name
+        assert squeeze_fun in ["mean", "max"]
+        self.squeeze_fun = squeeze_fun
         self.reduction_ratio = reduction_ratio
 
     def __call__(self, input_value):
@@ -43,7 +45,10 @@ class SENetLayer(object):
         )
 
         # Squeeze Step
-        Z = tf.math.reduce_mean(input_value, axis=-1, keepdims=False)
+        if self.squeeze_fun == "mean":
+            Z = tf.math.reduce_mean(input_value, axis=-1, keepdims=False)
+        else:
+            Z = tf.math.reduce_max(input_value, axis=-1, keepdims=False)
         logging.info("SENetLayer, name:%s, Z.shape:%s" % (self.name, str(Z.shape)))
         # Excitation Step
         A_1 = tf.nn.relu(tf.tensordot(Z, W_1, axes=(-1, 0)))

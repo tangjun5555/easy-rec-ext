@@ -5,13 +5,12 @@
 
 import os
 import logging
-
+import itertools
 import tensorflow as tf
-from easy_rec_ext.core import embedding_ops
 from easy_rec_ext.utils import variable_util
 
-tf = tf.compat.v1
-
+if tf.__version__ >= "2.0":
+    tf = tf.compat.v1
 filename = str(os.path.basename(__file__)).split(".")[0]
 
 
@@ -127,3 +126,86 @@ class OuterProduct(object):
 
         kp = tf.math.reduce_sum(p * q * kernel, -1)
         return kp
+
+
+class BilinearInteraction(object):
+    """
+    BilinearInteraction Layer used in FiBiNET
+    """
+    def __init__(self, name, bilinear_type="Field-Interaction"):
+        self.name = name
+        assert bilinear_type in ["Field-All", "Field-Each", "Field-Interaction"]
+        self.bilinear_type = bilinear_type
+
+    def __call__(self, input_value):
+        """
+        Input shape
+            - input_value is a 3D tensor with shape: (batch_size, field_num, embedding_size)
+        Output shape
+            - 2D tensor with shape: (batch_size, pairs * embedding_size)
+        """
+        field_num = input_value.get_shape().as_list()[1]
+        embed_size = input_value.get_shape().as_list()[2]
+
+        if self.bilinear_type == "Field-All":
+            W = variable_util.get_normal_variable(
+                scope="BilinearInteraction",
+                name=self.name + "_weight",
+                shape=(embed_size, embed_size)
+            )
+            vidots = [
+                tf.tensordot(
+                    tf.slice(input_value, [0, i, 0], [-1, 1, -1]),
+                    W,
+                    axes=(-1, 0),
+                )
+                for i in range(field_num - 1)
+            ]
+            p = [
+                tf.multiply(
+                    vidots[i],
+                    tf.slice(input_value, [0, j, 0], [-1, 1, -1]),
+                )
+                for i, j in itertools.combinations(range(field_num), 2)
+            ]
+        elif self.bilinear_type == "Field-Each":
+            W_list = [
+                variable_util.get_normal_variable(
+                    scope="BilinearInteraction",
+                    name=self.name + "_weight_%d" % i,
+                    shape=(embed_size, embed_size)
+                )
+                for i in range(field_num - 1)
+            ]
+            vidots = [
+                tf.tensordot(
+                    tf.slice(input_value, [0, i, 0], [-1, 1, -1]),
+                    W_list[i],
+                    axes=(-1, 0),
+                )
+                for i in range(field_num - 1)
+            ]
+            p = [
+                tf.multiply(
+                    vidots[i],
+                    tf.slice(input_value, [0, j, 0], [-1, 1, -1]),
+                )
+                for i, j in itertools.combinations(range(field_num), 2)
+            ]
+        else:
+            W_list = [
+                variable_util.get_normal_variable(
+                    scope="BilinearInteraction",
+                    name=self.name + "_weight_%d_%d" % (i, j),
+                    shape=(embed_size, embed_size)
+                )
+                for i, j in itertools.combinations(range(field_num), 2)
+            ]
+            p = [
+                tf.multiply(
+                    tf.tensordot(tf.slice(input_value, [0, v[0], 0], [-1, 1, -1]), w, axes=(-1, 0)),
+                    tf.slice(input_value, [0, v[1], 0], [-1, 1, -1])
+                )
+                for v, w in zip(itertools.combinations(range(field_num), 2), W_list)
+            ]
+        return tf.reshape(p, shape=(-1, field_num * (field_num - 1) / 2 * embed_size))
