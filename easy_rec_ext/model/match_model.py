@@ -10,6 +10,7 @@ from abc import abstractmethod
 from collections import OrderedDict
 from easy_rec_ext.core import embedding_ops
 from easy_rec_ext.core import regularizers
+from easy_rec_ext.utils import constant
 import easy_rec_ext.core.metrics as metrics_lib
 from easy_rec_ext.layers.sequence_pooling import SequencePooling
 from easy_rec_ext.layers.senet import SENetLayer
@@ -56,6 +57,11 @@ class MatchModel(object):
         if self._labels is not None:
             self._label_name = list(self._labels.keys())[0]
 
+        # add sample weight from inputs
+        self._sample_weight = 1.0
+        if constant.SAMPLE_WEIGHT in features:
+            self._sample_weight = features[constant.SAMPLE_WEIGHT]
+
         self._is_training = is_training
 
         self._emb_reg = regularizers.l2_regularizer(self._model_config.embedding_regularization)
@@ -97,7 +103,8 @@ class MatchModel(object):
         self.build_reg_loss()
         self._loss_dict["cross_entropy_loss"] = tf.losses.log_loss(
             labels=self._labels[self._label_name],
-            predictions=self._prediction_dict["probs"]
+            predictions=self._prediction_dict["probs"],
+            weights=self._sample_weight,
         )
         return self._loss_dict
 
