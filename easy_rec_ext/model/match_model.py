@@ -104,7 +104,7 @@ class MatchModel(object):
         self._loss_dict["cross_entropy_loss"] = tf.losses.log_loss(
             labels=self._labels[self._label_name],
             predictions=self._prediction_dict["probs"],
-            weights=self._sample_weight,
+            weights=tf.reshape(self._sample_weight, (-1,)),
         )
         return self._loss_dict
 
