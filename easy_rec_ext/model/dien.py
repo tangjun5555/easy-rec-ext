@@ -12,7 +12,6 @@ from easy_rec_ext.model.rank_model import RankModel
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
-
 filename = str(os.path.basename(__file__)).split(".")[0]
 
 
@@ -83,6 +82,7 @@ class DIENLayer(object):
         hist_gru = tf.keras.layers.GRU(
             units=emb_dim,
             return_sequences=True,
+            go_backwards=True,
             name="%s_interest_extractor_gru" % name,
         )(hist_id_col)
         logging.info("%s interest_extractor, hist_id_col.shape:%s, hist_gru.shape:%s" % (
