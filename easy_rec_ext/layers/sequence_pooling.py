@@ -151,6 +151,7 @@ class SequencePooling(object):
                 use_res=self.self_att_config.use_res,
             )(seq_value)
             logging.info("%s %s, self_att_output.shape:%s" % (filename, self.name, str(self_att_output.shape)))
+            self_att_output = tf.reduce_sum(self_att_output, axis=1, keepdims=False)
             return self_att_output
         else:
             raise ValueError("mode:%s not supported." % self.mode)
