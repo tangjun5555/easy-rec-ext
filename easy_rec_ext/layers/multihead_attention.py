@@ -169,6 +169,20 @@ class SelfAttention(MultiHeadAttention):
         return super(SelfAttention).__call__([deep_fea, deep_fea, deep_fea])
 
 
+class MultiHeadSelfAttentionConfig(object):
+    def __init__(self, head_num, head_size, use_res=False):
+        self.head_num = head_num
+        self.head_size = head_size
+        self.use_res = use_res
+
+    @staticmethod
+    def handle(data):
+        res = MultiHeadSelfAttentionConfig(data["head_num"], data["head_size"])
+        if "use_res" in data:
+            res.use_res = data["use_res"]
+        return res
+
+
 class MultiHeadSelfAttention(MultiHeadAttention):
     def __init__(self, name, head_num, head_size, l2_reg, use_res=False):
         super(MultiHeadSelfAttention).__init__(name, head_num, head_size, l2_reg, use_res)

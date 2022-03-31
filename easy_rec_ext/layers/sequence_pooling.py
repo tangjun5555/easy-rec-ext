@@ -7,7 +7,7 @@ import os
 import logging
 from typing import List
 import tensorflow as tf
-from easy_rec_ext.layers.multihead_attention import MultiHeadSelfAttention
+from easy_rec_ext.layers.multihead_attention import MultiHeadSelfAttention, MultiHeadSelfAttentionConfig
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
@@ -25,20 +25,6 @@ class RNNConfig(object):
         res = RNNConfig(data["hidden_units"])
         if "go_backwards" in data:
             res.go_backwards = data["go_backwards"]
-        return res
-
-
-class MultiHeadSelfAttentionConfig(object):
-    def __init__(self, head_num, head_size, use_res=False):
-        self.head_num = head_num
-        self.head_size = head_size
-        self.use_res = use_res
-
-    @staticmethod
-    def handle(data):
-        res = MultiHeadSelfAttentionConfig(data["head_num"], data["head_size"])
-        if "use_res" in data:
-            res.use_res = data["use_res"]
         return res
 
 
