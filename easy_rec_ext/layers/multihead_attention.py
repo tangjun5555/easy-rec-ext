@@ -176,6 +176,6 @@ class MultiHeadSelfAttention(MultiHeadAttention):
             deep_fea: input, [bs, feature_num, d_model].
 
         Returns:
-            output: [bs, feature_num, head_size].
+            output: [bs, feature_num, head_num * head_size].
         """
         return super(MultiHeadSelfAttention).__call__([deep_fea, deep_fea, deep_fea])
