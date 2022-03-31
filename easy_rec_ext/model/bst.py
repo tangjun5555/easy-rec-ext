@@ -3,33 +3,31 @@
 # time: 2021/7/25 10:59 下午
 # desc: Behavior Sequence Transformer
 
+import os
 import logging
-import math
 import tensorflow as tf
-from easy_rec_ext.layers import dnn, layer_norm
-from easy_rec_ext.layers.transformers import PositionEncoding
 from easy_rec_ext.core import regularizers
+from easy_rec_ext.layers import dnn, layer_norm
+from easy_rec_ext.layers.multihead_attention import MultiHeadSelfAttention, MultiHeadSelfAttentionConfig
 from easy_rec_ext.model.rank_model import RankModel
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
+filename = str(os.path.basename(__file__)).split(".")[0]
 
 
 class BSTConfig(object):
-    def __init__(self, seq_size, multi_head_size: int = 4, use_positional_encoding: int = 0,
-                 return_target: bool = True):
+    def __init__(self, seq_size,
+                 multi_head_self_att_config: MultiHeadSelfAttentionConfig,
+                 return_target: bool = True,
+                 ):
         self.seq_size = seq_size
-        self.multi_head_size = multi_head_size
-        self.use_positional_encoding = use_positional_encoding
+        self.multi_head_self_att_config = multi_head_self_att_config
         self.return_target = return_target
 
     @staticmethod
     def handle(data):
-        res = BSTConfig(data["seq_size"])
-        if "multi_head_size" in data:
-            res.multi_head_size = data["multi_head_size"]
-        if "use_positional_encoding" in data:
-            res.use_positional_encoding = data["use_positional_encoding"]
+        res = BSTConfig(data["seq_size"], MultiHeadSelfAttentionConfig.handle(data["multi_head_self_att_config"]))
         if "return_target" in data:
             res.return_target = data["return_target"]
         return res
@@ -62,94 +60,33 @@ class BSTLayer(object):
                 )
         return net
 
-    def attention_net(self, net, dim, cur_seq_len, seq_size, name):
-        query_net = self.dnn_net(net, [dim], name + "_query")  # B, seq_len，dim
-        key_net = self.dnn_net(net, [dim], name + "_key")
-        value_net = self.dnn_net(net, [dim], name + "_value")
-        scores = tf.matmul(
-            query_net, key_net, transpose_b=True)  # [B, seq_size, seq_size]
-
-        # hist_mask = tf.sequence_mask(
-        #     cur_seq_len, maxlen=seq_size - 1)  # [B, seq_size-1]
-        # cur_id_mask = tf.ones([tf.shape(hist_mask)[0], 1], dtype=tf.bool)  # [B, 1]
-        # mask = tf.concat([hist_mask, cur_id_mask], axis=1)  # [B, seq_size]
-        mask = tf.sequence_mask(cur_seq_len, maxlen=seq_size)
-        masks = tf.reshape(tf.tile(mask, [1, seq_size]),
-                           (-1, seq_size, seq_size))  # [B, seq_size, seq_size]
-        padding = tf.ones_like(scores) * (-2 ** 32 + 1)
-        scores = tf.where(masks, scores, padding)  # [B, seq_size, seq_size]
-
-        # Scale
-        scores = tf.nn.softmax(scores)  # (B, seq_size, seq_size)
-        att_res_net = tf.matmul(scores, value_net)  # [B, seq_size, emb_dim]
-        return att_res_net
-
-    def multi_head_att_net(self, id_cols, seq_size, head_count, seq_len, name):
-        emb_dim = id_cols.get_shape().as_list()[2]
-        logging.info("multi_head_att_net, name:%s, shape:%s, seq_size:%s, emb_dim:%s" %
-                     (str(name), str(id_cols.get_shape().as_list()), str(seq_size), str(emb_dim))
-                     )
-
-        multi_head_attention_res = []
-        part_cols_emd_dim = int(math.ceil(emb_dim / head_count))
-        for start_idx in range(0, emb_dim, part_cols_emd_dim):
-            if start_idx + part_cols_emd_dim > emb_dim:
-                part_cols_emd_dim = emb_dim - start_idx
-            part_id_col = tf.slice(id_cols, [0, 0, start_idx], [-1, -1, part_cols_emd_dim])
-            part_attention_net = self.attention_net(
-                net=part_id_col,
-                dim=part_cols_emd_dim,
-                cur_seq_len=seq_len,
-                seq_size=seq_size,
-                name=name + "/" + "multi_head_%d" % start_idx
-            )
-            multi_head_attention_res.append(part_attention_net)
-        multi_head_attention_res_net = tf.concat(multi_head_attention_res, axis=2)
-        multi_head_attention_res_net = self.dnn_net(
-            multi_head_attention_res_net,
-            [emb_dim],
-            name=name + "/" + "multi_head_attention"
-        )
-        return multi_head_attention_res_net
-
     def add_and_norm(self, net_1, net_2, emb_dim, name):
         net = tf.add(net_1, net_2)
-        # layer = tf.keras.layers.LayerNormalization(axis=2)
         layer = layer_norm.LayerNormalization(emb_dim, name)
         net = layer(net)
         return net
 
-    def bst(self, bst_fea, seq_size, head_count, name, use_positional_encoding=1, return_target=True):
-        cur_id, hist_id_col, seq_len = bst_fea["key"], bst_fea["hist_seq_emb"], bst_fea["hist_seq_len"]
-
-        # emb_dim = tf.shape(hist_id_col)[2]
+    def bst(self, name, deep_fea, seq_size, multi_head_self_att_config, return_target=True):
+        cur_id, hist_id_col, seq_len = deep_fea["key"], deep_fea["hist_seq_emb"], deep_fea["hist_seq_len"]
         emb_dim = hist_id_col.get_shape().as_list()[2]
-
-        # cur_batch_max_seq_len = tf.shape(hist_id_col)[1]
-        # hist_id_col = tf.cond(
-        #     tf.constant(seq_size) > cur_batch_max_seq_len,
-        #     lambda: tf.pad(hist_id_col, [[0, 0], [0, seq_size - cur_batch_max_seq_len - 1], [0, 0]], "CONSTANT"),
-        #     lambda: tf.slice(hist_id_col, [0, 0, 0], [-1, seq_size - 1, -1])
-        # )
-        # all_ids = tf.concat([hist_id_col, tf.expand_dims(cur_id, 1)], axis=1)  # b, seq_size, emb_dim
-
-        # all_ids = tf.concat([hist_id_col, tf.expand_dims(cur_id, 1)], axis=1)  # b, seq_size + 1, emb_dim
         all_ids = tf.concat([tf.expand_dims(cur_id, 1), hist_id_col], axis=1)  # b, seq_size + 1, emb_dim
 
-        all_ids = tf.layers.dense(all_ids, emb_dim, use_bias=False, name=name + "/" + "dnn_projection")
+        attention_net = MultiHeadSelfAttention(
+                name=name + "_" + "MultiHeadSelfAttention",
+                head_num=multi_head_self_att_config.head_num,
+                head_size=multi_head_self_att_config.head_size,
+                l2_reg=None,
+                use_res=multi_head_self_att_config.use_res,
+        )(all_ids)
+        logging.info("%s %s, attention_net.shape:%s" % (filename, name, str(attention_net.shape)))
+        attention_net = self.dnn_net(attention_net, [emb_dim], name + "_" + "attention_net_dnn")
+        logging.info("%s %s, attention_net.shape:%s" % (filename, name, str(attention_net.shape)))
 
-        if use_positional_encoding == 1:
-            all_ids = PositionEncoding(name + "/" + "PositionEncoding")(all_ids)
+        tmp_net = self.add_and_norm(all_ids, attention_net, emb_dim, name=name + "_" + "add_and_norm_1")
+        feed_forward_net = self.dnn_net(tmp_net, [emb_dim], name + "_" + "feed_forward_net")
+        net = self.add_and_norm(tmp_net, feed_forward_net, emb_dim, name=name + "_" + "add_and_norm_2")
 
-        attention_net = self.multi_head_att_net(all_ids, seq_size + 1, head_count, seq_len + 1, name)
-
-        tmp_net = self.add_and_norm(all_ids, attention_net, emb_dim, name=name + "/" + "add_and_norm_1")
-        feed_forward_net = self.dnn_net(tmp_net, [emb_dim], name + "/" + "feed_forward_net")
-        net = self.add_and_norm(tmp_net, feed_forward_net, emb_dim, name=name + "/" + "add_and_norm_2")
-
-        # bst_output = tf.reshape(net, [-1, seq_size * emb_dim])
-        bst_output = tf.reduce_sum(net, axis=1, keepdims=False)
-
+        bst_output = tf.reshape(net, [-1, (1 + seq_size) * emb_dim])
         if return_target:
             bst_output = tf.concat([bst_output, cur_id], axis=1)
         logging.info("bst %s, bst_output.shape:%s" % (name, str(bst_output.shape)))
@@ -212,11 +149,10 @@ class BST(RankModel, BSTLayer):
             tower_fea = self._bst_tower_features[tower_id]
             tower = self._model_config.bst_towers[tower_id]
             tower_fea = self.bst(
+                "%s_bst" % tower.input_group,
                 tower_fea,
                 seq_size=tower.bst_config.seq_size,
-                head_count=tower.bst_config.multi_head_size,
-                name="%s_bst" % tower.input_group,
-                use_positional_encoding=tower.bst_config.use_positional_encoding,
+                multi_head_self_att_config=tower.bst_config.multi_head_self_att_config,
                 return_target=tower.bst_config.return_target,
             )
             tower_fea_arr.append(tower_fea)

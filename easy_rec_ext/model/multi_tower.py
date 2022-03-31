@@ -165,11 +165,10 @@ class MultiTower(RankModel):
             with tf.variable_scope(variable_scope, reuse=tf.AUTO_REUSE):
                 bst_layer = BSTLayer()
                 tower_fea = bst_layer.bst(
+                    "%s_bst" % tower.input_group,
                     tower_fea,
                     seq_size=tower.bst_config.seq_size,
-                    head_count=tower.bst_config.multi_head_size,
-                    name="%s_bst" % tower.input_group,
-                    use_positional_encoding=tower.bst_config.use_positional_encoding,
+                    multi_head_self_att_config=tower.bst_config.multi_head_self_att_config,
                     return_target=tower.bst_config.return_target,
                 )
                 tower_fea_arr.append(tower_fea)
