@@ -68,6 +68,9 @@ class MultiHeadAttention(object):
         product = tf.linalg.matmul(a=q, b=k, transpose_b=True) / (self._head_size ** -0.5)
         logging.info(
             "%s _scaled_dot_product_attention, %s, product.shape:%s" % (filename, self._name, str(product.shape)))
+        mask = tf.math.greater_equal(tf.math.abs(product), 1e-9)
+        padding = tf.ones_like(product) * (-2 ** 32 + 1)
+        product = tf.where(mask, product, padding)
         weights = tf.nn.softmax(product)
         out = tf.linalg.matmul(weights, v)
         return out
