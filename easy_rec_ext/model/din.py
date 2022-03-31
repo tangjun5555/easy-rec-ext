@@ -15,8 +15,9 @@ if tf.__version__ >= "2.0":
 
 
 class DINConfig(object):
-    def __init__(self, dnn_config: dnn.DNNConfig, return_target=True, limit_seq_size=None):
+    def __init__(self, dnn_config: dnn.DNNConfig, need_scale=True, return_target=True, limit_seq_size=None):
         self.dnn_config = dnn_config
+        self.need_scale = need_scale
         self.return_target = return_target
         self.limit_seq_size = limit_seq_size
 
@@ -24,6 +25,8 @@ class DINConfig(object):
     def handle(data):
         dnn_config = dnn.DNNConfig.handle(data["dnn_config"])
         res = DINConfig(dnn_config)
+        if "need_scale" in data:
+            res.need_scale = data["need_scale"]
         if "return_target" in data:
             res.return_target = data["return_target"]
         if "limit_seq_size" in data:
@@ -50,7 +53,7 @@ class DINTower(object):
 
 
 class DINLayer(object):
-    def din(self, dnn_config, deep_fea, name, return_target=True, limit_seq_size=None):
+    def din(self, dnn_config, deep_fea, name, need_scale=True, return_target=True, limit_seq_size=None):
         cur_id, hist_id_col, seq_len = deep_fea["key"], deep_fea["hist_seq_emb"], deep_fea["hist_seq_len"]
 
         if limit_seq_size and limit_seq_size > 0:
@@ -88,11 +91,15 @@ class DINLayer(object):
         # mask
         seq_len = tf.expand_dims(seq_len, 1)
         mask = tf.sequence_mask(seq_len, seq_max_len)
-        padding = tf.ones_like(scores) * (-2 ** 32 + 1)
+        if need_scale:
+            padding = tf.ones_like(scores) * (-2 ** 32 + 1)
+        else:
+            padding = tf.zeros_like(scores)
         scores = tf.where(mask, scores, padding)  # [B, 1, seq_max_len]
 
         # Scale
-        scores = tf.nn.softmax(scores)  # (B, 1, seq_max_len)
+        if need_scale:
+            scores = tf.nn.softmax(scores)  # (B, 1, seq_max_len)
 
         din_output = tf.matmul(scores, hist_id_col)  # [B, 1, emb_dim]
         din_output = tf.reshape(din_output, [-1, emb_dim])  # [B, emb_dim]
