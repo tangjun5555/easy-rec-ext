@@ -79,11 +79,11 @@ class DIENLayer(object):
 
     def auxiliary_loss_layer(self):
         """
-
+        TODO
         Returns:
 
         """
-        return None
+        raise NotImplemented
 
     def interest_evolving_layer(self, name, cur_id, seq_len, seq_size, emb_dim, hist_gru, combine_mechanism):
         hist_attention = self.attention_net(cur_id, hist_gru, seq_len, seq_size, emb_dim)
@@ -127,7 +127,7 @@ class DIENLayer(object):
         Returns:
 
         """
-        return None
+        raise NotImplemented
 
     def AUGRU(self):
         """
@@ -135,7 +135,7 @@ class DIENLayer(object):
         Returns:
 
         """
-        return None
+        raise NotImplemented
 
 
 class DIEN(RankModel, DIENLayer):
