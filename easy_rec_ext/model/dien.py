@@ -60,8 +60,8 @@ class DIENLayer(object):
         cur_id, hist_id_col, seq_len = deep_fea["key"], deep_fea["hist_seq_emb"], deep_fea["hist_seq_len"]
         emb_dim = hist_id_col.get_shape().as_list()[2]
 
-        hist_gru = self.interest_extractor(name, emb_dim, hist_id_col)
-        final_state = self.interest_evolving(name, cur_id, seq_len, seq_max_len, emb_dim, hist_gru, combine_mechanism)
+        hist_gru = self.interest_extractor_layer(name, emb_dim, hist_id_col)
+        final_state = self.interest_evolving_layer(name, cur_id, seq_len, seq_max_len, emb_dim, hist_gru, combine_mechanism)
 
         if return_target:
             dien_output = tf.concat([final_state, cur_id], axis=1)
@@ -78,7 +78,7 @@ class DIENLayer(object):
         """
         return None
 
-    def interest_extractor(self, name, emb_dim, hist_id_col):
+    def interest_extractor_layer(self, name, emb_dim, hist_id_col):
         hist_gru = tf.keras.layers.GRU(
             units=emb_dim,
             return_sequences=True,
@@ -88,6 +88,21 @@ class DIENLayer(object):
         logging.info("%s interest_extractor, hist_id_col.shape:%s, hist_gru.shape:%s" % (
             filename, str(hist_id_col.shape), str(hist_gru.shape)))
         return hist_gru
+
+    def interest_evolving_layer(self, name, cur_id, seq_len, seq_max_len, emb_dim, hist_gru, combine_mechanism):
+        # scaled Dot-Product
+        hist_attention = tf.matmul(tf.expand_dims(cur_id, 1), hist_gru, transpose_b=True) / (emb_dim ** -0.5)
+
+        # mask
+        seq_len = tf.expand_dims(seq_len, 1)
+        mask = tf.sequence_mask(seq_len, seq_max_len)
+        padding = tf.ones_like(hist_attention) * (-2 ** 32 + 1)
+        hist_attention = tf.where(mask, hist_attention, padding)
+
+        hist_attention = tf.nn.softmax(hist_attention)
+        tf.summary.histogram("%s_interest_evolving_hist_attention" % name, hist_attention)
+
+        return self.AIGRU(name, seq_max_len, emb_dim, hist_gru, hist_attention)
 
     def AIGRU(self, name, seq_max_len, emb_dim, hist_gru, hist_attention):
         logging.info("%s AIGRU, hist_gru.shape:%s, hist_attention.shape:%s" % (
@@ -115,21 +130,6 @@ class DIENLayer(object):
 
         """
         pass
-
-    def interest_evolving(self, name, cur_id, seq_len, seq_max_len, emb_dim, hist_gru, combine_mechanism):
-        # scaled Dot-Product
-        hist_attention = tf.matmul(tf.expand_dims(cur_id, 1), hist_gru, transpose_b=True) / (emb_dim ** -0.5)
-
-        # mask
-        seq_len = tf.expand_dims(seq_len, 1)
-        mask = tf.sequence_mask(seq_len, seq_max_len)
-        padding = tf.ones_like(hist_attention) * (-2 ** 32 + 1)
-        hist_attention = tf.where(mask, hist_attention, padding)
-
-        hist_attention = tf.nn.softmax(hist_attention)
-        tf.summary.histogram("%s_interest_evolving_hist_attention" % name, hist_attention)
-
-        return self.AIGRU(name, seq_max_len, emb_dim, hist_gru, hist_attention)
 
 
 class DIEN(RankModel, DIENLayer):
