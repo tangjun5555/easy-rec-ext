@@ -91,9 +91,9 @@ class DIENLayer(object):
             filename, str(hist_gru.shape), str(hist_attention.shape)))
 
         if combine_mechanism == "AUGRU":
-            pass
+            return self.AUGRU()
         elif combine_mechanism == "AGRU":
-            pass
+            return self.AGRU()
         elif combine_mechanism == "AIGRU":
             return self.AIGRU(name, seq_size, emb_dim, hist_gru, hist_attention)
         else:
