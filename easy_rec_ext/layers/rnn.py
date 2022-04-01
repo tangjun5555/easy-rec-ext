@@ -263,5 +263,21 @@ class DynamicGRU(object):
             except AttributeError:
                 self.gru_cell = tf.compat.v1.nn.rnn_cell.GRUCell(self.num_units)
 
-    def __call__(self, ):
-        pass
+    def __call__(self, input_list):
+        """
+        :param concated_embeds_value: None * field_size * embedding_size
+        :return: None*1
+        """
+        if self.gru_type == "GRU" or self.gru_type == "AIGRU":
+            rnn_input, sequence_length = input_list
+            att_score = None
+        else:
+            rnn_input, sequence_length, att_score = input_list
+
+        rnn_output, hidden_state = dynamic_rnn(self.gru_cell, inputs=rnn_input, att_scores=att_score,
+                                               sequence_length=tf.squeeze(sequence_length,
+                                                                          ), dtype=tf.float32, scope=self.name)
+        if self.return_sequence:
+            return rnn_output
+        else:
+            return tf.expand_dims(hidden_state, axis=1)

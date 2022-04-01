@@ -182,7 +182,7 @@ class MultiTower(RankModel):
                 tower_fea = dien_layer.dien(
                     name="%s_dien" % tower.input_group,
                     deep_fea=tower_fea,
-                    seq_max_len=tower.dien_config.seq_size,
+                    seq_size=tower.dien_config.seq_size,
                     combine_mechanism=tower.dien_config.combine_mechanism,
                     return_target=tower.dien_config.return_target,
                 )
