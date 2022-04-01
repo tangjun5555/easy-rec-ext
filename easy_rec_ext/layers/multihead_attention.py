@@ -41,16 +41,17 @@ class MultiHeadAttention(object):
           k: Key matrix of shape [bs, head_num, feature_num, head_size].
           v: Value matrix of shape [bs, head_num, feature_num, head_size].
         """
+        feature_num = q.get_shape().as_list()[1]
         reshaped_q = tf.reshape(
-            q, shape=[-1, q.shape[1], self._head_num, self._head_size]
+            q, shape=[-1, feature_num, self._head_num, self._head_size]
         )
         q = tf.transpose(reshaped_q, perm=[0, 2, 1, 3])
         reshaped_k = tf.reshape(
-            k, shape=[-1, k.shape[1], self._head_num, self._head_size]
+            k, shape=[-1, feature_num, self._head_num, self._head_size]
         )
         k = tf.transpose(reshaped_k, perm=[0, 2, 1, 3])
         reshaped_v = tf.reshape(
-            v, shape=[-1, v.shape[1], self._head_num, self._head_size]
+            v, shape=[-1, feature_num, self._head_num, self._head_size]
         )
         v = tf.transpose(reshaped_v, perm=[0, 2, 1, 3])
         return q, k, v
