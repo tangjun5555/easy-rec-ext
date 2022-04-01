@@ -13,19 +13,22 @@ filename = str(os.path.basename(__file__)).split(".")[0]
 
 
 class MultiHeadAttention(object):
-    def __init__(self, name, head_num, head_size, l2_reg, use_res=False):
+    def __init__(self, name, head_num, head_size, feature_num, l2_reg=None, use_res=False):
         """
         Initializes a `MultiHeadAttention` Layer.
         Args:
           name: scope of the MultiHeadAttention, so that the parameters could be separated from other MultiHeadAttention
           head_num: The number of heads
           head_size: The dimension of a head
+          feature_num: The number of Feature
           l2_reg: l2 regularizer
           use_res: Whether to use residual connections before output.
         """
         self._name = name
         self._head_num = head_num
         self._head_size = head_size
+        self._feature_num = feature_num
+
         self._l2_reg = l2_reg
         self._use_res = use_res
 
@@ -42,15 +45,15 @@ class MultiHeadAttention(object):
           v: Value matrix of shape [bs, head_num, feature_num, head_size].
         """
         reshaped_q = tf.reshape(
-            q, shape=[-1, self.feature_num, self._head_num, self._head_size]
+            q, shape=[-1, self._feature_num, self._head_num, self._head_size]
         )
         q = tf.transpose(reshaped_q, perm=[0, 2, 1, 3])
         reshaped_k = tf.reshape(
-            k, shape=[-1, self.feature_num, self._head_num, self._head_size]
+            k, shape=[-1, self._feature_num, self._head_num, self._head_size]
         )
         k = tf.transpose(reshaped_k, perm=[0, 2, 1, 3])
         reshaped_v = tf.reshape(
-            v, shape=[-1, self.feature_num, self._head_num, self._head_size]
+            v, shape=[-1, self._feature_num, self._head_num, self._head_size]
         )
         v = tf.transpose(reshaped_v, perm=[0, 2, 1, 3])
         return q, k, v
@@ -135,8 +138,6 @@ class MultiHeadAttention(object):
         ori_k = attention_input[1]
         ori_v = attention_input[2]
 
-        self.feature_num = ori_k.get_shape().as_list()[1]
-
         q, k, v = self._compute_qkv(ori_q, ori_k, ori_v)
         q, k, v = self._split_multihead_qkv(q, k, v)
         multi_head_tensor = self._scaled_dot_product_attention(q, k, v)
@@ -157,8 +158,8 @@ class MultiHeadAttention(object):
 
 
 class SelfAttention(MultiHeadAttention):
-    def __init__(self, name, head_size, l2_reg, use_res=False):
-        super(SelfAttention, self).__init__(name, 1, head_size, l2_reg, use_res)
+    def __init__(self, name, head_size, feature_num, l2_reg=None, use_res=False):
+        super(SelfAttention, self).__init__(name, 1, head_size, feature_num, l2_reg, use_res)
 
     def __call__(self, deep_fea):
         """
@@ -172,22 +173,23 @@ class SelfAttention(MultiHeadAttention):
 
 
 class MultiHeadSelfAttentionConfig(object):
-    def __init__(self, head_num, head_size, use_res=False):
+    def __init__(self, head_num, head_size, feature_num, use_res=False):
         self.head_num = head_num
         self.head_size = head_size
+        self.feature_num = feature_num
         self.use_res = use_res
 
     @staticmethod
     def handle(data):
-        res = MultiHeadSelfAttentionConfig(data["head_num"], data["head_size"])
+        res = MultiHeadSelfAttentionConfig(data["head_num"], data["head_size"], data["feature_num"])
         if "use_res" in data:
             res.use_res = data["use_res"]
         return res
 
 
 class MultiHeadSelfAttention(MultiHeadAttention):
-    def __init__(self, name, head_num, head_size, l2_reg, use_res=False):
-        super(MultiHeadSelfAttention, self).__init__(name, head_num, head_size, l2_reg, use_res)
+    def __init__(self, name, head_num, head_size, feature_num, l2_reg=None, use_res=False):
+        super(MultiHeadSelfAttention, self).__init__(name, head_num, head_size, feature_num, l2_reg, use_res)
 
     def __call__(self, deep_fea):
         """

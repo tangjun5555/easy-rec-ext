@@ -75,6 +75,7 @@ class BSTLayer(object):
                 name=name + "_" + "MultiHeadSelfAttention",
                 head_num=multi_head_self_att_config.head_num,
                 head_size=multi_head_self_att_config.head_size,
+                feature_num=1 + seq_size,
                 l2_reg=None,
                 use_res=multi_head_self_att_config.use_res,
         )(all_ids)

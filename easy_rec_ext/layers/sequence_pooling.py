@@ -133,6 +133,7 @@ class SequencePooling(object):
                 name=self.name + "_" + "self_att",
                 head_num=self.self_att_config.head_num,
                 head_size=self.self_att_config.head_size,
+                feature_num=self.self_att_config.feature_num,
                 l2_reg=None,
                 use_res=self.self_att_config.use_res,
             )(seq_value)
