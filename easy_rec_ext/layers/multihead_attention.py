@@ -156,7 +156,7 @@ class MultiHeadAttention(object):
 
 class SelfAttention(MultiHeadAttention):
     def __init__(self, name, head_size, l2_reg, use_res=False):
-        super(SelfAttention).__init__(name, 1, head_size, l2_reg, use_res)
+        super(SelfAttention, self).__init__(name, 1, head_size, l2_reg, use_res)
 
     def __call__(self, deep_fea):
         """
@@ -166,7 +166,7 @@ class SelfAttention(MultiHeadAttention):
         Returns:
             output: [bs, feature_num, head_size].
         """
-        return super(SelfAttention).__call__([deep_fea, deep_fea, deep_fea])
+        return super(SelfAttention, self).__call__([deep_fea, deep_fea, deep_fea])
 
 
 class MultiHeadSelfAttentionConfig(object):
@@ -185,7 +185,7 @@ class MultiHeadSelfAttentionConfig(object):
 
 class MultiHeadSelfAttention(MultiHeadAttention):
     def __init__(self, name, head_num, head_size, l2_reg, use_res=False):
-        super(MultiHeadSelfAttention).__init__(name, head_num, head_size, l2_reg, use_res)
+        super(MultiHeadSelfAttention, self).__init__(name, head_num, head_size, l2_reg, use_res)
 
     def __call__(self, deep_fea):
         """
@@ -195,4 +195,4 @@ class MultiHeadSelfAttention(MultiHeadAttention):
         Returns:
             output: [bs, feature_num, head_num * head_size].
         """
-        return super(MultiHeadSelfAttention).__call__([deep_fea, deep_fea, deep_fea])
+        return super(MultiHeadSelfAttention, self).__call__([deep_fea, deep_fea, deep_fea])
