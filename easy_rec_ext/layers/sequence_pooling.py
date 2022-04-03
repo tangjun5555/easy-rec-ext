@@ -6,29 +6,38 @@
 import os
 import logging
 from typing import List
-
 import tensorflow as tf
+from easy_rec_ext.layers.multihead_attention import MultiHeadSelfAttention, MultiHeadSelfAttentionConfig
 
-tf = tf.compat.v1
-
+if tf.__version__ >= "2.0":
+    tf = tf.compat.v1
 filename = str(os.path.basename(__file__)).split(".")[0]
 
 
-class GRUConfig(object):
-    def __init__(self, gru_units: List[int], go_backwards: int):
-        self.gru_units = gru_units
+class RNNConfig(object):
+    def __init__(self, hidden_units: List[int], go_backwards: bool = False):
+        assert hidden_units and hidden_units[0] > 0
+        self.hidden_units = hidden_units
         self.go_backwards = go_backwards
 
     @staticmethod
     def handle(data):
-        res = GRUConfig(data["gru_units"], data["go_backwards"])
+        res = RNNConfig(data["hidden_units"])
+        if "go_backwards" in data:
+            res.go_backwards = data["go_backwards"]
         return res
 
 
 class SequencePoolingConfig(object):
-    def __init__(self, mode: str = "sum", gru_config: GRUConfig = None):
+    def __init__(self, mode: str = "sum",
+                 gru_config: RNNConfig = None,
+                 lstm_config: RNNConfig = None,
+                 self_att_config: MultiHeadSelfAttentionConfig = None,
+                 ):
         self.mode = mode
         self.gru_config = gru_config
+        self.lstm_config = lstm_config
+        self.self_att_config = self_att_config
 
     @staticmethod
     def handle(data):
@@ -36,7 +45,11 @@ class SequencePoolingConfig(object):
         if "mode" in data:
             res.mode = data["mode"]
         if "gru_config" in data:
-            res.gru_config = GRUConfig.handle(data["gru_config"])
+            res.gru_config = RNNConfig.handle(data["gru_config"])
+        if "lstm_config" in data:
+            res.lstm_config = RNNConfig.handle(data["lstm_config"])
+        if "self_att_config" in data:
+            res.self_att_config = MultiHeadSelfAttentionConfig.handle(data["self_att_config"])
         return res
 
 
@@ -47,14 +60,19 @@ class SequencePooling(object):
 
     Arguments
         name: str.
-        mode: str. Pooling operation to be used, can be sum, mean or max.
-        gru_config: str.
+        mode: str. Pooling operation to be used.
     """
 
-    def __init__(self, name, mode="sum", gru_config: GRUConfig = None):
+    def __init__(self, name, mode="sum",
+                 gru_config: RNNConfig = None,
+                 lstm_config: RNNConfig = None,
+                 self_att_config: MultiHeadSelfAttentionConfig = None
+                 ):
         self.name = name
         self.mode = mode
         self.gru_config = gru_config
+        self.lstm_config = lstm_config
+        self.self_att_config = self_att_config
 
     def __call__(self, seq_value, seq_len):
         """
@@ -73,17 +91,54 @@ class SequencePooling(object):
             hist = tf.reduce_sum(seq_value, axis=1, keep_dims=False)
             return tf.div(hist, tf.cast(seq_len, tf.float32) + 1e-8)
         elif self.mode == "gru":
-            go_backwards = self.gru_config.go_backwards == 1
             gru_input = seq_value
-            for i, j in enumerate(self.gru_config.gru_units):
-                gru_input, gru_states = tf.keras.layers.GRU(
-                    units=j,
-                    # stateful=True,
-                    return_state=True,
-                    go_backwards=go_backwards,
-                    name='{}_gru_{}'.format(self.name, str(i)),
-                )(gru_input)
-                logging.info("%s %s, gru_input.shape:%s, gru_states:%s" % (filename, self.name, str(gru_input.shape), str(gru_states.shape)))
-            return tf.reshape(gru_input, (-1, self.gru_config.gru_units[-1]))
+            if len(self.gru_config.hidden_units) > 1:
+                for i, j in enumerate(self.gru_config.hidden_units[:-1]):
+                    gru_input = tf.keras.layers.GRU(
+                        units=j,
+                        return_sequences=True,
+                        go_backwards=self.gru_config.go_backwards,
+                        name="{}_gru_{}".format(self.name, str(i)),
+                    )(gru_input)
+                    logging.info(
+                        "%s %s, i:%d, j:%d, gru_input.shape:%s" % (filename, self.name, i, j, str(gru_input.shape)))
+            gru_input = tf.keras.layers.GRU(
+                units=self.gru_config.hidden_units[-1],
+                go_backwards=self.gru_config.go_backwards,
+                name="{}_gru_{}".format(self.name, str(len(self.gru_config.hidden_units) - 1)),
+            )(gru_input)
+            logging.info("%s %s, gru_input.shape:%s" % (filename, self.name, str(gru_input.shape)))
+            return gru_input
+        elif self.mode == "lstm":
+            lstm_input = seq_value
+            if len(self.lstm_config.hidden_units) > 1:
+                for i, j in enumerate(self.lstm_config.hidden_units[:-1]):
+                    lstm_input = tf.keras.layers.LSTM(
+                        units=j,
+                        return_sequences=True,
+                        go_backwards=self.lstm_config.go_backwards,
+                        name="{}_lstm_{}".format(self.name, str(i)),
+                    )(lstm_input)
+                    logging.info(
+                        "%s %s, i:%d, j:%d, lstm_input.shape:%s" % (filename, self.name, i, j, str(lstm_input.shape)))
+            lstm_input = tf.keras.layers.LSTM(
+                units=self.lstm_config.hidden_units[-1],
+                go_backwards=self.lstm_config.go_backwards,
+                name="{}_lstm_{}".format(self.name, str(len(self.lstm_config.hidden_units) - 1)),
+            )(lstm_input)
+            logging.info("%s %s, lstm_input.shape:%s" % (filename, self.name, str(lstm_input.shape)))
+            return lstm_input
+        elif self.mode == "self_att":
+            self_att_output = MultiHeadSelfAttention(
+                name=self.name + "_" + "self_att",
+                head_num=self.self_att_config.head_num,
+                head_size=self.self_att_config.head_size,
+                feature_num=self.self_att_config.feature_num,
+                l2_reg=None,
+                use_res=self.self_att_config.use_res,
+            )(seq_value)
+            logging.info("%s %s, self_att_output.shape:%s" % (filename, self.name, str(self_att_output.shape)))
+            self_att_output = tf.reduce_sum(self_att_output, axis=1, keepdims=False)
+            return self_att_output
         else:
             raise ValueError("mode:%s not supported." % self.mode)

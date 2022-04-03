@@ -10,8 +10,10 @@ from abc import abstractmethod
 from collections import OrderedDict
 from easy_rec_ext.core import embedding_ops
 from easy_rec_ext.core import regularizers
+from easy_rec_ext.utils import constant
 import easy_rec_ext.core.metrics as metrics_lib
 from easy_rec_ext.layers.sequence_pooling import SequencePooling
+from easy_rec_ext.layers.senet import SENetLayer
 
 import tensorflow as tf
 
@@ -55,6 +57,11 @@ class MatchModel(object):
         if self._labels is not None:
             self._label_name = list(self._labels.keys())[0]
 
+        # add sample weight from inputs
+        self._sample_weight = 1.0
+        if constant.SAMPLE_WEIGHT in features:
+            self._sample_weight = features[constant.SAMPLE_WEIGHT]
+
         self._is_training = is_training
 
         self._emb_reg = regularizers.l2_regularizer(self._model_config.embedding_regularization)
@@ -96,7 +103,8 @@ class MatchModel(object):
         self.build_reg_loss()
         self._loss_dict["cross_entropy_loss"] = tf.losses.log_loss(
             labels=self._labels[self._label_name],
-            predictions=self._prediction_dict["probs"]
+            predictions=self._prediction_dict["probs"],
+            weights=tf.reshape(self._sample_weight, (-1,)),
         )
         return self._loss_dict
 
@@ -114,14 +122,11 @@ class MatchModel(object):
                     gids=gids,
                     reduction=metric.reduction,
                 )
+            elif "pcopc" == metric.name:
+                label = tf.to_float(self._labels[self._label_name])
+                metric_dict[str(metric)] = metrics_lib.pcopc(label, self._prediction_dict["probs"])
             elif "recall_at_k" == metric.name:
                 metric_dict[str(metric)] = tf.metrics.recall_at_k(
-                    label,
-                    self._prediction_dict["probs"],
-                    metric.topk,
-                )
-            elif "precision_at_k" == metric.name:
-                metric_dict[str(metric)] = tf.metrics.precision_at_k(
                     label,
                     self._prediction_dict["probs"],
                     metric.topk,
@@ -143,6 +148,14 @@ class MatchModel(object):
             outputs.append(group_input_dict[feature_field.input_name])
 
         outputs = tf.concat(outputs, axis=1)
+        if feature_group.senet_layer_config is not None:
+            embedding_dim = outputs.get_shape().as_list()[-1] // feature_fields_num
+            outputs = tf.reshape(outputs, (-1, feature_fields_num, embedding_dim))
+            outputs = SENetLayer(
+                name=feature_group.group_name + "_senet",
+                reduction_ratio=feature_group.senet_layer_config.reduction_ratio,
+            )(outputs)
+            outputs = tf.reshape(outputs, (-1, feature_fields_num * embedding_dim))
         return outputs
 
     def build_group_input_dict(self, feature_group):
@@ -155,29 +168,19 @@ class MatchModel(object):
 
             if feature_field.feature_type == "IdFeature":
                 input_ids = self._feature_dict[feature_field.input_name]
-
                 if feature_field.one_hot == 1:
                     if feature_field.num_buckets > 0:
                         values = tf.one_hot(input_ids, feature_field.num_buckets)
                     else:
                         values = tf.one_hot(input_ids, feature_field.hash_bucket_size)
                     values = tf.squeeze(values, axis=[1])
-
                 else:
-                    if input_ids.dtype == tf.dtypes.string:
-                        embedding_weights = embedding_ops.get_embedding_variable(
-                            name=feature_field.embedding_name,
-                            dim=feature_field.embedding_dim,
-                            vocab_size=feature_field.num_buckets if feature_field.num_buckets > 0 else feature_field.hash_bucket_size,
-                            key_is_string=True,
-                        )
-                    else:
-                        embedding_weights = embedding_ops.get_embedding_variable(
-                            name=feature_field.embedding_name,
-                            dim=feature_field.embedding_dim,
-                            vocab_size=feature_field.num_buckets if feature_field.num_buckets > 0 else feature_field.hash_bucket_size,
-                            key_is_string=False,
-                        )
+                    embedding_weights = embedding_ops.get_embedding_variable(
+                        name=feature_field.embedding_name,
+                        dim=feature_field.embedding_dim,
+                        vocab_size=feature_field.num_buckets if feature_field.num_buckets > 0 else feature_field.hash_bucket_size,
+                        key_is_string=input_ids.dtype == tf.dtypes.string,
+                    )
                     values = embedding_ops.safe_embedding_lookup(
                         embedding_weights, input_ids
                     )
@@ -201,14 +204,20 @@ class MatchModel(object):
 
             elif feature_field.feature_type == "SequenceFeature":
                 hist_seq = self._feature_dict[feature_field.input_name]
-                hist_seq_len = tf.where(tf.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
+                if hist_seq.dtype == tf.dtypes.string:
+                    hist_seq_len = tf.where(tf.math.logical_or(tf.equal(hist_seq, ""), tf.equal(hist_seq, "-1")),
+                                            tf.zeros_like(tf.string_to_hash_bucket_fast(hist_seq, 10)),
+                                            tf.ones_like(tf.string_to_hash_bucket_fast(hist_seq, 10)),
+                                            )
+                else:
+                    hist_seq_len = tf.where(tf.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
                 hist_seq_len = tf.reduce_sum(hist_seq_len, axis=1, keep_dims=False)
 
                 embedding_weights = embedding_ops.get_embedding_variable(
                     name=feature_field.embedding_name,
                     dim=feature_field.embedding_dim,
                     vocab_size=feature_field.num_buckets if feature_field.num_buckets > 0 else feature_field.hash_bucket_size,
-                    key_is_string=False,
+                    key_is_string=hist_seq.dtype == tf.dtypes.string,
                 )
                 values = embedding_ops.safe_embedding_lookup(
                     embedding_weights, tf.expand_dims(hist_seq, -1)
@@ -219,6 +228,8 @@ class MatchModel(object):
                         name=feature_field.input_name + "_pooling",
                         mode=feature_field.sequence_pooling_config.mode,
                         gru_config=feature_field.sequence_pooling_config.gru_config,
+                        lstm_config=feature_field.sequence_pooling_config.lstm_config,
+                        self_att_config=feature_field.sequence_pooling_config.self_att_config,
                     )(values, hist_seq_len)
 
             else:

@@ -12,26 +12,21 @@ from easy_rec_ext.model.rank_model import RankModel
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
-
 filename = str(os.path.basename(__file__)).split(".")[0]
 
 
 class DIENConfig(object):
     def __init__(self, seq_size: int,
-                 use_auxiliary_loss: int = 0,
                  combine_mechanism: str = "AIGRU",
                  return_target: bool = True,
                  ):
         self.seq_size = seq_size
-        self.use_auxiliary_loss = use_auxiliary_loss
         self.combine_mechanism = combine_mechanism
         self.return_target = return_target
 
     @staticmethod
     def handle(data):
         res = DIENConfig(data["seq_size"])
-        if "use_auxiliary_loss" in data:
-            res.use_auxiliary_loss = data["use_auxiliary_loss"]
         if "combine_mechanism" in data:
             res.combine_mechanism = data["combine_mechanism"]
         if "return_target" in data:
@@ -57,12 +52,12 @@ class DIENTower(object):
 
 
 class DIENLayer(object):
-    def dien(self, name, deep_fea, seq_max_len, combine_mechanism, return_target=True):
+    def dien(self, name, deep_fea, seq_size, combine_mechanism, return_target=True):
         cur_id, hist_id_col, seq_len = deep_fea["key"], deep_fea["hist_seq_emb"], deep_fea["hist_seq_len"]
         emb_dim = hist_id_col.get_shape().as_list()[2]
 
-        hist_gru = self.interest_extractor(name, emb_dim, hist_id_col)
-        final_state = self.interest_evolving(name, cur_id, seq_len, seq_max_len, emb_dim, hist_gru, combine_mechanism)
+        hist_gru = self.interest_extractor_layer(name, emb_dim, hist_id_col)
+        final_state = self.interest_evolving_layer(name, cur_id, seq_len, seq_size, emb_dim, hist_gru, combine_mechanism)
 
         if return_target:
             dien_output = tf.concat([final_state, cur_id], axis=1)
@@ -71,33 +66,59 @@ class DIENLayer(object):
         logging.info("%s %s, dien_output.shape:%s" % (filename, name, str(dien_output.shape)))
         return dien_output
 
-    def auxiliary_loss(self):
-        """
-        TODO
-        Returns:
-
-        """
-        return None
-
-    def interest_extractor(self, name, emb_dim, hist_id_col):
+    def interest_extractor_layer(self, name, emb_dim, hist_id_col):
         hist_gru = tf.keras.layers.GRU(
             units=emb_dim,
             return_sequences=True,
+            go_backwards=True,
             name="%s_interest_extractor_gru" % name,
         )(hist_id_col)
         logging.info("%s interest_extractor, hist_id_col.shape:%s, hist_gru.shape:%s" % (
             filename, str(hist_id_col.shape), str(hist_gru.shape)))
         return hist_gru
 
-    def AIGRU(self, name, seq_max_len, emb_dim, hist_gru, hist_attention):
-        logging.info("%s AIGRU, hist_gru.shape:%s, hist_attention.shape:%s" % (
+    def auxiliary_loss_layer(self):
+        """
+        TODO
+        Returns:
+
+        """
+        raise NotImplemented
+
+    def interest_evolving_layer(self, name, cur_id, seq_len, seq_size, emb_dim, hist_gru, combine_mechanism):
+        hist_attention = self.attention_net(cur_id, hist_gru, seq_len, seq_size, emb_dim)
+        logging.info("%s interest_evolving_layer, hist_gru.shape:%s, hist_attention.shape:%s" % (
             filename, str(hist_gru.shape), str(hist_attention.shape)))
-        final_state = tf.math.multiply(hist_gru, tf.reshape(hist_attention, (-1, seq_max_len, 1)))
+
+        if combine_mechanism == "AUGRU":
+            return self.AUGRU()
+        elif combine_mechanism == "AGRU":
+            return self.AGRU()
+        elif combine_mechanism == "AIGRU":
+            return self.AIGRU(name, seq_size, emb_dim, hist_gru, hist_attention)
+        else:
+            raise ValueError("%s interest_evolving_layer, combine_mechanism: %s not supported." % (filename, combine_mechanism))
+
+    def attention_net(self, cur_id, hist_gru, seq_len, seq_size, emb_dim):
+        # scaled Dot-Product
+        hist_attention = tf.matmul(tf.expand_dims(cur_id, 1), hist_gru, transpose_b=True) / (emb_dim ** -0.5)
+        # mask
+        seq_len = tf.expand_dims(seq_len, 1)
+        mask = tf.sequence_mask(seq_len, seq_size)
+        padding = tf.ones_like(hist_attention) * (-2 ** 32 + 1)
+        hist_attention = tf.where(mask, hist_attention, padding)
+        # scale
+        hist_attention = tf.nn.softmax(hist_attention)
+        return hist_attention
+
+    def AIGRU(self, name, seq_size, emb_dim, hist_gru, hist_attention):
+        hist_gru = tf.math.multiply(hist_gru, tf.reshape(hist_attention, (-1, seq_size, 1)))
         final_state = tf.keras.layers.GRU(
             units=emb_dim,
             return_sequences=False,
+            go_backwards=True,
             name="%s_AIGRU" % name,
-        )(final_state)
+        )(hist_gru)
         return final_state
 
     def AGRU(self):
@@ -106,7 +127,7 @@ class DIENLayer(object):
         Returns:
 
         """
-        pass
+        raise NotImplemented
 
     def AUGRU(self):
         """
@@ -114,22 +135,7 @@ class DIENLayer(object):
         Returns:
 
         """
-        pass
-
-    def interest_evolving(self, name, cur_id, seq_len, seq_max_len, emb_dim, hist_gru, combine_mechanism):
-        # scaled Dot-Product
-        hist_attention = tf.matmul(tf.expand_dims(cur_id, 1), hist_gru, transpose_b=True) / (emb_dim ** -0.5)
-
-        # mask
-        seq_len = tf.expand_dims(seq_len, 1)
-        mask = tf.sequence_mask(seq_len, seq_max_len)
-        padding = tf.ones_like(hist_attention) * (-2 ** 32 + 1)
-        hist_attention = tf.where(mask, hist_attention, padding)
-
-        hist_attention = tf.nn.softmax(hist_attention)
-        tf.summary.histogram("%s_interest_evolving_hist_attention" % name, hist_attention)
-
-        return self.AIGRU(name, seq_max_len, emb_dim, hist_gru, hist_attention)
+        raise NotImplemented
 
 
 class DIEN(RankModel, DIENLayer):
@@ -191,7 +197,7 @@ class DIEN(RankModel, DIENLayer):
             tower_fea = self.dien(
                 name="%s_dien" % tower_name,
                 deep_fea=tower_fea,
-                seq_max_len=tower.dien_config.seq_size,
+                seq_size=tower.dien_config.seq_size,
                 combine_mechanism=tower.dien_config.combine_mechanism,
                 return_target=tower.dien_config.return_target,
             )

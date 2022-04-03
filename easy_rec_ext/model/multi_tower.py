@@ -7,7 +7,7 @@ import os
 import logging
 import tensorflow as tf
 from easy_rec_ext.layers import dnn
-from easy_rec_ext.layers.interaction import FM, InnerProduct, OuterProduct
+from easy_rec_ext.layers.interaction import FM, InnerProduct, OuterProduct, BilinearInteraction
 from easy_rec_ext.core import regularizers
 from easy_rec_ext.model.rank_model import RankModel
 from easy_rec_ext.model.din import DINLayer
@@ -131,14 +131,13 @@ class MultiTower(RankModel):
 
             with tf.variable_scope(variable_scope, reuse=tf.AUTO_REUSE):
                 if tower.interaction_config.mode == "fm":
-                    fm_layer = FM(tower_name + "_" + "fm")
-                    tower_fea_arr.append(fm_layer(tower_fea))
-                elif tower.interaction_config.mode == "inner_product":
-                    inner_product_layer = InnerProduct(tower_name + "_" + "inner_product")
-                    tower_fea_arr.append(inner_product_layer(tower_fea))
-                elif tower.interaction_config.mode == "outer_product":
-                    inner_product_layer = OuterProduct(tower_name + "_" + "outer_product")
-                    tower_fea_arr.append(inner_product_layer(tower_fea))
+                    tower_fea_arr.append(FM(tower_name + "_" + "fm")(tower_fea))
+                elif tower.interaction_config.mode in ["inner_product", "InnerProduct"]:
+                    tower_fea_arr.append(InnerProduct(tower_name + "_" + "inner_product")(tower_fea))
+                elif tower.interaction_config.mode in ["outer_product", "OuterProduct"]:
+                    tower_fea_arr.append(OuterProduct(tower_name + "_" + "outer_product")(tower_fea))
+                elif tower.interaction_config.mode in ["bilinear_interaction", "BilinearInteraction"]:
+                    tower_fea_arr.append(BilinearInteraction(tower_name + "_" + "bilinear_interaction")(tower_fea))
                 else:
                     raise ValueError(
                         "%s interaction_config.mode:%s is not supported." % (filename, tower.interaction_config.mode)
@@ -166,11 +165,10 @@ class MultiTower(RankModel):
             with tf.variable_scope(variable_scope, reuse=tf.AUTO_REUSE):
                 bst_layer = BSTLayer()
                 tower_fea = bst_layer.bst(
+                    "%s_bst" % tower.input_group,
                     tower_fea,
                     seq_size=tower.bst_config.seq_size,
-                    head_count=tower.bst_config.multi_head_size,
-                    name="%s_bst" % tower.input_group,
-                    use_positional_encoding=tower.bst_config.use_positional_encoding,
+                    multi_head_self_att_config=tower.bst_config.multi_head_self_att_config,
                     return_target=tower.bst_config.return_target,
                 )
                 tower_fea_arr.append(tower_fea)
@@ -184,7 +182,7 @@ class MultiTower(RankModel):
                 tower_fea = dien_layer.dien(
                     name="%s_dien" % tower.input_group,
                     deep_fea=tower_fea,
-                    seq_max_len=tower.dien_config.seq_size,
+                    seq_size=tower.dien_config.seq_size,
                     combine_mechanism=tower.dien_config.combine_mechanism,
                     return_target=tower.dien_config.return_target,
                 )

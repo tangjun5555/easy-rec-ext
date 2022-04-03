@@ -3,10 +3,14 @@
 # time: 2021/11/9 11:20 下午
 # desc:
 
+import os
+import logging
 import numpy as np
 import tensorflow as tf
 
-tf = tf.compat.v1
+if tf.__version__ >= "2.0":
+    tf = tf.compat.v1
+filename = str(os.path.basename(__file__)).split(".")[0]
 
 
 class PositionEncoding(object):

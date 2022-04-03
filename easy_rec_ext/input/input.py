@@ -74,7 +74,7 @@ class Input(object):
             field_num = len(line[0].split(sep))
             assert field_num == len(self._input_field_defaults), \
                 "sep[%s] maybe invalid: field_num=%d, required_num=%d" % (
-                sep, field_num, len(self._input_field_defaults))
+                    sep, field_num, len(self._input_field_defaults))
             return True
 
         check_op = tf.py_func(_check_data, [line], Tout=tf.bool)
@@ -122,21 +122,22 @@ class Input(object):
         parsed_dict = {}
         for fc in self._feature_config.feature_fields:
             if fc.feature_type == "SequenceFeature":
-                field = field_dict[fc.feature_name]
-                parsed_dict[fc.input_name] = tf.strings.split(field, "|")
-                if fc.hash_bucket_size <= 0:
-                    parsed_dict[fc.input_name] = tf.sparse.SparseTensor(
-                        parsed_dict[fc.input_name].indices,
-                        tf.string_to_number(parsed_dict[fc.input_name].values, tf.int64,
-                                            name="sequence_str_2_int_%s" % fc.input_name),
-                        parsed_dict[fc.input_name].dense_shape
-                    )
-                else:
-                    parsed_dict[fc.input_name] = tf.sparse.SparseTensor(
-                        parsed_dict[fc.input_name].indices,
-                        string_ops.string_to_hash_bucket(parsed_dict[fc.input_name].values, fc.hash_bucket_size),
-                        parsed_dict[fc.input_name].dense_shape
-                    )
+                parsed_dict[fc.input_name] = tf.strings.split(field_dict[fc.feature_name], "|")
+                if os.environ["use_dynamic_embedding"] == "0" or (
+                    os.environ["use_dynamic_embedding"] == "1" and os.environ["use_gpu"] == "1"):
+                    if fc.hash_bucket_size > 0:
+                        parsed_dict[fc.input_name] = tf.sparse.SparseTensor(
+                            parsed_dict[fc.input_name].indices,
+                            string_ops.string_to_hash_bucket(parsed_dict[fc.input_name].values, fc.hash_bucket_size),
+                            parsed_dict[fc.input_name].dense_shape
+                        )
+                    else:
+                        parsed_dict[fc.input_name] = tf.sparse.SparseTensor(
+                            parsed_dict[fc.input_name].indices,
+                            tf.string_to_number(parsed_dict[fc.input_name].values, tf.int64,
+                                                name="seq_str_2_int_%s" % fc.input_name),
+                            parsed_dict[fc.input_name].dense_shape
+                        )
                 parsed_dict[fc.input_name] = tf.sparse.to_dense(parsed_dict[fc.input_name])
 
             elif fc.feature_type == "RawFeature":
@@ -160,22 +161,18 @@ class Input(object):
 
             elif fc.feature_type == "IdFeature":
                 parsed_dict[fc.input_name] = field_dict[fc.feature_name]
-                if fc.hash_bucket_size <= 0:
-                    if parsed_dict[fc.input_name].dtype == tf.string:
-                        parsed_dict[fc.input_name] = tf.string_to_number(parsed_dict[fc.input_name], tf.dtypes.int64,
-                                                                         name="%s_str_2_int" % fc.input_name)
-                else:
-                    if os.environ["use_dynamic_embedding"] == "1":
-                        if os.environ["use_gpu"] == "1":
+                if parsed_dict[fc.input_name].dtype == tf.string:
+                    if os.environ["use_dynamic_embedding"] == "0" or (os.environ["use_dynamic_embedding"] == "1" and os.environ["use_gpu"] == "1"):
+                        if fc.hash_bucket_size > 0:
                             parsed_dict[fc.input_name] = string_ops.string_to_hash_bucket(
                                 parsed_dict[fc.input_name],
                                 fc.hash_bucket_size
                             )
-                    else:
-                        parsed_dict[fc.input_name] = string_ops.string_to_hash_bucket(
-                            parsed_dict[fc.input_name],
-                            fc.hash_bucket_size
-                        )
+                        else:
+                            parsed_dict[fc.input_name] = tf.string_to_number(
+                                parsed_dict[fc.input_name], tf.dtypes.int64,
+                                name="%s_str_2_int" % fc.input_name
+                            )
                 parsed_dict[fc.input_name] = tf.expand_dims(parsed_dict[fc.input_name], axis=1)
             else:
                 parsed_dict[fc.input_name] = field_dict[fc.feature_name]
@@ -187,7 +184,6 @@ class Input(object):
                    in [tf.float32, tf.double, tf.int32, tf.int64], "invalid label dtype: %s" % str(
                 field_dict[input_name].dtype)
             parsed_dict[input_name] = field_dict[input_name]
-
         return parsed_dict
 
     def create_placeholders(self):

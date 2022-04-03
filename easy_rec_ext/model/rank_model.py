@@ -11,6 +11,7 @@ from easy_rec_ext.core import embedding_ops
 from easy_rec_ext.core import regularizers
 import easy_rec_ext.core.metrics as metrics_lib
 from easy_rec_ext.layers.sequence_pooling import SequencePooling
+from easy_rec_ext.layers.senet import SENetLayer
 
 import tensorflow as tf
 
@@ -113,6 +114,14 @@ class RankModel(object):
             outputs.append(group_input_dict[feature_field.input_name])
 
         outputs = tf.concat(outputs, axis=1)
+        if feature_group.senet_layer_config is not None:
+            embedding_dim = outputs.get_shape().as_list()[-1] // feature_fields_num
+            outputs = tf.reshape(outputs, (-1, feature_fields_num, embedding_dim))
+            outputs = SENetLayer(
+                name=feature_group.group_name + "_senet",
+                reduction_ratio=feature_group.senet_layer_config.reduction_ratio,
+            )(outputs)
+            outputs = tf.reshape(outputs, (-1, feature_fields_num * embedding_dim))
         return outputs
 
     def get_id_feature(self, feature_group, feature_name, use_raw_id=False):
@@ -249,6 +258,11 @@ class RankModel(object):
                 values = tf.expand_dims(values, axis=1)
                 outputs.append(values)
         outputs = tf.concat(outputs, axis=1)
+        if feature_group.senet_layer_config is not None:
+            outputs = SENetLayer(
+                name=feature_group.group_name + "_senet",
+                reduction_ratio=feature_group.senet_layer_config.reduction_ratio,
+            )(outputs)
         return outputs
 
     def build_group_input_dict(self, feature_group):
@@ -337,6 +351,8 @@ class RankModel(object):
                         name=feature_field.input_name + "_pooling",
                         mode=feature_field.sequence_pooling_config.mode,
                         gru_config=feature_field.sequence_pooling_config.gru_config,
+                        lstm_config=feature_field.sequence_pooling_config.lstm_config,
+                        self_att_config=feature_field.sequence_pooling_config.self_att_config,
                     )(values, hist_seq_len)
 
             else:
