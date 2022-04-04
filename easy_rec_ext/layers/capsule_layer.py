@@ -37,7 +37,8 @@ class CapsuleLayer(object):
         return scalar_factor * inputs
 
     def __call__(self, seq_feas, seq_lens):
-        """Capsule layer.
+        """
+        Capsule layer.
 
         Args:
           seq_feas: tensor of shape batch_size x self._max_seq_len x low_fea_dim(bsd)
