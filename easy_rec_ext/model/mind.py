@@ -7,6 +7,7 @@
 import os
 import logging
 import tensorflow as tf
+from easy_rec_ext.model.dssm import DSSMModel
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
@@ -17,3 +18,9 @@ class MINDModelConfig(object):
     pass
 
 
+class MINDModel(DSSMModel):
+    def multi_interest_extractor_layer(self, ):
+        pass
+
+    def label_aware_attention_layer(self, multi_query_vectors, item_vector):
+        pass
