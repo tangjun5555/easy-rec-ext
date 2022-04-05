@@ -7,7 +7,6 @@ import os
 import logging
 from typing import List
 import tensorflow as tf
-from easy_rec_ext.core import embedding_ops
 from easy_rec_ext.layers import dnn
 from easy_rec_ext.model.match_model import MatchModel
 
@@ -18,7 +17,7 @@ filename = str(os.path.basename(__file__)).split(".")[0]
 
 class DSSMModelConfig(object):
     def __init__(self, user_input_groups: List[str], item_input_groups: List[str],
-                 user_field: str, item_field: str,
+                 user_field: str = None, item_field: str = None,
                  scale_sim: bool = True,
                  ):
         self.user_input_groups = user_input_groups
@@ -29,9 +28,11 @@ class DSSMModelConfig(object):
 
     @staticmethod
     def handle(data):
-        res = DSSMModelConfig(data["user_input_groups"], data["item_input_groups"],
-                              data["user_field"], data["item_field"],
-                              )
+        res = DSSMModelConfig(data["user_input_groups"], data["item_input_groups"])
+        if "user_field" in data:
+            res.user_field = data["user_field"]
+        if "item_field" in data:
+            res.item_field = data["item_field"]
         if "scale_sim" in data:
             res.scale_sim = data["scale_sim"]
         return res
@@ -167,28 +168,32 @@ class DSSM(MatchModel, DSSMModel):
 
         if dssm_model_config.scale_sim:
             sim_w = tf.get_variable(
-                "scale_sim_w",
+                "dssm/scale_sim_w",
                 dtype=tf.float32,
                 shape=(1, 1),
                 initializer=tf.ones_initializer(),
             )
             sim_b = tf.get_variable(
-                "scale_sim_b",
+                "dssm/scale_sim_b",
                 dtype=tf.float32,
                 shape=(1,),
                 initializer=tf.zeros_initializer()
             )
-            tf.summary.histogram("dssm/sim_w", sim_w)
-            tf.summary.histogram("dssm/sim_b", sim_b)
+            tf.summary.histogram("dssm/scale_sim_w", sim_w)
+            tf.summary.histogram("dssm/scale_sim_b", sim_b)
             user_item_sim = tf.matmul(user_item_sim, tf.abs(sim_w)) + sim_b
+        probs = tf.nn.sigmoid(user_item_sim)
 
-        user_item_sim = tf.nn.sigmoid(user_item_sim)
         prediction_dict = dict()
-        prediction_dict["probs"] = tf.reshape(user_item_sim, (-1,), name="probs")
+        prediction_dict["probs"] = tf.reshape(probs, (-1,), name="probs")
 
-        prediction_dict["user_id"] = tf.identity(self._feature_dict[dssm_model_config.user_field], name="user_id")
         prediction_dict["user_vector"] = tf.identity(user_emb, name="user_vector")
-        prediction_dict["item_id"] = tf.identity(self._feature_dict[dssm_model_config.item_field], name="item_id")
         prediction_dict["item_vector"] = tf.identity(item_emb, name="item_vector")
+
+        if dssm_model_config.user_field:
+            prediction_dict["user_id"] = tf.identity(self._feature_dict[dssm_model_config.user_field], name="user_id")
+        if dssm_model_config.item_field:
+            prediction_dict["item_id"] = tf.identity(self._feature_dict[dssm_model_config.item_field], name="item_id")
+
         self._add_to_prediction_dict(prediction_dict)
         return self._prediction_dict
