@@ -135,6 +135,28 @@ class MatchModel(object):
                 raise NotImplemented
         return metric_dict
 
+    def build_seq_input_layer(self, feature_group):
+        logging.info("%s build_seq_input_layer, feature_group:%s" % (filename, str(feature_group)))
+        outputs = {}
+        hist_seq_emb_list = []
+
+        group_input_dict = self.build_group_input_dict(feature_group)
+        feature_group = self._feature_groups_dict[feature_group]
+
+        feature_fields_num = len(feature_group.feature_name_list) if feature_group.feature_name_list else 0
+        for i in range(feature_fields_num):
+            feature_field = self._feature_fields_dict[feature_group.feature_name_list[i]]
+            hist_seq_emb_list.append(group_input_dict[feature_field.feature_name])
+
+            hist_seq_id = self._feature_dict[feature_field.input_name]
+            if "hist_seq_len" not in outputs:
+                hist_seq_len = tf.where(tf.less(hist_seq_id, 0), tf.zeros_like(hist_seq_id), tf.ones_like(hist_seq_id))
+                hist_seq_len = tf.reduce_sum(hist_seq_len, axis=1, keep_dims=False)
+                outputs["hist_seq_len"] = hist_seq_len
+
+        outputs["hist_seq_emb"] = tf.concat(hist_seq_emb_list, axis=-1)
+        return outputs
+
     def build_input_layer(self, feature_group):
         logging.info("%s build_input_layer, feature_group:%s" % (filename, str(feature_group)))
         outputs = []
@@ -145,7 +167,7 @@ class MatchModel(object):
         feature_fields_num = len(feature_group.feature_name_list) if feature_group.feature_name_list else 0
         for i in range(feature_fields_num):
             feature_field = self._feature_fields_dict[feature_group.feature_name_list[i]]
-            outputs.append(group_input_dict[feature_field.input_name])
+            outputs.append(group_input_dict[feature_field.feature_name])
 
         outputs = tf.concat(outputs, axis=1)
         if feature_group.senet_layer_config is not None:
