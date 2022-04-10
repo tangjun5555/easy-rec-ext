@@ -18,3 +18,4 @@ from .ple import PLE
 
 # Match Model
 from .dssm import DSSM
+from .mind import MIND

@@ -5,17 +5,23 @@
 
 from typing import List
 from easy_rec_ext.builders.optimizer_builder import Optimizer
+
 from easy_rec_ext.layers.dnn import DNNConfig, DNNTower
 from easy_rec_ext.layers.sequence_pooling import SequencePoolingConfig
 from easy_rec_ext.layers.interaction import InteractionConfig
+
 from easy_rec_ext.model.dssm import DSSMModelConfig
+from easy_rec_ext.model.mind import MINDModelConfig
+
 from easy_rec_ext.model.din import DINTower
 from easy_rec_ext.model.bst import BSTTower
 from easy_rec_ext.model.dien import DIENTower
 from easy_rec_ext.model.can import CANTower
+
 from easy_rec_ext.model.mmoe import MMoEModelCofing
 from easy_rec_ext.model.esmm import ESMMModelConfig
 from easy_rec_ext.model.aitm import AITMModelConfig
+
 from easy_rec_ext.model.star import STARModelConfig
 
 
@@ -475,6 +481,7 @@ class ModelConfig(BaseConfig):
 
                  # Match Model Config
                  dssm_model_config: DSSMModelConfig = None,
+                 mind_model_config: MINDModelConfig = None,
 
                  # Multi-Task Rank Model Config
                  esmm_model_config: ESMMModelConfig = None,
@@ -503,6 +510,7 @@ class ModelConfig(BaseConfig):
         self.feature_groups = feature_groups
 
         self.dssm_model_config = dssm_model_config
+        self.mind_model_config = mind_model_config
 
         self.esmm_model_config = esmm_model_config
         self.aitm_model_config = aitm_model_config
@@ -536,6 +544,8 @@ class ModelConfig(BaseConfig):
 
         if "dssm_model_config" in data:
             res.dssm_model_config = DSSMModelConfig.handle(data["dssm_model_config"])
+        if "mind_model_config" in data:
+            res.mind_model_config = MINDModelConfig.handle(data["mind_model_config"])
 
         if "esmm_model_config" in data:
             res.esmm_model_config = ESMMModelConfig.handle(data["esmm_model_config"])
