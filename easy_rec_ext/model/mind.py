@@ -155,21 +155,22 @@ class MIND(MatchModel, MINDModel):
         item_tower_emb = item_feature
         user_item_sim = self.sim(user_tower_emb, item_tower_emb)
 
-        sim_w = tf.get_variable(
-            "mind/scale_sim_w",
-            dtype=tf.float32,
-            shape=(1, 1),
-            initializer=tf.ones_initializer(),
-        )
-        sim_b = tf.get_variable(
-            "mind/scale_sim_b",
-            dtype=tf.float32,
-            shape=(1,),
-            initializer=tf.zeros_initializer()
-        )
-        tf.summary.histogram("mind/scale_sim_w", sim_w)
-        tf.summary.histogram("mind/scale_sim_b", sim_b)
-        user_item_sim = tf.matmul(user_item_sim, tf.abs(sim_w)) + sim_b
+        if mind_model_config.scale_sim:
+            sim_w = tf.get_variable(
+                "mind/scale_sim_w",
+                dtype=tf.float32,
+                shape=(1, 1),
+                initializer=tf.ones_initializer(),
+            )
+            sim_b = tf.get_variable(
+                "mind/scale_sim_b",
+                dtype=tf.float32,
+                shape=(1,),
+                initializer=tf.zeros_initializer()
+            )
+            tf.summary.histogram("mind/scale_sim_w", sim_w)
+            tf.summary.histogram("mind/scale_sim_b", sim_b)
+            user_item_sim = tf.matmul(user_item_sim, tf.abs(sim_w)) + sim_b
         
         probs = tf.nn.sigmoid(user_item_sim)
         self._prediction_dict["probs"] = tf.reshape(probs, (-1,), name="probs")
