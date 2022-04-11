@@ -8,6 +8,7 @@ import logging
 from typing import List
 import tensorflow as tf
 from easy_rec_ext.layers import dnn
+from easy_rec_ext.layers import sequence_pooling
 from easy_rec_ext.model.match_model import MatchModel
 
 if tf.__version__ >= "2.0":
@@ -116,14 +117,23 @@ class DSSM(MatchModel, DSSMModel):
             tower_feature = self.build_input_layer(tower.input_group)
             self._dnn_tower_features.append(tower_feature)
 
-        logging.info("%s all tower num:%d" % (filename, self._dnn_tower_num))
+        self._seq_pooling_tower_num = len(self._model_config.seq_pooling_towers) if self._model_config.seq_pooling_towers else 0
+        self._seq_pooling_tower_features = []
+        for tower_id in range(self._seq_pooling_tower_num):
+            tower = self._model_config.seq_pooling_towers[tower_id]
+            tower_feature = self.build_seq_input_layer(tower.input_group)
+            self._seq_pooling_tower_features.append(tower_feature)
+
+        logging.info("%s all tower num:%d" % (filename, self._dnn_tower_num + self._seq_pooling_tower_num))
         logging.info("%s dnn tower num:%d" % (filename, self._dnn_tower_num))
+        logging.info("%s seq_pooling tower num:%d" % (filename, self._seq_pooling_tower_num))
 
     def build_predict_graph(self):
         dssm_model_config = self._model_config.dssm_model_config
 
         user_emb_fea_list = []
         item_emb_fea_list = []
+
         for tower_id in range(self._dnn_tower_num):
             tower = self._model_config.dnn_towers[tower_id]
             tower_fea = self._dnn_tower_features[tower_id]
@@ -148,6 +158,26 @@ class DSSM(MatchModel, DSSMModel):
             else:
                 raise ValueError("tower.input_group:%s not in user or item input groups" % tower.input_group)
             logging.info("DSSM user_emb_fea_list add input_group:%s" % tower.input_group)
+
+        for tower_id in range(self._seq_pooling_tower_num):
+            tower = self._model_config.seq_pooling_towers[tower_id]
+            tower_fea = self._seq_pooling_tower_features[tower_id]
+            tower_fea = sequence_pooling.SequencePooling(
+                name=tower.input_group + "_pooling",
+                mode=tower.sequence_pooling_config.mode,
+                gru_config=tower.sequence_pooling_config.gru_config,
+                lstm_config=tower.sequence_pooling_config.lstm_config,
+                self_att_config=tower.sequence_pooling_config.self_att_config,
+            )(tower_fea["hist_seq_emb"], tower_fea["hist_seq_len"])
+
+            if tower.input_group in dssm_model_config.user_input_groups:
+                user_emb_fea_list.append(tower_fea)
+            elif tower.input_group in dssm_model_config.item_input_groups:
+                item_emb_fea_list.append(tower_fea)
+            else:
+                raise ValueError("tower.input_group:%s not in user or item input groups" % tower.input_group)
+            logging.info("DSSM user_emb_fea_list add input_group:%s" % tower.input_group)
+
         user_emb_fea = tf.concat(user_emb_fea_list, axis=1)
         item_emb_fea = tf.concat(item_emb_fea_list, axis=1)
 
@@ -184,16 +214,14 @@ class DSSM(MatchModel, DSSMModel):
             user_item_sim = tf.matmul(user_item_sim, tf.abs(sim_w)) + sim_b
         probs = tf.nn.sigmoid(user_item_sim)
 
-        prediction_dict = dict()
-        prediction_dict["probs"] = tf.reshape(probs, (-1,), name="probs")
+        self._prediction_dict["probs"] = tf.reshape(probs, (-1,), name="probs")
 
-        prediction_dict["user_vector"] = tf.identity(user_emb, name="user_vector")
-        prediction_dict["item_vector"] = tf.identity(item_emb, name="item_vector")
+        self._prediction_dict["user_vector"] = tf.identity(user_emb, name="user_vector")
+        self._prediction_dict["item_vector"] = tf.identity(item_emb, name="item_vector")
 
         if dssm_model_config.user_field:
-            prediction_dict["user_id"] = tf.identity(self._feature_dict[dssm_model_config.user_field], name="user_id")
+            self._prediction_dict["user_id"] = tf.identity(self._feature_dict[dssm_model_config.user_field], name="user_id")
         if dssm_model_config.item_field:
-            prediction_dict["item_id"] = tf.identity(self._feature_dict[dssm_model_config.item_field], name="item_id")
+            self._prediction_dict["item_id"] = tf.identity(self._feature_dict[dssm_model_config.item_field], name="item_id")
 
-        self._add_to_prediction_dict(prediction_dict)
         return self._prediction_dict

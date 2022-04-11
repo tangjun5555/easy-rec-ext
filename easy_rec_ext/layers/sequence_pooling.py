@@ -53,6 +53,17 @@ class SequencePoolingConfig(object):
         return res
 
 
+class SequencePoolingTower(object):
+    def __init__(self, input_group: str, sequence_pooling_config: SequencePoolingConfig):
+        self.input_group = input_group
+        self.sequence_pooling_config = sequence_pooling_config
+
+    @staticmethod
+    def handle(data):
+        sequence_pooling_config = SequencePoolingConfig.handle(data["sequence_pooling_config"])
+        return SequencePoolingTower(data["input_group"], sequence_pooling_config)
+
+
 class SequencePooling(object):
     """
     The SequencePoolingLayer is used to apply pooling operation

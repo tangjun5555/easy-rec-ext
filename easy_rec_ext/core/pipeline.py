@@ -7,7 +7,7 @@ from typing import List
 from easy_rec_ext.builders.optimizer_builder import Optimizer
 
 from easy_rec_ext.layers.dnn import DNNConfig, DNNTower
-from easy_rec_ext.layers.sequence_pooling import SequencePoolingConfig
+from easy_rec_ext.layers.sequence_pooling import SequencePoolingConfig, SequencePoolingTower
 from easy_rec_ext.layers.interaction import InteractionConfig
 
 from easy_rec_ext.model.dssm import DSSMModelConfig
@@ -491,6 +491,7 @@ class ModelConfig(BaseConfig):
 
                  wide_towers: List[str] = None,
                  dnn_towers: List[DNNTower] = None,
+                 seq_pooling_towers: List[SequencePoolingTower] = None,
                  interaction_towers: List[InteractionTower] = None,
                  din_towers: List[DINTower] = None,
                  bst_towers: List[BSTTower] = None,
@@ -519,6 +520,7 @@ class ModelConfig(BaseConfig):
 
         self.wide_towers = wide_towers
         self.dnn_towers = dnn_towers
+        self.seq_pooling_towers = seq_pooling_towers
         self.interaction_towers = interaction_towers
         self.din_towers = din_towers
         self.bst_towers = bst_towers
@@ -563,6 +565,11 @@ class ModelConfig(BaseConfig):
             for tower in data["dnn_towers"]:
                 dnn_towers.append(DNNTower.handle(tower))
             res.dnn_towers = dnn_towers
+        if "seq_pooling_towers" in data:
+            seq_pooling_towers = []
+            for tower in data["seq_pooling_towers"]:
+                seq_pooling_towers.append(SequencePoolingTower.handle(tower))
+            res.seq_pooling_towers = seq_pooling_towers
         if "interaction_towers" in data:
             interaction_towers = []
             for tower in data["interaction_towers"]:
