@@ -19,31 +19,35 @@ filename = str(os.path.basename(__file__)).split(".")[0]
 
 
 class SDMModelConfig(DSSMModelConfig):
-    def __init__(self, user_input_groups: List[str], item_input_groups: List[str],
-                 user_field: str, item_field: str,
-                 scale_sim: bool = True, use_user_scale_weight=False, use_item_scale_weight=False,):
-        super(SDMModelConfig, self).__init__(
-            user_input_groups, item_input_groups,
-            user_field, item_field,
-            scale_sim, use_user_scale_weight, use_item_scale_weight
-        )
+    def __init__(self, user_input_groups: List[str], hist_long_input_group: str, hist_short_input_group: str,
+                 item_input_groups: List[str],
+                 user_field: str = None, item_field: str = None, scale_sim: bool = True,
+                 ):
+        self.user_input_groups = user_input_groups
+        self.hist_long_input_group = hist_long_input_group
+        self.hist_short_input_group = hist_short_input_group
+        self.item_input_groups = item_input_groups
+
+        self.user_field = user_field
+        self.item_field = item_field
+        self.scale_sim = scale_sim
 
     @staticmethod
     def handle(data):
-        res = SDMModelConfig(data["user_input_groups"], data["item_input_groups"], data["user_field"],
-                              data["item_field"])
+        res = SDMModelConfig(data["user_input_groups"], data["hist_long_input_group"], data["hist_short_input_group"],
+                             data["item_input_groups"])
+        if "user_field" in data:
+            res.user_field = data["user_field"]
+        if "item_field" in data:
+            res.item_field = data["item_field"]
         if "scale_sim" in data:
             res.scale_sim = data["scale_sim"]
-        if "use_user_scale_weight" in data:
-            res.user_size = data["use_user_scale_weight"]
-        if "use_item_scale_weight" in data:
-            res.item_size = data["use_item_scale_weight"]
         return res
 
 
 class SDMModel(DSSMModel):
-    def sdm(self, name, short_hist, long_hist):
-        pass
+    def sdm(self, name, hist_long_feas, hist_short_feas, user_profile_emd):
+        hist_short_seq_emb, hist_short_seq_len = hist_short_feas["hist_seq_emb"], hist_short_feas["hist_seq_len"]
 
 
 class SDM(MatchModel, SDMModel):
