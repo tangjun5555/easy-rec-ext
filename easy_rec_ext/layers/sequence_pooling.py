@@ -100,7 +100,7 @@ class SequencePooling(object):
             return tf.reduce_sum(seq_value, axis=1, keep_dims=False)
         elif self.mode == "mean":
             hist = tf.reduce_sum(seq_value, axis=1, keep_dims=False)
-            return tf.div(hist, tf.cast(seq_len, tf.float32) + 1e-8)
+            return tf.div(hist, tf.expand_dims(tf.cast(seq_len, tf.float32) + 1e-8), axis=-1)
         elif self.mode == "gru":
             gru_input = seq_value
             if len(self.gru_config.hidden_units) > 1:
