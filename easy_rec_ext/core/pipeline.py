@@ -11,6 +11,7 @@ from easy_rec_ext.layers.sequence_pooling import SequencePoolingConfig, Sequence
 from easy_rec_ext.layers.interaction import InteractionConfig
 
 from easy_rec_ext.model.dssm import DSSMModelConfig
+from easy_rec_ext.model.sdm import SDMModelConfig
 from easy_rec_ext.model.mind import MINDModelConfig
 
 from easy_rec_ext.model.din import DINTower
@@ -481,6 +482,7 @@ class ModelConfig(BaseConfig):
 
                  # Match Model Config
                  dssm_model_config: DSSMModelConfig = None,
+                 sdm_model_config: SDMModelConfig = None,
                  mind_model_config: MINDModelConfig = None,
 
                  # Multi-Task Rank Model Config
@@ -511,6 +513,7 @@ class ModelConfig(BaseConfig):
         self.feature_groups = feature_groups
 
         self.dssm_model_config = dssm_model_config
+        self.sdm_model_config = sdm_model_config
         self.mind_model_config = mind_model_config
 
         self.esmm_model_config = esmm_model_config
@@ -546,6 +549,8 @@ class ModelConfig(BaseConfig):
 
         if "dssm_model_config" in data:
             res.dssm_model_config = DSSMModelConfig.handle(data["dssm_model_config"])
+        if "sdm_model_config" in data:
+            res.sdm_model_config = SDMModelConfig.handle(data["sdm_model_config"])
         if "mind_model_config" in data:
             res.mind_model_config = MINDModelConfig.handle(data["mind_model_config"])
 

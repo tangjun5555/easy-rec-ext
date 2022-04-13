@@ -68,8 +68,19 @@ class MIND(MatchModel, MINDModel):
             tower_feature = self.build_input_layer(tower.input_group)
             self._dnn_tower_features.append(tower_feature)
 
-        logging.info("%s all tower num:%d" % (filename, self._dnn_tower_num))
+        self._seq_pooling_tower_num = len(
+            self._model_config.seq_pooling_towers) if self._model_config.seq_pooling_towers else 0
+        self._seq_pooling_tower_names = []
+        self._seq_pooling_tower_features = []
+        for tower_id in range(self._seq_pooling_tower_num):
+            tower = self._model_config.seq_pooling_towers[tower_id]
+            self._seq_pooling_tower_names.append(tower.input_group)
+            tower_feature = self.build_seq_input_layer(tower.input_group)
+            self._seq_pooling_tower_features.append(tower_feature)
+
+        logging.info("%s all tower num:%d" % (filename, self._dnn_tower_num + self._seq_pooling_tower_num))
         logging.info("%s dnn tower num:%d" % (filename, self._dnn_tower_num))
+        logging.info("%s seq_pooling tower num:%d" % (filename, self._seq_pooling_tower_num))
 
     def build_predict_graph(self):
         mind_model_config = self._model_config.mind_model_config
@@ -115,7 +126,9 @@ class MIND(MatchModel, MINDModel):
                                  self._is_training,
                                  )
 
-        hist_tower_fea_dict = self.build_seq_input_layer(mind_model_config.hist_input_group)
+        hist_tower_fea_dict = self._seq_pooling_tower_features[
+            self._seq_pooling_tower_names.index(mind_model_config.hist_input_group)
+        ]
         hist_seq_emb, hist_seq_len = hist_tower_fea_dict["hist_seq_emb"], hist_tower_fea_dict["hist_seq_len"]
 
         # batch_size x max_k x high_capsule_dim

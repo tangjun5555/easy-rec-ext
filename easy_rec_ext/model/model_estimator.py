@@ -52,6 +52,8 @@ class ModelEstimator(tf.estimator.Estimator):
 
         elif self._pipeline_config.model_config.model_class == "dssm":
             model = DSSM
+        elif self._pipeline_config.model_config.model_class == "sdm":
+            model = SDM
         elif self._pipeline_config.model_config.model_class == "mind":
             model = MIND
 
