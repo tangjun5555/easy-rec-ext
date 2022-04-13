@@ -13,6 +13,15 @@ if tf.__version__ >= "2.0":
 line_sep = "\n" + "##" * 20 + "\n"
 
 
+def test_33():
+    key_length = tf.constant(
+        value=[1, 2, 3],
+        dtype=tf.int64,
+    )
+    r1 = tf.sequence_mask(tf.expand_dims(key_length, axis=-1), 4)
+    print(r1)
+
+
 def test_32():
     from easy_rec_ext.utils import string_ops
     input_tensor = tf.constant(

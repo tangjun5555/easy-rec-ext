@@ -72,7 +72,22 @@ class TargetAttention(object):
             key: [batch_size, T, embed_size]
             key_length: [batch_size]
         Returns:
-
+            output: [batch_size, embed_size]
         """
+        if self.score_type == "concat":
+            att_score = ConcatAttentionScore(
+                name=self.name + "_" + "score"
+            )(query, key)
+        else:
+            att_score = ProductAttentionScore(
+                name=self.name + "_" + "score"
+            )(query, key)
+
         hist_len = key.get_shape()[1]
-        key_masks = tf.sequence_mask(key_length, hist_len)
+        padding = tf.ones_like(att_score) * (-2 ** 32 + 1)
+        key_masks = tf.sequence_mask(tf.expand_dims(key_length, axis=-1), hist_len)
+        att_score = tf.where(key_masks, att_score, padding)
+        att_score = tf.nn.softmax(att_score)
+
+        output = tf.matmul(att_score, key)
+        return tf.squeeze(output, axis=1)
