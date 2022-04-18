@@ -68,7 +68,7 @@ class SDMModel(DSSMModel):
                                            name="%s_dense_1" % name)
 
         hist_long_seq_emb = tf.layers.dense(hist_long_seq_emb, output_units, activation=tf.nn.tanh,
-                                            name="s_dense_2" % name)
+                                            name="%s_dense_2" % name)
         prefer_output = TargetAttention(name="%s_prefer_target_att" % name, )(
             user_profile_emd, hist_long_seq_emb, hist_long_seq_len,
         )
