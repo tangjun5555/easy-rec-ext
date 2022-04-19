@@ -5,7 +5,9 @@
 
 import os
 import logging
+import numpy as np
 import tensorflow as tf
+from easy_rec_ext.core import embedding_ops
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
@@ -13,7 +15,9 @@ filename = str(os.path.basename(__file__)).split(".")[0]
 
 
 class MultiHeadAttention(object):
-    def __init__(self, name, head_num, head_size, feature_num, l2_reg=None, use_res=False):
+    def __init__(self, name, head_num, head_size, feature_num,
+                 l2_reg=None, use_res=False,
+                 positional_encoding_type: str = None):
         """
         Initializes a `MultiHeadAttention` Layer.
         Args:
@@ -31,6 +35,7 @@ class MultiHeadAttention(object):
 
         self._l2_reg = l2_reg
         self._use_res = use_res
+        self.positional_encoding_type = positional_encoding_type
 
     def _split_multihead_qkv(self, q, k, v):
         """
@@ -111,6 +116,29 @@ class MultiHeadAttention(object):
             kernel_regularizer=self._l2_reg,
             name="%s/%s/dnn" % (self._name, "value")
         )
+
+        if "sinusoidal" == self.positional_encoding_type:
+            T = self._feature_num
+            num_units = self._head_num * self._head_size
+            position_enc = np.array([
+                [pos / np.power(10000, 2. * (i // 2) / num_units) for i in range(num_units)]
+                for pos in range(T)])
+            position_enc[:, 0::2] = np.sin(position_enc[:, 0::2])  # dim 2i
+            position_enc[:, 1::2] = np.cos(position_enc[:, 1::2])  # dim 2i+1
+            position_ind = tf.expand_dims(tf.range(T), 0)
+            k = k + tf.nn.embedding_lookup(tf.initializers.identity(position_enc), position_ind)
+            q = q + tf.nn.embedding_lookup(tf.initializers.identity(position_enc), position_ind)
+        elif "learned" == self.positional_encoding_type:
+            T = self._feature_num
+            num_units = self._head_num * self._head_size
+            position_enc = embedding_ops.get_embedding_variable(
+                name=self._name + "_position_enc",
+                dim=num_units,
+                vocab_size=T,
+            )
+            position_ind = tf.expand_dims(tf.range(T), 0)
+            k = k + tf.nn.embedding_lookup(position_enc, position_ind)
+            q = q + tf.nn.embedding_lookup(position_enc, position_ind)
         return q, k, v
 
     def _combine_heads(self, multi_head_tensor):
