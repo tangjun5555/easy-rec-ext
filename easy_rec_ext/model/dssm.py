@@ -117,7 +117,8 @@ class DSSM(MatchModel, DSSMModel):
             tower_feature = self.build_input_layer(tower.input_group)
             self._dnn_tower_features.append(tower_feature)
 
-        self._seq_pooling_tower_num = len(self._model_config.seq_pooling_towers) if self._model_config.seq_pooling_towers else 0
+        self._seq_pooling_tower_num = len(
+            self._model_config.seq_pooling_towers) if self._model_config.seq_pooling_towers else 0
         self._seq_pooling_tower_features = []
         for tower_id in range(self._seq_pooling_tower_num):
             tower = self._model_config.seq_pooling_towers[tower_id]
@@ -192,6 +193,17 @@ class DSSM(MatchModel, DSSMModel):
                            self._is_training
                            )(item_emb_fea)
 
+        # process bias tower
+        if self._model_config.bias_towers:
+            for tower in self._model_config.bias_towers:
+                bias_fea = self.build_input_layer(tower.input_group)
+                bias_fea = tf.layers.dense(bias_fea, user_emb.shape()[-1],
+                                           name="bias_dense_" + tower.input_group)
+                if "multiply" == tower.fusion_mode:
+                    user_emb = tf.multiply(user_emb, bias_fea)
+                else:
+                    user_emb = tf.add(user_emb, bias_fea)
+
         user_emb = self.norm(user_emb)
         item_emb = self.norm(item_emb)
         user_item_sim = self.sim(user_emb, item_emb)
@@ -220,8 +232,10 @@ class DSSM(MatchModel, DSSMModel):
         self._prediction_dict["item_vector"] = tf.identity(item_emb, name="item_vector")
 
         if dssm_model_config.user_field:
-            self._prediction_dict["user_id"] = tf.identity(self._feature_dict[dssm_model_config.user_field], name="user_id")
+            self._prediction_dict["user_id"] = tf.identity(self._feature_dict[dssm_model_config.user_field],
+                                                           name="user_id")
         if dssm_model_config.item_field:
-            self._prediction_dict["item_id"] = tf.identity(self._feature_dict[dssm_model_config.item_field], name="item_id")
+            self._prediction_dict["item_id"] = tf.identity(self._feature_dict[dssm_model_config.item_field],
+                                                           name="item_id")
 
         return self._prediction_dict

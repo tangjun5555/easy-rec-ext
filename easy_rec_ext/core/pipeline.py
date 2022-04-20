@@ -467,12 +467,16 @@ class PLEModelCofing(BaseConfig):
 
 
 class BiasTower(BaseConfig):
-    def __init__(self, input_group):
+    def __init__(self, input_group, fusion_mode="add"):
         self.input_group = input_group
+        self.fusion_mode = fusion_mode
 
     @staticmethod
     def handle(data):
         res = BiasTower(data["input_group"])
+        if "fusion_mode" in data:
+            assert data["fusion_mode"] in ["add", "multiply"]
+            res.fusion_mode = data["fusion_mode"]
         return res
 
 
@@ -501,7 +505,7 @@ class ModelConfig(BaseConfig):
                  can_towers: List[CANTower] = None,
 
                  final_dnn: DNNConfig = None,
-                 bias_tower: BiasTower = None,
+                 bias_towers: List[BiasTower] = None,
                  star_model_config: STARModelConfig = None,
 
                  embedding_regularization: float = 0.0,
@@ -531,7 +535,7 @@ class ModelConfig(BaseConfig):
         self.can_towers = can_towers
 
         self.final_dnn = final_dnn
-        self.bias_tower = bias_tower
+        self.bias_towers = bias_towers
         self.star_model_config = star_model_config
 
         self.embedding_regularization = embedding_regularization
@@ -603,8 +607,11 @@ class ModelConfig(BaseConfig):
 
         if "final_dnn" in data:
             res.final_dnn = DNNConfig.handle(data["final_dnn"])
-        if "bias_tower" in data:
-            res.bias_tower = BiasTower.handle(data["bias_tower"])
+        if "bias_towers" in data:
+            bias_towers = []
+            for tower in data["bias_towers"]:
+                bias_towers.append(BiasTower.handle(tower))
+            res.bias_towers = bias_towers
         if "star_model_config" in data:
             res.star_model_config = STARModelConfig.handle(data["star_model_config"])
 
