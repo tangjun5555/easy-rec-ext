@@ -230,10 +230,16 @@ class MultiTower(RankModel):
             wide_fea = tf.concat(self._wide_tower_features, axis=1)
             all_fea = tf.concat([all_fea, wide_fea], axis=1)
             logging.info("%s build_predict_graph, with wide tower, all_fea.shape:%s" % (filename, str(all_fea.shape)))
-        if self._model_config.bias_tower:
-            bias_fea = self.build_bias_input_layer(self._model_config.bias_tower.input_group)
-            all_fea = tf.concat([all_fea, bias_fea], axis=1)
-            logging.info("%s build_predict_graph, with bias tower, all_fea.shape:%s" % (filename, str(all_fea.shape)))
+
+        if self._model_config.bias_towers:
+            for tower in self._model_config.bias_towers:
+                bias_fea = self.build_input_layer(tower.input_group)
+                bias_fea = tf.layers.dense(bias_fea, all_fea.shape()[-1],
+                                           name="bias_tower_dense_" + tower.input_group)
+                if "multiply" == tower.fusion_mode:
+                    all_fea = tf.multiply(all_fea, bias_fea)
+                else:
+                    all_fea = tf.add(all_fea, bias_fea)
 
         if self._model_config.star_model_config:
             star_model_config = self._model_config.star_model_config

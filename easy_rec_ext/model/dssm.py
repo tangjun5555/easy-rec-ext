@@ -198,7 +198,7 @@ class DSSM(MatchModel, DSSMModel):
             for tower in self._model_config.bias_towers:
                 bias_fea = self.build_input_layer(tower.input_group)
                 bias_fea = tf.layers.dense(bias_fea, user_emb.shape()[-1],
-                                           name="bias_dense_" + tower.input_group)
+                                           name="bias_tower_dense_" + tower.input_group)
                 if "multiply" == tower.fusion_mode:
                     user_emb = tf.multiply(user_emb, bias_fea)
                 else:
