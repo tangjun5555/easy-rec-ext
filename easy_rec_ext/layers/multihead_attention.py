@@ -201,23 +201,28 @@ class SelfAttention(MultiHeadAttention):
 
 
 class MultiHeadSelfAttentionConfig(object):
-    def __init__(self, head_num, head_size, feature_num, use_res=False):
+    def __init__(self, head_num, head_size, feature_num, use_res=False, positional_encoding_type: str = None):
         self.head_num = head_num
         self.head_size = head_size
         self.feature_num = feature_num
         self.use_res = use_res
+        self.positional_encoding_type = positional_encoding_type
 
     @staticmethod
     def handle(data):
         res = MultiHeadSelfAttentionConfig(data["head_num"], data["head_size"], data["feature_num"])
         if "use_res" in data:
             res.use_res = data["use_res"]
+        if "positional_encoding_type" in data:
+            res.positional_encoding_type = data["positional_encoding_type"]
         return res
 
 
 class MultiHeadSelfAttention(MultiHeadAttention):
-    def __init__(self, name, head_num, head_size, feature_num, l2_reg=None, use_res=False):
-        super(MultiHeadSelfAttention, self).__init__(name, head_num, head_size, feature_num, l2_reg, use_res)
+    def __init__(self, name, head_num, head_size, feature_num,
+                 l2_reg=None, use_res=False, positional_encoding_type: str = None):
+        super(MultiHeadSelfAttention, self).__init__(name, head_num, head_size, feature_num, l2_reg, use_res,
+                                                     positional_encoding_type)
 
     def __call__(self, deep_fea):
         """
