@@ -86,6 +86,9 @@ class TargetAttention(object):
         max_len = tf.shape(key)[1]
         padding = tf.ones_like(att_score) * (-2 ** 32 + 1)
         key_masks = tf.sequence_mask(tf.expand_dims(key_length, axis=-1), max_len)
+        logging.info("%s, key_masks.shape:%s, att_score.shape:%s, padding.shape:%s" % (
+            filename, str(key_masks.shape), str(att_score.shape), str(padding.shape)
+        ))
         att_score = tf.where(key_masks, att_score, padding)
         att_score = tf.nn.softmax(att_score)
 
