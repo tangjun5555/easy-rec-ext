@@ -15,9 +15,7 @@ filename = str(os.path.basename(__file__)).split(".")[0]
 
 
 class MultiHeadAttention(object):
-    def __init__(self, name, head_num, head_size, feature_num,
-                 l2_reg=None, use_res=False,
-                 positional_encoding_type: str = None):
+    def __init__(self, name, head_num, head_size, feature_num, l2_reg=None, use_res=False):
         """
         Initializes a `MultiHeadAttention` Layer.
         Args:
@@ -32,10 +30,11 @@ class MultiHeadAttention(object):
         self._head_num = head_num
         self._head_size = head_size
         self._feature_num = feature_num
-
         self._l2_reg = l2_reg
         self._use_res = use_res
-        self.positional_encoding_type = positional_encoding_type
+
+        self.positional_encoding_type = None
+        self.hist_mask = None
 
     def _split_multihead_qkv(self, q, k, v):
         """
@@ -76,7 +75,11 @@ class MultiHeadAttention(object):
         product = tf.linalg.matmul(a=q, b=k, transpose_b=True) / (self._head_size ** -0.5)
         logging.info(
             "%s _scaled_dot_product_attention, %s, product.shape:%s" % (filename, self._name, str(product.shape)))
-        mask = tf.math.greater_equal(tf.math.abs(product), 1e-9)
+
+        if self.hist_mask is not None:
+            mask = self.hist_mask
+        else:
+            mask = tf.math.greater_equal(tf.math.abs(product), 1e-9)
         padding = tf.ones_like(product) * (-2 ** 32 + 1)
         product = tf.where(mask, product, padding)
         weights = tf.nn.softmax(product)
@@ -126,8 +129,8 @@ class MultiHeadAttention(object):
             position_enc[:, 0::2] = np.sin(position_enc[:, 0::2])  # dim 2i
             position_enc[:, 1::2] = np.cos(position_enc[:, 1::2])  # dim 2i+1
             position_ind = tf.expand_dims(tf.range(T), 0)
-            k = k + tf.nn.embedding_lookup(tf.initializers.identity(position_enc), position_ind)
             q = q + tf.nn.embedding_lookup(tf.initializers.identity(position_enc), position_ind)
+            k = k + tf.nn.embedding_lookup(tf.initializers.identity(position_enc), position_ind)
         elif "learned" == self.positional_encoding_type:
             T = self._feature_num
             num_units = self._head_num * self._head_size
@@ -137,8 +140,11 @@ class MultiHeadAttention(object):
                 vocab_size=T,
             )
             position_ind = tf.expand_dims(tf.range(T), 0)
-            k = k + tf.nn.embedding_lookup(position_enc, position_ind)
-            q = q + tf.nn.embedding_lookup(position_enc, position_ind)
+            q = q + tf.nn.embedding_lookup(tf.initializers.identity(position_enc), position_ind)
+            k = k + tf.nn.embedding_lookup(tf.initializers.identity(position_enc), position_ind)
+        else:
+            raise NotImplementedError
+
         return q, k, v
 
     def _combine_heads(self, multi_head_tensor):
@@ -177,27 +183,12 @@ class MultiHeadAttention(object):
                 out.shape[2],
                 use_bias=False,
                 kernel_regularizer=self._l2_reg,
-                name="%s/dnn" % (self._name)
+                name="%s/res/dnn" % (self._name)
             )
             res_out = tf.nn.relu(out + W_0_x)
             return res_out
         else:
             return out
-
-
-class SelfAttention(MultiHeadAttention):
-    def __init__(self, name, head_size, feature_num, l2_reg=None, use_res=False):
-        super(SelfAttention, self).__init__(name, 1, head_size, feature_num, l2_reg, use_res)
-
-    def __call__(self, deep_fea):
-        """
-        Args:
-            deep_fea: input, [bs, feature_num, d_model].
-
-        Returns:
-            output: [bs, feature_num, head_size].
-        """
-        return super(SelfAttention, self).__call__([deep_fea, deep_fea, deep_fea])
 
 
 class MultiHeadSelfAttentionConfig(object):
@@ -221,15 +212,21 @@ class MultiHeadSelfAttentionConfig(object):
 class MultiHeadSelfAttention(MultiHeadAttention):
     def __init__(self, name, head_num, head_size, feature_num,
                  l2_reg=None, use_res=False, positional_encoding_type: str = None):
-        super(MultiHeadSelfAttention, self).__init__(name, head_num, head_size, feature_num, l2_reg, use_res,
-                                                     positional_encoding_type)
+        super(MultiHeadSelfAttention, self).__init__(name, head_num, head_size, feature_num, l2_reg, use_res)
+        self.positional_encoding_type = positional_encoding_type
 
-    def __call__(self, deep_fea):
+    def __call__(self, deep_fea, cur_seq_len=None):
         """
         Args:
             deep_fea: input, [bs, feature_num, d_model].
-
+            cur_seq_len: [bs]
         Returns:
             output: [bs, feature_num, head_num * head_size].
         """
+
+        if cur_seq_len is not None:
+            hist_mask = tf.sequence_mask(
+                cur_seq_len, maxlen=self._feature_num)  # [B, seq_size]
+            self.hist_mask = tf.reshape(tf.tile(hist_mask, [1, self._feature_num]),
+                               (-1, self._feature_num, self._feature_num))
         return super(MultiHeadSelfAttention, self).__call__([deep_fea, deep_fea, deep_fea])
