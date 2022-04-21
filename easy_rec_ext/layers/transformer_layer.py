@@ -14,7 +14,21 @@ if tf.__version__ >= "2.0":
 filename = str(os.path.basename(__file__)).split(".")[0]
 
 
+# class TransformerEncodeLayerConfig(object):
+#     def __init__(self, multi_head_self_att_config: MultiHeadSelfAttentionConfig):
+#         self.multi_head_self_att_config = multi_head_self_att_config
+#
+#     @staticmethod
+#     def handle(data):
+#         multi_head_self_att_config = MultiHeadSelfAttentionConfig.handle(data["multi_head_self_att_config"])
+#         res = TransformerEncodeLayerConfig()
+
+
 class TransformerEncodeLayer(object):
-    def __int__(self, name, multi_head_self_att_config):
+    def __int__(self, name, multi_head_self_att_config: MultiHeadSelfAttentionConfig):
         self.name = name
         self.multi_head_self_att_config = multi_head_self_att_config
+
+    def __call__(self, deep_fea, cur_seq_len=None):
+        pass
+
