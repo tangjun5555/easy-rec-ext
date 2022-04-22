@@ -229,6 +229,6 @@ class MultiHeadSelfAttention(MultiHeadAttention):
                 cur_seq_len, maxlen=self._feature_num)  # [B, seq_size]
             hist_mask = tf.reshape(tf.tile(hist_mask, [1, self._feature_num]),
                                    (-1, self._feature_num, self._feature_num))
-            self.hist_mask = tf.reshape(tf.tile(hist_mask, [1, self._head_num]),
+            self.hist_mask = tf.reshape(tf.tile(hist_mask, [1, self._head_num, 1]),
                                         (-1, self._head_num, self._feature_num, self._feature_num))
         return super(MultiHeadSelfAttention, self).__call__([deep_fea, deep_fea, deep_fea])
