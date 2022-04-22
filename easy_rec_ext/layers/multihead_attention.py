@@ -129,8 +129,9 @@ class MultiHeadAttention(object):
             position_enc[:, 0::2] = np.sin(position_enc[:, 0::2])  # dim 2i
             position_enc[:, 1::2] = np.cos(position_enc[:, 1::2])  # dim 2i+1
             position_ind = tf.expand_dims(tf.range(T), 0)
-            q = q + tf.nn.embedding_lookup(tf.initializers.identity(position_enc), position_ind)
-            k = k + tf.nn.embedding_lookup(tf.initializers.identity(position_enc), position_ind)
+            q = q + tf.nn.embedding_lookup(tf.identity(position_enc), position_ind)
+            k = k + tf.nn.embedding_lookup(tf.identity(position_enc), position_ind)
+            v = v + tf.nn.embedding_lookup(tf.identity(position_enc), position_ind)
         elif "learned" == self.positional_encoding_type:
             T = self._feature_num
             num_units = self._head_num * self._head_size
@@ -140,8 +141,10 @@ class MultiHeadAttention(object):
                 vocab_size=T,
             )
             position_ind = tf.expand_dims(tf.range(T), 0)
-            q = q + tf.nn.embedding_lookup(tf.initializers.identity(position_enc), position_ind)
-            k = k + tf.nn.embedding_lookup(tf.initializers.identity(position_enc), position_ind)
+            tf.identity()
+            q = q + tf.nn.embedding_lookup(position_enc, position_ind)
+            k = k + tf.nn.embedding_lookup(position_enc, position_ind)
+            v = v + tf.nn.embedding_lookup(position_enc, position_ind)
         else:
             logging.info("%s %s don't use positional_encoding" % (filename, self._name))
 
