@@ -139,7 +139,7 @@ class ESMM(MultiTower):
             if self._model_config.bias_towers:
                 for tower in self._model_config.bias_towers:
                     bias_fea = self.build_input_layer(tower.input_group)
-                    bias_fea = tf.layers.dense(bias_fea, tf.shape(task_logits)[-1],
+                    bias_fea = tf.layers.dense(bias_fea, task_logits.get_shape().as_list()[-1],
                                                name=task_name + "_bias_tower_dense_" + tower.input_group)
                     if "multiply" == tower.fusion_mode:
                         task_logits = tf.multiply(task_logits, bias_fea)
