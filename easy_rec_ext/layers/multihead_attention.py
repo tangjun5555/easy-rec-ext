@@ -227,6 +227,8 @@ class MultiHeadSelfAttention(MultiHeadAttention):
         if cur_seq_len is not None:
             hist_mask = tf.sequence_mask(
                 cur_seq_len, maxlen=self._feature_num)  # [B, seq_size]
-            self.hist_mask = tf.reshape(tf.tile(hist_mask, [1, self._feature_num]),
-                               (-1, self._feature_num, self._feature_num))
+            hist_mask = tf.reshape(tf.tile(hist_mask, [1, self._feature_num]),
+                                   (-1, self._feature_num, self._feature_num))
+            self.hist_mask = tf.reshape(tf.tile(hist_mask, [1, self._head_num]),
+                                        (-1, self._head_num, self._feature_num, self._feature_num))
         return super(MultiHeadSelfAttention, self).__call__([deep_fea, deep_fea, deep_fea])

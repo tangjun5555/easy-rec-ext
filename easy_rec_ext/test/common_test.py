@@ -27,17 +27,21 @@ def test_33():
         value=[1, 2, 3],
         dtype=tf.int64,
     )
-    # max_len = 4
-    max_len = tf.constant(
-        value=[4, 4, 3],
-        dtype=tf.int64,
-    )
-    # r1 = tf.sequence_mask(tf.expand_dims(key_length, axis=-1), 4)
+    max_len = 4
+    # max_len = tf.constant(
+    #     value=[4, 4, 3],
+    #     dtype=tf.int64,
+    # )
+    r1 = tf.sequence_mask(tf.expand_dims(key_length, axis=-1), 4)
     r1 = tf.sequence_mask(key_length, max_len)
     # r2 = tf.reshape(tf.tile(r1, [1, max_len]), (-1, max_len, max_len))
+    r2 = tf.tile(r1, [1, max_len])
+    r3 = tf.reshape(r2, (-1, max_len, max_len))
     print(r1)
-    # print(line_sep)
-    # print(r2)
+    print(line_sep)
+    print(r2)
+    print(line_sep)
+    print(r3)
 
 
 def test_32():
