@@ -234,7 +234,7 @@ class MultiTower(RankModel):
         if self._model_config.bias_towers:
             for tower in self._model_config.bias_towers:
                 bias_fea = self.build_input_layer(tower.input_group)
-                bias_fea = tf.layers.dense(bias_fea, all_fea.shape()[-1],
+                bias_fea = tf.layers.dense(bias_fea, tf.shape(all_fea)[-1],
                                            name="bias_tower_dense_" + tower.input_group)
                 if "multiply" == tower.fusion_mode:
                     all_fea = tf.multiply(all_fea, bias_fea)
