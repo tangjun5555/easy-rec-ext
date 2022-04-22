@@ -83,13 +83,16 @@ class TargetAttention(object):
                 name=self.name + "_" + "score"
             )(query, key)
 
+        logging.info("%s, query.shape:%s, key.shape:%s, key_length.shape:%s" % (
+            filename, str(query.shape), str(key.shape), str(key_length.shape)
+        ))
         max_len = tf.shape(key)[1]
         padding = tf.ones_like(att_score) * (-2 ** 32 + 1)
         key_masks = tf.sequence_mask(tf.expand_dims(key_length, axis=-1), max_len)
         logging.info("%s, key_masks.shape:%s, att_score.shape:%s, padding.shape:%s" % (
             filename, str(key_masks.shape), str(att_score.shape), str(padding.shape)
         ))
-        att_score = tf.where(key_masks, att_score, padding)
+        att_score = tf.where(key_masks, att_score, padding, name=self.name + "_where")
         att_score = tf.nn.softmax(att_score)
 
         output = tf.matmul(att_score, key)
