@@ -143,7 +143,7 @@ class MultiHeadAttention(object):
             q = q + tf.nn.embedding_lookup(tf.initializers.identity(position_enc), position_ind)
             k = k + tf.nn.embedding_lookup(tf.initializers.identity(position_enc), position_ind)
         else:
-            raise NotImplementedError
+            logging.info("%s %s don't use positional_encoding" % (filename, self._name))
 
         return q, k, v
 

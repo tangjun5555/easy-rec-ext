@@ -147,7 +147,7 @@ class SequencePooling(object):
                 feature_num=self.self_att_config.feature_num,
                 l2_reg=None,
                 use_res=self.self_att_config.use_res,
-            )(seq_value)
+            )(seq_value, seq_len)
             logging.info("%s %s, self_att_output.shape:%s" % (filename, self.name, str(self_att_output.shape)))
             self_att_output = tf.reduce_sum(self_att_output, axis=1, keepdims=False)
             return self_att_output

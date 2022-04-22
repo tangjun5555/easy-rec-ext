@@ -78,7 +78,7 @@ class BSTLayer(object):
                 feature_num=1 + seq_size,
                 l2_reg=None,
                 use_res=multi_head_self_att_config.use_res,
-        )(all_ids)
+        )(all_ids, 1 + seq_len)
         logging.info("%s %s, attention_net.shape:%s" % (filename, name, str(attention_net.shape)))
         attention_net = self.dnn_net(attention_net, [emb_dim], name + "_" + "attention_net_dnn")
         logging.info("%s %s, attention_net.shape:%s" % (filename, name, str(attention_net.shape)))

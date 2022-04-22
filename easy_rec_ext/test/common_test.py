@@ -13,6 +13,15 @@ if tf.__version__ >= "2.0":
 line_sep = "\n" + "##" * 20 + "\n"
 
 
+def test_34():
+    key_length = tf.constant(
+        value=[1, 2, 3],
+        dtype=tf.int64,
+    )
+    r1 = 1 + key_length
+    print(r1)
+
+
 def test_33():
     key_length = tf.constant(
         value=[1, 2, 3],

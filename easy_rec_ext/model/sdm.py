@@ -84,7 +84,7 @@ class SDMModel(DSSMModel):
             head_num=1,
             head_size=output_units,
             feature_num=hist_short_size,
-        )(short_rnn_output)
+        )(short_rnn_output, hist_short_seq_len)
         short_output = TargetAttention(name="%s_short_target_att" % name, )(
             user_profile_emd, short_att_output, hist_short_seq_len,
         )
