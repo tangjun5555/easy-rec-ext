@@ -135,9 +135,16 @@ class ESMM(MultiTower):
                 task_logits = tf.concat([task_logits, wide_fea], axis=1)
                 logging.info("%s build_predict_graph, task:%s, task_logits.shape:%s" % (
                     filename, task_name, str(task_logits.shape)))
-            if self._model_config.bias_tower:
-                bias_fea = self.build_bias_input_layer(self._model_config.bias_tower.input_group)
-                task_logits = tf.concat([task_logits, bias_fea], axis=1)
+
+            if self._model_config.bias_towers:
+                for tower in self._model_config.bias_towers:
+                    bias_fea = self.build_input_layer(tower.input_group)
+                    bias_fea = tf.layers.dense(bias_fea, task_logits.shape()[-1],
+                                               name=task_name + "_bias_tower_dense_" + tower.input_group)
+                    if "multiply" == tower.fusion_mode:
+                        task_logits = tf.multiply(task_logits, bias_fea)
+                    else:
+                        task_logits = tf.add(task_logits, bias_fea)
                 logging.info("%s build_predict_graph, task:%s, task_logits.shape:%s" % (
                     filename, task_name, str(task_logits.shape)))
 
