@@ -18,5 +18,6 @@ from .ple import PLE
 
 # Match Model
 from .dssm import DSSM
+from .dropoutnet import DropoutNet
 from .sdm import SDM
 from .mind import MIND
