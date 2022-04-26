@@ -153,6 +153,7 @@ class MultiTower(RankModel):
                     tower.din_config.dnn_config,
                     tower_fea,
                     name="%s_din" % tower.input_group,
+                    need_scale=tower.din_config.need_scale,
                     return_target=tower.din_config.return_target,
                     limit_seq_size=tower.din_config.limit_seq_size,
                 )
