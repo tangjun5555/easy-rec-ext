@@ -15,7 +15,7 @@ filename = str(os.path.basename(__file__)).split(".")[0]
 
 
 class AutoDis(object):
-    def __int__(self, name, in_dim, each_out_size, meta_emb_num=5):
+    def __init__(self, name, in_dim, each_out_size, meta_emb_num=5):
         self.name = name
         self.in_dim = in_dim
         self.each_out_size = each_out_size
