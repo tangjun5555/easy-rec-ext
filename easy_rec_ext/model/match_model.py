@@ -223,6 +223,15 @@ class MatchModel(object):
                         values, units=feature_field.raw_input_dim * feature_field.embedding_dim,
                         activation=tf.nn.relu, name=feature_field.embedding_name + "_dnn"
                     )
+                elif feature_field.raw_input_embedding_type == "auto_dis":
+                    from easy_rec_ext.layers.auto_discretization import AutoDis
+                    values = AutoDis(
+                        feature_field.feature_name + "_auto_dis",
+                        feature_field.raw_input_dim,
+                        feature_field.embedding_dim,
+                    )(values)
+                else:
+                    raise NotImplemented
 
             elif feature_field.feature_type == "SequenceFeature":
                 hist_seq = self._feature_dict[feature_field.input_name]
