@@ -34,13 +34,12 @@ class LossType(Enum):
 def build_pairwise_loss(labels, logits):
     """
     Build pair-wise loss.
-
     Args:
-        labels:
-        logits:
+        labels: [batch_size]
+        logits: [batch_size]
 
     Returns:
-
+        loss: scalar
     """
     pairwise_logits = tf.expand_dims(logits, -1) - tf.expand_dims(logits, 0)
     logging.info("[pairwise_loss] pairwise logits: {}".format(pairwise_logits))
@@ -62,12 +61,10 @@ def build_pairwise_loss(labels, logits):
 def build_kd_loss(kds, prediction_dict, label_dict):
     """
     Build knowledge distillation loss.
-
     Args:
       kds: list of knowledge distillation object of type KD.
       prediction_dict: dict of predict_name to predict tensors.
       label_dict: ordered dict of label_name to label tensors.
-
     Return:
       knowledge distillation loss will be add to loss_dict with key: kd_loss.
     """
@@ -77,39 +74,42 @@ def build_kd_loss(kds, prediction_dict, label_dict):
             "invalid predict_name: %s available ones: %s" % (
                 kd.pred_name, ",".join(prediction_dict.keys()))
 
-        loss_name = kd.loss_name
-        if not loss_name:
-            loss_name = "kd_loss_" + kd.pred_name.replace("/", "_")
-            loss_name += "_" + kd.soft_label_name.replace("/", "_")
+        assert kd.pred_is_logits, "predict_name:%s must be logits" % kd.pred_name
 
-        label = label_dict[kd.soft_label_name]
+        loss_name = "kd_loss"
+        loss_name += '_' + kd.pred_name.replace('/', '_')
+        loss_name += '_' + kd.label_name.replace('/', '_')
+
+        label = label_dict[kd.label_name]
         pred = prediction_dict[kd.pred_name]
 
-        if kd.loss_type == LossType.CROSS_ENTROPY_LOSS:
-            if not kd.label_is_logits:
-                label = tf.math.log(label + 1e-7)
-            if not kd.pred_is_logits:
-                pred = tf.math.log(pred + 1e-7)
-
-        if kd.temperature > 0 and kd.loss_type == LossType.CROSS_ENTROPY_LOSS:
-            label = label / kd.temperature
-            pred = pred / kd.temperature
+        if kd.temperature > 0 and kd.temperature != 1.0 and kd.loss_type == LossType.CROSS_ENTROPY_LOSS:
+            if kd.pred_is_logits:
+                pred = pred / kd.temperature
+            if kd.label_is_logits:
+                label = label / kd.temperature
 
         if kd.loss_type == LossType.CROSS_ENTROPY_LOSS:
             num_class = 1 if len(pred.get_shape()) < 2 else pred.get_shape()[-1]
             if num_class > 1:
-                label = tf.nn.softmax(label)
-                pred = tf.nn.softmax(pred)
-            elif num_class == 1:
-                label = tf.nn.sigmoid(label)
-                pred = tf.nn.sigmoid(label)
+                if kd.pred_is_logits:
+                    pred = tf.nn.softmax(pred)
+                # if kd.label_is_logits:
+                #     label = tf.nn.softmax(label)
+            else:
+                if kd.pred_is_logits:
+                    pred = tf.nn.sigmoid(pred)
+                # if kd.label_is_logits:
+                #     label = tf.nn.sigmoid(label)
 
         if kd.loss_type == LossType.CROSS_ENTROPY_LOSS:
             loss_dict[loss_name] = tf.losses.log_loss(
-                label, pred, weights=kd.loss_weight)
+                label, pred, weights=kd.loss_weight
+            )
         elif kd.loss_type == LossType.L2_LOSS:
             loss_dict[loss_name] = tf.losses.mean_squared_error(
-                labels=label, predictions=pred, weights=kd.loss_weight)
+                labels=label, predictions=pred, weights=kd.loss_weight,
+            )
         else:
             assert False, "unsupported loss type for kd: %s" % LossType.Name(
                 kd.loss_type)
