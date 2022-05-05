@@ -240,12 +240,27 @@ class DSSM(MatchModel, DSSMModel):
             variable_scope = "kd"
             for tower in self._model_config.dnn_towers:
                 tower_fea_list.append(self.build_tower_fea(tower, variable_scope))
+            for tower in self._model_config.seq_pooling_towers:
+                tower_fea_list.append(self.build_tower_fea(tower, variable_scope))
+
             all_tower_fea = tf.concat(tower_fea_list, axis=1)
             all_tower_fea = dnn.DNN(self._model_config.final_dnn,
                                     self._l2_reg,
                                     "kd_final_dnn",
                                     self._is_training
                                     )(all_tower_fea)
+
+            # process bias tower
+            if self._model_config.bias_towers:
+                for tower in self._model_config.bias_towers:
+                    bias_fea = self.build_input_layer(tower.input_group)
+                    bias_fea = tf.layers.dense(bias_fea, all_tower_fea.shape()[-1],
+                                               name="kd_" + "bias_tower_dense_" + tower.input_group)
+                    if "multiply" == tower.fusion_mode:
+                        all_tower_fea = tf.multiply(all_tower_fea, bias_fea)
+                    else:
+                        all_tower_fea = tf.add(all_tower_fea, bias_fea)
+
             kd_logits = tf.layers.dense(all_tower_fea, 1, name="kd_logits")
             self._labels["kd_logits"] = tf.reshape(kd_logits, (-1,))
 
