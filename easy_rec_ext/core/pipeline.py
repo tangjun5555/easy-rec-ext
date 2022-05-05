@@ -486,7 +486,7 @@ class BiasTower(BaseConfig):
 class KnowledgeDistillationConfig(BaseConfig):
     def __init__(self, pred_name, label_name,
                  pred_is_logits=True, label_is_logits=True,
-                 loss_type="CROSS_ENTROPY_LOSS",
+                 loss_type="L2_LOSS",
                  loss_weight=1.0, temperature=1.0
                  ):
         self.pred_name = pred_name
