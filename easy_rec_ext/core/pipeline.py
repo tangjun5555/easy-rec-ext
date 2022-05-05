@@ -6,7 +6,6 @@
 from typing import List
 
 from easy_rec_ext.builders.optimizer_builder import Optimizer
-from easy_rec_ext.builders.loss_builder import LossType
 
 from easy_rec_ext.layers.dnn import DNNConfig, DNNTower
 from easy_rec_ext.layers.sequence_pooling import SequencePoolingConfig, SequencePoolingTower
@@ -480,38 +479,6 @@ class BiasTower(BaseConfig):
         if "fusion_mode" in data:
             assert data["fusion_mode"] in ["add", "multiply"]
             res.fusion_mode = data["fusion_mode"]
-        return res
-
-
-class KnowledgeDistillationConfig(BaseConfig):
-    def __init__(self, pred_name, label_name,
-                 pred_is_logits=True, label_is_logits=True,
-                 loss_type="L2_LOSS",
-                 loss_weight=1.0, temperature=1.0
-                 ):
-        self.pred_name = pred_name
-        self.label_name = label_name
-        self.pred_is_logits = pred_is_logits
-        self.label_is_logits = label_is_logits
-        self.loss_type = loss_type
-        self.loss_weight = loss_weight
-        self.temperature = temperature
-
-    @staticmethod
-    def handle(data):
-        res = KnowledgeDistillationConfig(
-            data["pred_name"], data["label_name"]
-        )
-        if "pred_is_logits" in data:
-            res.pred_is_logits = data["pred_is_logits"]
-        if "label_is_logits" in data:
-            res.label_is_logits = data["label_is_logits"]
-        if "loss_type" in data:
-            res.loss_type = LossType.handle(data["loss_type"])
-        if "loss_weight" in data:
-            res.loss_weight = data["loss_weight"]
-        if "temperature" in data:
-            res.temperature = data["temperature"]
         return res
 
 

@@ -17,18 +17,21 @@ filename = str(os.path.basename(__file__)).split(".")[0]
 class LossType(Enum):
     CROSS_ENTROPY_LOSS = 0
     SOFTMAX_CROSS_ENTROPY_LOSS = 1
-    PAIRWISE_LOSS = 2
+    L2_LOSS = 2
+    PAIRWISE_LOSS = 3
 
     @staticmethod
     def handle(value):
-        if value == "CROSS_ENTROPY_LOSS":
+        if "CROSS_ENTROPY_LOSS" == value:
             return LossType.CROSS_ENTROPY_LOSS
-        elif value == "SOFTMAX_CROSS_ENTROPY_LOSS":
+        elif "SOFTMAX_CROSS_ENTROPY_LOSS" == value:
             return LossType.SOFTMAX_CROSS_ENTROPY_LOSS
-        elif value == "PAIRWISE_LOSS":
+        elif "L2_LOSS" == value:
+            return LossType.L2_LOSS
+        elif "PAIRWISE_LOSS" == value:
             return LossType.PAIRWISE_LOSS
         else:
-            return None
+            raise NotImplemented
 
 
 def build_pairwise_loss(labels, logits):
@@ -56,6 +59,38 @@ def build_pairwise_loss(labels, logits):
     # set rank loss to zero if a batch has no positive sample.
     loss = tf.where(tf.is_nan(loss), tf.zeros_like(loss), loss)
     return loss
+
+
+class KnowledgeDistillation(object):
+    def __init__(self, pred_name: str, label_name: str,
+                 pred_is_logits: bool = True, label_is_logits: bool = True,
+                 loss_type: LossType = LossType.L2_LOSS,
+                 loss_weight: float = 1.0, temperature: float = 1.0,
+                 ):
+        self.pred_name = pred_name
+        self.label_name = label_name
+        self.pred_is_logits = pred_is_logits
+        self.label_is_logits = label_is_logits
+        self.loss_type = loss_type
+        self.loss_weight = loss_weight
+        self.temperature = temperature
+
+    @staticmethod
+    def handle(data):
+        res = KnowledgeDistillation(
+            data["pred_name"], data["label_name"]
+        )
+        if "pred_is_logits" in data:
+            res.pred_is_logits = data["pred_is_logits"]
+        if "label_is_logits" in data:
+            res.label_is_logits = data["label_is_logits"]
+        if "loss_type" in data:
+            res.loss_type = LossType.handle(data["loss_type"])
+        if "loss_weight" in data:
+            res.loss_weight = data["loss_weight"]
+        if "temperature" in data:
+            res.temperature = data["temperature"]
+        return res
 
 
 def build_kd_loss(kds, prediction_dict, label_dict):

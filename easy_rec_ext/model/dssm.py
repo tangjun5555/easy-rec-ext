@@ -7,6 +7,7 @@ import os
 import logging
 from typing import List
 import tensorflow as tf
+from easy_rec_ext.builders.loss_builder import KnowledgeDistillation, build_kd_loss
 from easy_rec_ext.layers import dnn
 from easy_rec_ext.layers import sequence_pooling
 from easy_rec_ext.model.match_model import MatchModel
@@ -17,15 +18,21 @@ filename = str(os.path.basename(__file__)).split(".")[0]
 
 
 class DSSMModelConfig(object):
-    def __init__(self, user_input_groups: List[str], item_input_groups: List[str],
+    def __init__(self,
+                 user_input_groups: List[str], item_input_groups: List[str],
                  user_field: str = None, item_field: str = None,
                  scale_sim: bool = True,
+                 kd: KnowledgeDistillation = None,
                  ):
         self.user_input_groups = user_input_groups
         self.item_input_groups = item_input_groups
+
         self.user_field = user_field
         self.item_field = item_field
+
         self.scale_sim = scale_sim
+
+        self.kd = kd
 
     @staticmethod
     def handle(data):
@@ -36,6 +43,8 @@ class DSSMModelConfig(object):
             res.item_field = data["item_field"]
         if "scale_sim" in data:
             res.scale_sim = data["scale_sim"]
+        if "kd" in data:
+            res.kd = KnowledgeDistillation.handle(data["kd"])
         return res
 
     def __str__(self):
@@ -224,8 +233,23 @@ class DSSM(MatchModel, DSSMModel):
             tf.summary.histogram("dssm/scale_sim_w", sim_w)
             tf.summary.histogram("dssm/scale_sim_b", sim_b)
             user_item_sim = tf.matmul(user_item_sim, tf.abs(sim_w)) + sim_b
-        probs = tf.nn.sigmoid(user_item_sim)
 
+        self._prediction_dict["logits"] = tf.reshape(user_item_sim, (-1,), name="logits")
+        if dssm_model_config.kd:
+            tower_fea_list = []
+            variable_scope = "kd"
+            for tower in self._model_config.dnn_towers:
+                tower_fea_list.append(self.build_tower_fea(tower, variable_scope))
+            all_tower_fea = tf.concat(tower_fea_list, axis=1)
+            all_tower_fea = dnn.DNN(self._model_config.final_dnn,
+                                    self._l2_reg,
+                                    "kd_final_dnn",
+                                    self._is_training
+                                    )(all_tower_fea)
+            kd_logits = tf.layers.dense(all_tower_fea, 1, name="kd_logits")
+            self._labels["kd_logits"] = tf.reshape(kd_logits, (-1,))
+
+        probs = tf.nn.sigmoid(user_item_sim)
         self._prediction_dict["probs"] = tf.reshape(probs, (-1,), name="probs")
 
         self._prediction_dict["user_vector"] = tf.identity(user_emb, name="user_vector")
@@ -239,3 +263,58 @@ class DSSM(MatchModel, DSSMModel):
                                                            name="item_id")
 
         return self._prediction_dict
+
+    def build_tower_fea(self, tower, variable_scope=None):
+        variable_scope = variable_scope if variable_scope else "tower"
+        tower_name = tower.input_group
+        dnn_tower_names = [x.input_group for x in self._model_config.dnn_towers]
+        seq_pooling_tower_names = [x.input_group for x in self._model_config.seq_pooling_towers]
+        if tower_name in dnn_tower_names:
+            tower_id = dnn_tower_names.index(tower_name)
+            tower_fea = self._dnn_tower_features[tower_id]
+            with tf.variable_scope(variable_scope, reuse=tf.AUTO_REUSE):
+                tower_fea = tf.layers.batch_normalization(
+                    tower_fea,
+                    training=self._is_training,
+                    trainable=True,
+                    name="%s_fea_bn" % tower.input_group,
+                )
+                tower_fea = dnn.DNN(
+                    tower.dnn_config,
+                    self._l2_reg,
+                    "%s_dnn" % tower.input_group,
+                    self._is_training
+                )(tower_fea)
+        elif tower_name in seq_pooling_tower_names:
+            tower_id = seq_pooling_tower_names.index(tower_name)
+            tower_fea = self._seq_pooling_tower_features[tower_id]
+            with tf.variable_scope(variable_scope, reuse=tf.AUTO_REUSE):
+                tower_fea = sequence_pooling.SequencePooling(
+                    name=tower.input_group + "_pooling",
+                    mode=tower.sequence_pooling_config.mode,
+                    gru_config=tower.sequence_pooling_config.gru_config,
+                    lstm_config=tower.sequence_pooling_config.lstm_config,
+                    self_att_config=tower.sequence_pooling_config.self_att_config,
+                )(tower_fea["hist_seq_emb"], tower_fea["hist_seq_len"])
+        else:
+            raise NotImplemented
+        return tower_fea
+
+    def build_loss_graph(self):
+        dssm_model_config = self._model_config.dssm_model_config
+        self.build_reg_loss()
+        self._loss_dict["cross_entropy_loss"] = tf.losses.log_loss(
+            labels=self._labels[self._label_name],
+            predictions=self._prediction_dict["probs"],
+            weights=tf.reshape(self._sample_weight, (-1,)),
+        )
+        # build kd loss
+        if dssm_model_config.kd:
+            assert dssm_model_config.kd.pred_name == "logits"
+            assert dssm_model_config.kd.label_name == "kd_logits"
+            assert dssm_model_config.kd.pred_is_logits
+            assert dssm_model_config.kd.label_is_logits
+            assert dssm_model_config.kd.loss_type == "L2_LOSS"
+            kd_loss_dict = build_kd_loss(dssm_model_config.kd, self._prediction_dict, self._labels)
+            self._loss_dict.update(kd_loss_dict)
+        return self._loss_dict
