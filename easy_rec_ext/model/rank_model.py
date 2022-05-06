@@ -166,16 +166,37 @@ class RankModel(object):
     def build_seq_att_input_layer(self, feature_group):
         logging.info("%s build_seq_att_input_layer, feature_group:%s" % (filename, str(feature_group)))
         outputs = {}
-
         group_input_dict = self.build_group_input_dict(feature_group)
         feature_group = self._feature_groups_dict[feature_group]
-
         key_outputs = []
         hist_seq_emb_outputs = []
         for seq_att_map in feature_group.seq_att_map_list:
             if seq_att_map.key:
                 key_feature_field = self._feature_fields_dict[seq_att_map.key]
-                key_outputs.append(group_input_dict[key_feature_field.input_name])
+                if not feature_group.key_embed_prefix:
+                    key_outputs.append(group_input_dict[key_feature_field.input_name])
+                else:
+                    input_ids = self._feature_dict[key_feature_field.input_name]
+                    embed_name = feature_group.key_embed_prefix + key_feature_field.embedding_name
+                    if input_ids.dtype == tf.dtypes.string:
+                        embedding_weights = embedding_ops.get_embedding_variable(
+                            name=embed_name,
+                            dim=key_feature_field.embedding_dim,
+                            vocab_size=key_feature_field.num_buckets if key_feature_field.num_buckets > 0 else key_feature_field.hash_bucket_size,
+                            key_is_string=True,
+                        )
+                    else:
+                        embedding_weights = embedding_ops.get_embedding_variable(
+                            name=embed_name,
+                            dim=key_feature_field.embedding_dim,
+                            vocab_size=key_feature_field.num_buckets if key_feature_field.num_buckets > 0 else key_feature_field.hash_bucket_size,
+                            key_is_string=False,
+                        )
+                    key_outputs.append(
+                        embedding_ops.safe_embedding_lookup(
+                            embedding_weights, input_ids
+                        )
+                    )
 
             if seq_att_map.hist_seq:
                 seq_feature_field = self._feature_fields_dict[seq_att_map.hist_seq]

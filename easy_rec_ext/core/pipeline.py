@@ -188,13 +188,16 @@ class FeatureConfig(BaseConfig):
 
 
 class SeqAttMap(BaseConfig):
-    def __init__(self, key: str, hist_seq: str):
+    def __init__(self, key: str, hist_seq: str, key_embed_prefix: str = None):
         self.key = key
         self.hist_seq = hist_seq
+        self.key_embed_prefix = key_embed_prefix
 
     @staticmethod
     def handle(data):
         res = SeqAttMap(data["key"], data["hist_seq"])
+        if "key_embed_prefix" in data:
+            res.key_embed_prefix = data["key_embed_prefix"]
         return res
 
 
