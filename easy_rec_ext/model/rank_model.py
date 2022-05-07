@@ -173,11 +173,11 @@ class RankModel(object):
         for seq_att_map in feature_group.seq_att_map_list:
             if seq_att_map.key:
                 key_feature_field = self._feature_fields_dict[seq_att_map.key]
-                if not feature_group.key_embed_prefix:
+                if not seq_att_map.key_embed_prefix:
                     key_outputs.append(group_input_dict[key_feature_field.input_name])
                 else:
                     input_ids = self._feature_dict[key_feature_field.input_name]
-                    embed_name = feature_group.key_embed_prefix + key_feature_field.embedding_name
+                    embed_name = seq_att_map.key_embed_prefix + key_feature_field.embedding_name
                     if input_ids.dtype == tf.dtypes.string:
                         embedding_weights = embedding_ops.get_embedding_variable(
                             name=embed_name,
