@@ -34,7 +34,7 @@ class FM(object):
             - input_value is a 3D tensor with shape: (batch_size, field_num, embedding_size)
 
         Output shape
-            - 2D tensor with shape: (batch_size, embedding_size)
+            - 2D tensor with shape: (batch_size, 1)
         """
         field_num = input_value.get_shape().as_list()[1]
         embed_size = input_value.get_shape().as_list()[2]
@@ -42,7 +42,24 @@ class FM(object):
 
         sum_square = tf.square(tf.reduce_sum(input_value, 1, keepdims=False))
         square_sum = tf.reduce_sum(tf.square(input_value), 1, keepdims=False)
-        return 0.5 * tf.subtract(sum_square, square_sum)
+        return 0.5 * tf.reduce_sum(tf.subtract(sum_square, square_sum))
+
+
+class FFM(object):
+    def __init__(self, name):
+        self.name = name
+
+    def __call__(self, input_value):
+        """
+        Input shape
+            - input_value is a 3D tensor with shape: (batch_size, field_num, embedding_size)
+
+        Output shape
+            - 2D tensor with shape: (batch_size, 1)
+        """
+        field_num = input_value.get_shape().as_list()[1]
+        embed_size = input_value.get_shape().as_list()[2]
+        logging.info("FFM, name:%s, field_num:%d, embed_size:%d" % (self.name, field_num, embed_size))
 
 
 class InnerProduct(object):
