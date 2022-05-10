@@ -8,7 +8,7 @@ import logging
 from typing import List
 import tensorflow as tf
 from easy_rec_ext.core import regularizers
-from easy_rec_ext.builders.loss_builder import KnowledgeDistillation, build_kd_loss
+from easy_rec_ext.builders.loss_builder import KnowledgeDistillation, build_kd_loss, LossType
 from easy_rec_ext.layers import dnn
 from easy_rec_ext.layers import sequence_pooling
 from easy_rec_ext.model.din import DINLayer
@@ -335,7 +335,7 @@ class DSSM(MatchModel, DSSMModel):
             assert dssm_model_config.kd.label_name == "kd_logits"
             assert dssm_model_config.kd.pred_is_logits
             assert dssm_model_config.kd.label_is_logits
-            assert dssm_model_config.kd.loss_type == "L2_LOSS"
+            assert dssm_model_config.kd.loss_type == LossType.L2_LOSS
             kd_loss_dict = build_kd_loss(dssm_model_config.kd, self._prediction_dict, self._labels)
             self._loss_dict.update(kd_loss_dict)
         return self._loss_dict
