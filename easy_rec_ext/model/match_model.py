@@ -45,7 +45,7 @@ class MatchModel(object):
                  model_config,
                  feature_config,
                  features,
-                 labels={},
+                 labels=None,
                  is_training=False,
                  ):
         self._model_config = model_config
@@ -56,6 +56,8 @@ class MatchModel(object):
         self._labels = labels
         if self._labels is not None and len(self._labels.keys()) > 0:
             self._label_name = list(self._labels.keys())[0]
+        else:
+            self._labels = dict()
 
         # add sample weight from inputs
         self._sample_weight = 1.0
