@@ -7,9 +7,11 @@ import os
 import logging
 from typing import List
 import tensorflow as tf
+from easy_rec_ext.core import regularizers
 from easy_rec_ext.builders.loss_builder import KnowledgeDistillation, build_kd_loss
 from easy_rec_ext.layers import dnn
 from easy_rec_ext.layers import sequence_pooling
+from easy_rec_ext.model.din import DINLayer
 from easy_rec_ext.model.match_model import MatchModel
 
 if tf.__version__ >= "2.0":
@@ -134,9 +136,19 @@ class DSSM(MatchModel, DSSMModel):
             tower_feature = self.build_seq_input_layer(tower.input_group)
             self._seq_pooling_tower_features.append(tower_feature)
 
-        logging.info("%s all tower num:%d" % (filename, self._dnn_tower_num + self._seq_pooling_tower_num))
+        self._din_tower_num = len(self._model_config.din_towers) if self._model_config.din_towers else 0
+        self._din_tower_features = []
+        for tower_id in range(self._din_tower_num):
+            tower = self._model_config.din_towers[tower_id]
+            tower_feature = self.build_seq_att_input_layer(tower.input_group)
+            regularizers.apply_regularization(self._emb_reg, weights_list=[tower_feature["key"]])
+            regularizers.apply_regularization(self._emb_reg, weights_list=[tower_feature["hist_seq_emb"]])
+            self._din_tower_features.append(tower_feature)
+
+        logging.info("%s all tower num:%d" % (filename, self._dnn_tower_num + self._seq_pooling_tower_num + self._din_tower_num))
         logging.info("%s dnn tower num:%d" % (filename, self._dnn_tower_num))
         logging.info("%s seq_pooling tower num:%d" % (filename, self._seq_pooling_tower_num))
+        logging.info("%s din tower num:%d" % (filename, self._din_tower_num))
 
     def build_predict_graph(self):
         dssm_model_config = self._model_config.dssm_model_config
@@ -146,46 +158,24 @@ class DSSM(MatchModel, DSSMModel):
 
         for tower_id in range(self._dnn_tower_num):
             tower = self._model_config.dnn_towers[tower_id]
-            tower_fea = self._dnn_tower_features[tower_id]
-
-            tower_fea = tf.layers.batch_normalization(
-                tower_fea,
-                training=self._is_training,
-                trainable=True,
-                name="%s_fea_bn" % tower.input_group,
-            )
-            tower_fea = dnn.DNN(
-                tower.dnn_config,
-                self._l2_reg,
-                "%s_dnn" % tower.input_group,
-                self._is_training
-            )(tower_fea)
-
+            tower_fea = self.build_tower_fea(tower)
             if tower.input_group in dssm_model_config.user_input_groups:
                 user_emb_fea_list.append(tower_fea)
             elif tower.input_group in dssm_model_config.item_input_groups:
                 item_emb_fea_list.append(tower_fea)
             else:
-                raise ValueError("tower.input_group:%s not in user or item input groups" % tower.input_group)
+                print("tower.input_group:%s not in user or item input groups" % tower.input_group)
             logging.info("DSSM user_emb_fea_list add input_group:%s" % tower.input_group)
 
         for tower_id in range(self._seq_pooling_tower_num):
             tower = self._model_config.seq_pooling_towers[tower_id]
-            tower_fea = self._seq_pooling_tower_features[tower_id]
-            tower_fea = sequence_pooling.SequencePooling(
-                name=tower.input_group + "_pooling",
-                mode=tower.sequence_pooling_config.mode,
-                gru_config=tower.sequence_pooling_config.gru_config,
-                lstm_config=tower.sequence_pooling_config.lstm_config,
-                self_att_config=tower.sequence_pooling_config.self_att_config,
-            )(tower_fea["hist_seq_emb"], tower_fea["hist_seq_len"])
-
+            tower_fea = self.build_tower_fea(tower)
             if tower.input_group in dssm_model_config.user_input_groups:
                 user_emb_fea_list.append(tower_fea)
             elif tower.input_group in dssm_model_config.item_input_groups:
                 item_emb_fea_list.append(tower_fea)
             else:
-                raise ValueError("tower.input_group:%s not in user or item input groups" % tower.input_group)
+                print("tower.input_group:%s not in user or item input groups" % tower.input_group)
             logging.info("DSSM user_emb_fea_list add input_group:%s" % tower.input_group)
 
         user_emb_fea = tf.concat(user_emb_fea_list, axis=1)
@@ -242,6 +232,8 @@ class DSSM(MatchModel, DSSMModel):
                 tower_fea_list.append(self.build_tower_fea(tower, variable_scope))
             for tower in self._model_config.seq_pooling_towers:
                 tower_fea_list.append(self.build_tower_fea(tower, variable_scope))
+            for tower in self._model_config.din_towers:
+                tower_fea_list.append(self.build_tower_fea(tower, variable_scope))
 
             all_tower_fea = tf.concat(tower_fea_list, axis=1)
             all_tower_fea = dnn.DNN(self._model_config.final_dnn,
@@ -284,6 +276,7 @@ class DSSM(MatchModel, DSSMModel):
         tower_name = tower.input_group
         dnn_tower_names = [x.input_group for x in self._model_config.dnn_towers]
         seq_pooling_tower_names = [x.input_group for x in self._model_config.seq_pooling_towers]
+        din_tower_names = [x.input_group for x in self._model_config.din_towers]
         if tower_name in dnn_tower_names:
             tower_id = dnn_tower_names.index(tower_name)
             tower_fea = self._dnn_tower_features[tower_id]
@@ -311,6 +304,19 @@ class DSSM(MatchModel, DSSMModel):
                     lstm_config=tower.sequence_pooling_config.lstm_config,
                     self_att_config=tower.sequence_pooling_config.self_att_config,
                 )(tower_fea["hist_seq_emb"], tower_fea["hist_seq_len"])
+        elif tower_name in din_tower_names:
+            tower_id = din_tower_names.index(tower_name)
+            tower_fea = self._din_tower_features[tower_id]
+            with tf.variable_scope(variable_scope, reuse=tf.AUTO_REUSE):
+                din_layer = DINLayer()
+                tower_fea = din_layer.din(
+                    tower.din_config.dnn_config,
+                    tower_fea,
+                    name="%s_din" % tower.input_group,
+                    need_scale=tower.din_config.need_scale,
+                    return_target=tower.din_config.return_target,
+                    limit_seq_size=tower.din_config.limit_seq_size,
+                )
         else:
             raise NotImplemented
         return tower_fea
