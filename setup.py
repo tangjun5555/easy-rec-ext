@@ -19,12 +19,12 @@ setup(
     install_requires=Path("requirements.txt").read_text().splitlines(),
     extras_require={
         "cpu": [
-            "tensorflow==2.4.1",
-            "tensorflow-recommenders-addons==0.2.0"
+            "tensorflow==2.5.1",
+            "tensorflow-recommenders-addons==0.4.0"
         ],
         "gpu": [
-            "tensorflow-gpu==2.4.1",
-            "tensorflow-recommenders-addons-gpu==0.2.0"
+            "tensorflow-gpu==2.5.1",
+            "tensorflow-recommenders-addons-gpu==0.4.0"
         ],
     },
 )
