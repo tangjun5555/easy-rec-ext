@@ -68,7 +68,7 @@ class Input(object):
 
     def _parse_csv(self, line):
         def _check_data(line):
-            sep = ","
+            sep = self._input_config.input_separator
             if type(sep) != type(str):
                 sep = sep.encode("utf-8")
             field_num = len(line[0].split(sep))
@@ -79,7 +79,8 @@ class Input(object):
 
         check_op = tf.py_func(_check_data, [line], Tout=tf.bool)
         with tf.control_dependencies([check_op]):
-            fields = tf.decode_csv(line, record_defaults=self._input_field_defaults, field_delim=",", name="decode_csv")
+            fields = tf.decode_csv(line, record_defaults=self._input_field_defaults,
+                                   field_delim=self._input_config.input_separator, name="decode_csv")
 
         inputs = {self._input_fields[x]: fields[x] for x in self._effective_fids}
         for x in self._label_fids:
@@ -122,7 +123,7 @@ class Input(object):
         parsed_dict = {}
         for fc in self._feature_config.feature_fields:
             if fc.feature_type == "SequenceFeature":
-                parsed_dict[fc.input_name] = tf.strings.split(field_dict[fc.feature_name], "|")
+                parsed_dict[fc.input_name] = tf.strings.split(field_dict[fc.feature_name], fc.separator)
                 if os.environ["use_dynamic_embedding"] == "0" or (
                     os.environ["use_dynamic_embedding"] == "1" and os.environ["use_gpu"] == "1"):
                     if fc.hash_bucket_size > 0:
@@ -143,7 +144,7 @@ class Input(object):
             elif fc.feature_type == "RawFeature":
                 if field_dict[fc.feature_name].dtype == tf.string:
                     if fc.raw_input_dim > 1:
-                        tmp_fea = tf.string_split(field_dict[fc.feature_name], "|")
+                        tmp_fea = tf.string_split(field_dict[fc.feature_name], fc.separator)
                         tmp_vals = tf.string_to_number(tmp_fea.values, tf.float32,
                                                        name="multi_raw_fea_to_flt_%s" % fc.input_name)
                         parsed_dict[fc.input_name] = tf.sparse_to_dense(

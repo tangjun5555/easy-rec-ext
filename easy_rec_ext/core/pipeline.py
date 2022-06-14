@@ -71,14 +71,17 @@ class OSSConfig(BaseConfig):
 class InputConfig(BaseConfig):
     def __init__(self,
                  input_fields: List[InputField], label_fields: List[str],
-                 input_type: str = "csv", oss_config: OSSConfig = None,
+                 input_type: str = "csv", input_separator=",",
+                 oss_config: OSSConfig = None,
                  train_input_path: str = None, eval_input_path: str = None,
-                 num_epochs: int = 2, batch_size: int = 256
+                 num_epochs: int = 2, batch_size: int = 256,
                  ):
         self.input_fields = input_fields
         self.label_fields = label_fields
 
         self.input_type = input_type
+        self.input_separator = input_separator
+
         self.oss_config = oss_config
 
         self.train_input_path = train_input_path
@@ -96,6 +99,9 @@ class InputConfig(BaseConfig):
 
         if "input_type" in data:
             res.input_type = data["input_type"]
+        if "input_separator" in data:
+            res.input_separator = data["input_separator"]
+
         if "oss_config" in data:
             res.oss_config = OSSConfig.handle(data["oss_config"])
 
@@ -114,6 +120,7 @@ class InputConfig(BaseConfig):
 class FeatureField(BaseConfig):
     def __init__(self,
                  input_name: str, feature_type: str, feature_name: str = None,
+                 separator: str = "|",
                  raw_input_dim: int = 1, raw_input_embedding_type: str = None,
                  one_hot: int = 0,
                  embedding_name: str = None, embedding_dim: int = 16,
@@ -124,6 +131,8 @@ class FeatureField(BaseConfig):
         self.input_name = input_name
         self.feature_type = feature_type
         self.feature_name = feature_name if feature_name else input_name
+
+        self.separator = separator
 
         self.raw_input_dim = raw_input_dim
         self.raw_input_embedding_type = raw_input_embedding_type
@@ -148,6 +157,9 @@ class FeatureField(BaseConfig):
 
         if "feature_name" in data:
             res.feature_name = data["feature_name"] if data["feature_name"] else res.input_name
+
+        if "separator" in data:
+            res.separator = data["separator"]
 
         if "raw_input_dim" in data:
             res.raw_input_dim = data["raw_input_dim"]
