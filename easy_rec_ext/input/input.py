@@ -59,7 +59,7 @@ class Input(object):
 
     def get_type_defaults(self, field_type):
         type_defaults = {
-            "int": 0,
+            "int": -1,
             "string": "",
             "float": 0.0,
         }
