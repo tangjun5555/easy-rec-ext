@@ -23,16 +23,6 @@ class TFRecordInput(Input):
         super(TFRecordInput, self).__init__(input_config, feature_config, input_path,
                                             task_index, task_num)
 
-        self.feature_desc = {}
-        for x, t, d in zip(self._input_fields, self._input_field_types, self._input_field_defaults):
-            d = self.get_type_defaults(t)
-            t = self.get_tf_type(t)
-            self.feature_desc[x] = tf.io.FixedLenFeature(dtype=t, shape=1, default_value=d)
-
-    def _parse_tfrecord(self, example):
-        inputs = tf.io.parse_single_example(example, features=self.feature_desc)
-        return inputs
-
     def _build(self, mode):
         file_paths = tf.gfile.Glob(self._input_path)
         file_paths = sorted(file_paths)

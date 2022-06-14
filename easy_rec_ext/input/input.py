@@ -33,14 +33,14 @@ class Input(object):
         self._input_fields = [x.input_name for x in self._input_config.input_fields]
         self._input_field_types = [x.input_type for x in self._input_config.input_fields]
 
-        self._effective_fields = []
-        for feature_field in self._feature_config.feature_fields:
-            if feature_field.input_name not in self._effective_fields:
-                self._effective_fields.append(feature_field.input_name)
-        self._effective_fids = [self._input_fields.index(x) for x in self._effective_fields]
-
         self._label_fields = list(self._input_config.label_fields)
         self._label_fids = [self._input_fields.index(x) for x in self._label_fields]
+
+        self._effective_fields = []
+        for feature_field in self._input_config.input_fields:
+            if feature_field.input_name not in self._label_fields:
+                self._effective_fields.append(feature_field.input_name)
+        self._effective_fids = [self._input_fields.index(x) for x in self._effective_fields]
 
         self._input_field_defaults = [self.get_type_defaults(t) for t in self._input_field_types]
 
@@ -65,6 +65,15 @@ class Input(object):
         }
         assert field_type in type_defaults, "invalid type: %s" % field_type
         return type_defaults[field_type]
+
+    def _parse_tfrecord(self, example):
+        feature_desc = {}
+        for x, t, d in zip(self._input_fields, self._input_field_types, self._input_field_defaults):
+            d = self.get_type_defaults(t)
+            t = self.get_tf_type(t)
+            feature_desc[x] = tf.io.FixedLenFeature(dtype=t, shape=1, default_value=d)
+        inputs = tf.io.parse_single_example(example, features=feature_desc)
+        return inputs
 
     def _parse_csv(self, line):
         def _check_data(line):
@@ -123,60 +132,61 @@ class Input(object):
         parsed_dict = {}
         for fc in self._feature_config.feature_fields:
             if fc.feature_type == "SequenceFeature":
-                parsed_dict[fc.input_name] = tf.strings.split(field_dict[fc.feature_name], fc.separator)
+                parsed_dict[fc.feature_name] = tf.strings.split(field_dict[fc.input_name], fc.separator)
                 if os.environ["use_dynamic_embedding"] == "0" or (
                     os.environ["use_dynamic_embedding"] == "1" and os.environ["use_gpu"] == "1"):
                     if fc.hash_bucket_size > 0:
-                        parsed_dict[fc.input_name] = tf.sparse.SparseTensor(
-                            parsed_dict[fc.input_name].indices,
-                            string_ops.string_to_hash_bucket(parsed_dict[fc.input_name].values, fc.hash_bucket_size),
-                            parsed_dict[fc.input_name].dense_shape
+                        parsed_dict[fc.feature_name] = tf.sparse.SparseTensor(
+                            parsed_dict[fc.feature_name].indices,
+                            string_ops.string_to_hash_bucket(parsed_dict[fc.feature_name].values, fc.hash_bucket_size),
+                            parsed_dict[fc.feature_name].dense_shape
                         )
                     else:
-                        parsed_dict[fc.input_name] = tf.sparse.SparseTensor(
-                            parsed_dict[fc.input_name].indices,
-                            tf.string_to_number(parsed_dict[fc.input_name].values, tf.int64,
+                        parsed_dict[fc.feature_name] = tf.sparse.SparseTensor(
+                            parsed_dict[fc.feature_name].indices,
+                            tf.string_to_number(parsed_dict[fc.feature_name].values, tf.int64,
                                                 name="seq_str_2_int_%s" % fc.input_name),
-                            parsed_dict[fc.input_name].dense_shape
+                            parsed_dict[fc.feature_name].dense_shape
                         )
-                parsed_dict[fc.input_name] = tf.sparse.to_dense(parsed_dict[fc.input_name])
+                parsed_dict[fc.feature_name] = tf.sparse.to_dense(parsed_dict[fc.feature_name])
 
             elif fc.feature_type == "RawFeature":
-                if field_dict[fc.feature_name].dtype == tf.string:
+                if field_dict[fc.input_name].dtype == tf.string:
                     if fc.raw_input_dim > 1:
-                        tmp_fea = tf.string_split(field_dict[fc.feature_name], fc.separator)
+                        tmp_fea = tf.string_split(field_dict[fc.input_name], fc.separator)
                         tmp_vals = tf.string_to_number(tmp_fea.values, tf.float32,
                                                        name="multi_raw_fea_to_flt_%s" % fc.input_name)
-                        parsed_dict[fc.input_name] = tf.sparse_to_dense(
+                        parsed_dict[fc.feature_name] = tf.sparse_to_dense(
                             tmp_fea.indices,
-                            [tf.shape(field_dict[fc.feature_name])[0], fc.raw_input_dim],
+                            [tf.shape(field_dict[fc.input_name])[0], fc.raw_input_dim],
                             tmp_vals,
                             default_value=0,
                         )
                     else:
-                        parsed_dict[fc.input_name] = tf.string_to_number(field_dict[fc.feature_name], tf.float32)
-                        parsed_dict[fc.input_name] = tf.expand_dims(parsed_dict[fc.input_name], axis=1)
+                        parsed_dict[fc.feature_name] = tf.string_to_number(field_dict[fc.input_name], tf.float32)
+                        parsed_dict[fc.feature_name] = tf.expand_dims(parsed_dict[fc.feature_name], axis=1)
                 else:
-                    parsed_dict[fc.input_name] = tf.to_float(field_dict[fc.feature_name])
-                    parsed_dict[fc.input_name] = tf.expand_dims(parsed_dict[fc.input_name], axis=1)
+                    parsed_dict[fc.feature_name] = tf.to_float(field_dict[fc.input_name])
+                    parsed_dict[fc.feature_name] = tf.expand_dims(parsed_dict[fc.feature_name], axis=1)
 
             elif fc.feature_type == "IdFeature":
-                parsed_dict[fc.input_name] = field_dict[fc.feature_name]
-                if parsed_dict[fc.input_name].dtype == tf.string:
+                parsed_dict[fc.feature_name] = field_dict[fc.input_name]
+                if parsed_dict[fc.feature_name].dtype == tf.string:
                     if os.environ["use_dynamic_embedding"] == "0" or (os.environ["use_dynamic_embedding"] == "1" and os.environ["use_gpu"] == "1"):
                         if fc.hash_bucket_size > 0:
-                            parsed_dict[fc.input_name] = string_ops.string_to_hash_bucket(
-                                parsed_dict[fc.input_name],
+                            parsed_dict[fc.feature_name] = string_ops.string_to_hash_bucket(
+                                parsed_dict[fc.feature_name],
                                 fc.hash_bucket_size
                             )
                         else:
-                            parsed_dict[fc.input_name] = tf.string_to_number(
-                                parsed_dict[fc.input_name], tf.dtypes.int64,
+                            parsed_dict[fc.feature_name] = tf.string_to_number(
+                                parsed_dict[fc.feature_name], tf.dtypes.int64,
                                 name="%s_str_2_int" % fc.input_name
                             )
-                parsed_dict[fc.input_name] = tf.expand_dims(parsed_dict[fc.input_name], axis=1)
+                parsed_dict[fc.feature_name] = tf.expand_dims(parsed_dict[fc.feature_name], axis=1)
             else:
-                parsed_dict[fc.input_name] = field_dict[fc.feature_name]
+                print("【WARNING】Unusual feature types:%s, feature_name:%s" % (fc.feature_type, fc.feature_name))
+                parsed_dict[fc.feature_name] = field_dict[fc.input_name]
 
         for input_id, input_name in enumerate(self._label_fields):
             if input_name not in field_dict:
@@ -190,7 +200,7 @@ class Input(object):
     def create_placeholders(self):
         self._mode = tf.estimator.ModeKeys.PREDICT
         inputs_placeholder = tf.placeholder(tf.string, [None], name="features")
-        input_vals = tf.string_split(inputs_placeholder, ",", skip_empty=False).values
+        input_vals = tf.string_split(inputs_placeholder, self._input_config.input_separator, skip_empty=False).values
         effective_fids = list(self._effective_fids)
         input_vals = tf.reshape(input_vals, [-1, len(effective_fids)], name="input_reshape")
         features = {}
