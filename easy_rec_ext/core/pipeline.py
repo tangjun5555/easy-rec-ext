@@ -124,7 +124,7 @@ class FeatureField(BaseConfig):
                  raw_input_dim: int = 1, raw_input_embedding_type: str = None,
                  one_hot: int = 0,
                  embedding_name: str = None, embedding_dim: int = 16,
-                 num_buckets: int = 0, hash_bucket_size: int = 0,
+                 num_buckets: int = 0, hash_bucket_size: int = 0, vocab_list: List[str] = None,
                  sequence_pooling_config: SequencePoolingConfig = None,
                  limit_seq_size: int = None, seq_need_reverse: bool = False,
                  ):
@@ -144,6 +144,7 @@ class FeatureField(BaseConfig):
 
         self.num_buckets = num_buckets
         self.hash_bucket_size = hash_bucket_size
+        self.vocab_list = vocab_list
 
         self.sequence_pooling_config = sequence_pooling_config
         self.limit_seq_size = limit_seq_size
@@ -179,6 +180,8 @@ class FeatureField(BaseConfig):
             res.num_buckets = data["num_buckets"]
         if "hash_bucket_size" in data:
             res.hash_bucket_size = data["hash_bucket_size"]
+        if "vocab_list" in data:
+            res.vocab_list = data["vocab_list"]
 
         if "sequence_pooling_config" in data:
             res.sequence_pooling_config = SequencePoolingConfig.handle(data["sequence_pooling_config"])

@@ -133,8 +133,12 @@ class Input(object):
         for fc in self._feature_config.feature_fields:
             if fc.feature_type == "SequenceFeature":
                 parsed_dict[fc.feature_name] = tf.strings.split(field_dict[fc.input_name], fc.separator)
+                if fc.vocab_list:
+                    parsed_dict[fc.feature_name] = string_ops.mapping_by_vocab_list(tf.sparse.to_dense(parsed_dict[fc.feature_name]),
+                                                                                    fc.vocab_list)
+                    continue
                 if os.environ["use_dynamic_embedding"] == "0" or (
-                    os.environ["use_dynamic_embedding"] == "1" and os.environ["use_gpu"] == "1"):
+                        os.environ["use_dynamic_embedding"] == "1" and os.environ["use_gpu"] == "1"):
                     if fc.hash_bucket_size > 0:
                         parsed_dict[fc.feature_name] = tf.sparse.SparseTensor(
                             parsed_dict[fc.feature_name].indices,
@@ -172,7 +176,11 @@ class Input(object):
             elif fc.feature_type == "IdFeature":
                 parsed_dict[fc.feature_name] = field_dict[fc.input_name]
                 if parsed_dict[fc.feature_name].dtype == tf.string:
-                    if os.environ["use_dynamic_embedding"] == "0" or (os.environ["use_dynamic_embedding"] == "1" and os.environ["use_gpu"] == "1"):
+                    if fc.vocab_list:
+                        parsed_dict[fc.feature_name] = string_ops.mapping_by_vocab_list(parsed_dict[fc.feature_name],
+                                                                                        fc.vocab_list)
+                    elif os.environ["use_dynamic_embedding"] == "0" or (
+                            os.environ["use_dynamic_embedding"] == "1" and os.environ["use_gpu"] == "1"):
                         if fc.hash_bucket_size > 0:
                             parsed_dict[fc.feature_name] = string_ops.string_to_hash_bucket(
                                 parsed_dict[fc.feature_name],

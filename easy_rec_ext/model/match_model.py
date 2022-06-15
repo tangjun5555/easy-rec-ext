@@ -179,6 +179,7 @@ class MatchModel(object):
 
                     hist_seq = self._feature_dict[seq_feature_field.feature_name]
                     if "hist_seq_len" not in outputs:
+                        # TODO Maybe more elegant
                         hist_seq_len = tf.where(tf.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
                         hist_seq_len = tf.reduce_sum(hist_seq_len, axis=1, keep_dims=False)
                         outputs["hist_seq_len"] = hist_seq_len
@@ -224,6 +225,7 @@ class MatchModel(object):
 
             hist_seq_id = self._feature_dict[feature_field.feature_name]
             if "hist_seq_len" not in outputs:
+                # TODO Maybe more elegant
                 hist_seq_len = tf.where(tf.less(hist_seq_id, 0), tf.zeros_like(hist_seq_id), tf.ones_like(hist_seq_id))
                 hist_seq_len = tf.reduce_sum(hist_seq_len, axis=1, keep_dims=False)
                 outputs["hist_seq_len"] = hist_seq_len
@@ -311,7 +313,8 @@ class MatchModel(object):
                 hist_seq = self._feature_dict[feature_field.feature_name]
                 if feature_field.seq_need_reverse:
                     hist_seq = tf.reverse(hist_seq, [-1])
-                
+
+                # TODO Maybe more elegant
                 hist_seq_len = tf.where(tf.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
                 hist_seq_len = tf.reduce_sum(hist_seq_len, axis=1, keep_dims=False)
 
