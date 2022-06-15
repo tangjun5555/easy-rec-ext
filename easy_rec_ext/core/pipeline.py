@@ -182,6 +182,8 @@ class FeatureField(BaseConfig):
             res.hash_bucket_size = data["hash_bucket_size"]
         if "vocab_list" in data:
             res.vocab_list = data["vocab_list"]
+            if res.vocab_list:
+                res.num_buckets = len(res.vocab_list)
 
         if "sequence_pooling_config" in data:
             res.sequence_pooling_config = SequencePoolingConfig.handle(data["sequence_pooling_config"])
