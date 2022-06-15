@@ -50,7 +50,7 @@ class RankModel(object):
             for feature_group in self._model_config.feature_groups
         }
         self._feature_fields_dict = {
-            feature_field.input_name: feature_field
+            feature_field.feature_name: feature_field
             for feature_field in self._feature_config.feature_fields
         }
 
@@ -111,7 +111,7 @@ class RankModel(object):
         feature_fields_num = len(feature_group.feature_name_list) if feature_group.feature_name_list else 0
         for i in range(feature_fields_num):
             feature_field = self._feature_fields_dict[feature_group.feature_name_list[i]]
-            outputs.append(group_input_dict[feature_field.input_name])
+            outputs.append(group_input_dict[feature_field.feature_name])
 
         outputs = tf.concat(outputs, axis=1)
         if feature_group.senet_layer_config is not None:
@@ -129,10 +129,10 @@ class RankModel(object):
         assert feature_field.feature_type in ["IdFeature"]
 
         if use_raw_id:
-            return self._feature_dict[feature_field.input_name]
+            return self._feature_dict[feature_field.feature_name]
         else:
             group_input_dict = self.build_group_input_dict(feature_group)
-            return group_input_dict[feature_field.input_name]
+            return group_input_dict[feature_field.feature_name]
 
     def build_cartesian_interaction_input_layer(self, feature_group, item_use_raw_id=False):
         logging.info("%s build_cross_interaction_input_layer, feature_group:%s" % (filename, str(feature_group)))
@@ -146,7 +146,7 @@ class RankModel(object):
             feature_field = self._feature_fields_dict[user_key]
             assert feature_field.feature_type in ["IdFeature", "SequenceFeature"]
 
-            values = group_input_dict[feature_field.input_name]
+            values = group_input_dict[feature_field.feature_name]
             if feature_field.feature_type == "IdFeature":
                 values = tf.expand_dims(values, axis=1)
                 user_outputs.append(values)
@@ -157,9 +157,9 @@ class RankModel(object):
         feature_field = self._feature_fields_dict[feature_group.cartesian_interaction_map.item_key]
         assert feature_field.feature_type in ["IdFeature"]
         if item_use_raw_id:
-            outputs["item_value"] = self._feature_dict[feature_field.input_name]
+            outputs["item_value"] = self._feature_dict[feature_field.feature_name]
         else:
-            values = group_input_dict[feature_field.input_name]
+            values = group_input_dict[feature_field.feature_name]
             outputs["item_value"] = values
         return outputs
 
@@ -174,9 +174,9 @@ class RankModel(object):
             if seq_att_map.key:
                 key_feature_field = self._feature_fields_dict[seq_att_map.key]
                 if not seq_att_map.key_embed_prefix:
-                    key_outputs.append(group_input_dict[key_feature_field.input_name])
+                    key_outputs.append(group_input_dict[key_feature_field.feature_name])
                 else:
-                    input_ids = self._feature_dict[key_feature_field.input_name]
+                    input_ids = self._feature_dict[key_feature_field.feature_name]
                     embed_name = seq_att_map.key_embed_prefix + key_feature_field.embedding_name
                     if input_ids.dtype == tf.dtypes.string:
                         embedding_weights = embedding_ops.get_embedding_variable(
@@ -201,9 +201,9 @@ class RankModel(object):
             if seq_att_map.hist_seq:
                 seq_feature_field = self._feature_fields_dict[seq_att_map.hist_seq]
                 if seq_feature_field.feature_type == "SequenceFeature":
-                    hist_seq_emb_outputs.append(group_input_dict[seq_feature_field.input_name])
+                    hist_seq_emb_outputs.append(group_input_dict[seq_feature_field.feature_name])
 
-                    hist_seq = self._feature_dict[seq_feature_field.input_name]
+                    hist_seq = self._feature_dict[seq_feature_field.feature_name]
                     if "hist_seq_len" not in outputs:
                         hist_seq_len = tf.where(tf.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
                         hist_seq_len = tf.reduce_sum(hist_seq_len, axis=1, keep_dims=False)
@@ -211,12 +211,12 @@ class RankModel(object):
                 elif seq_feature_field.feature_type == "RawFeature":
                     if seq_feature_field.raw_input_embedding_type:
                         hist_seq_emb_outputs.append(
-                            tf.reshape(group_input_dict[seq_feature_field.input_name],
+                            tf.reshape(group_input_dict[seq_feature_field.feature_name],
                                        [-1, seq_feature_field.raw_input_dim, seq_feature_field.embedding_dim])
                         )
                     else:
                         hist_seq_emb_outputs.append(
-                            tf.reshape(group_input_dict[seq_feature_field.input_name],
+                            tf.reshape(group_input_dict[seq_feature_field.feature_name],
                                        [-1, seq_feature_field.raw_input_dim, 1])
                         )
 
@@ -271,11 +271,11 @@ class RankModel(object):
             if feature_field.feature_type == "RawFeature":
                 assert feature_field.raw_input_embedding_type
                 outputs.append(
-                    tf.reshape(group_input_dict[feature_field.input_name],
+                    tf.reshape(group_input_dict[feature_field.feature_name],
                                [-1, feature_field.raw_input_dim, feature_field.embedding_dim])
                 )
             elif feature_field.feature_type == "IdFeature":
-                values = group_input_dict[feature_field.input_name]
+                values = group_input_dict[feature_field.feature_name]
                 values = tf.expand_dims(values, axis=1)
                 outputs.append(values)
         outputs = tf.concat(outputs, axis=1)
@@ -295,7 +295,7 @@ class RankModel(object):
             feature_field = self._feature_fields_dict[feature_group.feature_name_list[i]]
 
             if feature_field.feature_type == "IdFeature":
-                input_ids = self._feature_dict[feature_field.input_name]
+                input_ids = self._feature_dict[feature_field.feature_name]
 
                 if feature_field.one_hot == 1:
                     if feature_field.num_buckets > 0:
@@ -324,7 +324,7 @@ class RankModel(object):
                     )
 
             elif feature_field.feature_type == "RawFeature":
-                values = self._feature_dict[feature_field.input_name]
+                values = self._feature_dict[feature_field.feature_name]
                 if feature_field.raw_input_embedding_type == "field_embedding":
                     embedding_weights = embedding_ops.get_embedding_variable(
                         name=feature_field.embedding_name,
@@ -350,7 +350,7 @@ class RankModel(object):
                     raise NotImplemented
 
             elif feature_field.feature_type == "SequenceFeature":
-                hist_seq = self._feature_dict[feature_field.input_name]
+                hist_seq = self._feature_dict[feature_field.feature_name]
                 if feature_field.limit_seq_size and feature_field.limit_seq_size > 0:
                     cur_batch_max_seq_len = tf.shape(hist_seq)[1]
                     hist_seq = tf.cond(
@@ -362,6 +362,8 @@ class RankModel(object):
                                        ),
                         lambda: tf.slice(hist_seq, [0, 0], [-1, feature_field.limit_seq_size])
                     )
+                if feature_field.seq_need_reverse:
+                    hist_seq = tf.reverse(hist_seq, [-1])
 
                 hist_seq_len = tf.where(tf.math.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
                 hist_seq_len = tf.reduce_sum(hist_seq_len, axis=1, keep_dims=False)
@@ -378,7 +380,7 @@ class RankModel(object):
 
                 if feature_field.sequence_pooling_config is not None:
                     values = SequencePooling(
-                        name=feature_field.input_name + "_pooling",
+                        name=feature_field.feature_name + "_pooling",
                         mode=feature_field.sequence_pooling_config.mode,
                         gru_config=feature_field.sequence_pooling_config.gru_config,
                         lstm_config=feature_field.sequence_pooling_config.lstm_config,
@@ -388,9 +390,9 @@ class RankModel(object):
             else:
                 raise ValueError("build_group_input_dict, feature_type: %s not supported." % feature_field.feature_type)
 
-            outputs[feature_field.input_name] = values
+            outputs[feature_field.feature_name] = values
             logging.info("build_group_input_dict, name:%s, shape:%s" %
-                         (feature_field.input_name, str(values.get_shape().as_list()))
+                         (feature_field.feature_name, str(values.get_shape().as_list()))
                          )
 
         return outputs

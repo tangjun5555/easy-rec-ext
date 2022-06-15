@@ -77,7 +77,7 @@ class MatchModel(object):
             for feature_group in self._model_config.feature_groups
         }
         self._feature_fields_dict = {
-            feature_field.input_name: feature_field
+            feature_field.feature_name: feature_field
             for feature_field in self._feature_config.feature_fields
         }
 
@@ -148,9 +148,9 @@ class MatchModel(object):
             if seq_att_map.key:
                 key_feature_field = self._feature_fields_dict[seq_att_map.key]
                 if not seq_att_map.key_embed_prefix:
-                    key_outputs.append(group_input_dict[key_feature_field.input_name])
+                    key_outputs.append(group_input_dict[key_feature_field.feature_name])
                 else:
-                    input_ids = self._feature_dict[key_feature_field.input_name]
+                    input_ids = self._feature_dict[key_feature_field.feature_name]
                     embed_name = seq_att_map.key_embed_prefix + key_feature_field.embedding_name
                     if input_ids.dtype == tf.dtypes.string:
                         embedding_weights = embedding_ops.get_embedding_variable(
@@ -175,9 +175,9 @@ class MatchModel(object):
             if seq_att_map.hist_seq:
                 seq_feature_field = self._feature_fields_dict[seq_att_map.hist_seq]
                 if seq_feature_field.feature_type == "SequenceFeature":
-                    hist_seq_emb_outputs.append(group_input_dict[seq_feature_field.input_name])
+                    hist_seq_emb_outputs.append(group_input_dict[seq_feature_field.feature_name])
 
-                    hist_seq = self._feature_dict[seq_feature_field.input_name]
+                    hist_seq = self._feature_dict[seq_feature_field.feature_name]
                     if "hist_seq_len" not in outputs:
                         hist_seq_len = tf.where(tf.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
                         hist_seq_len = tf.reduce_sum(hist_seq_len, axis=1, keep_dims=False)
@@ -185,12 +185,12 @@ class MatchModel(object):
                 elif seq_feature_field.feature_type == "RawFeature":
                     if seq_feature_field.raw_input_embedding_type:
                         hist_seq_emb_outputs.append(
-                            tf.reshape(group_input_dict[seq_feature_field.input_name],
+                            tf.reshape(group_input_dict[seq_feature_field.feature_name],
                                        [-1, seq_feature_field.raw_input_dim, seq_feature_field.embedding_dim])
                         )
                     else:
                         hist_seq_emb_outputs.append(
-                            tf.reshape(group_input_dict[seq_feature_field.input_name],
+                            tf.reshape(group_input_dict[seq_feature_field.feature_name],
                                        [-1, seq_feature_field.raw_input_dim, 1])
                         )
 
@@ -222,7 +222,7 @@ class MatchModel(object):
             feature_field = self._feature_fields_dict[feature_group.feature_name_list[i]]
             hist_seq_emb_list.append(group_input_dict[feature_field.feature_name])
 
-            hist_seq_id = self._feature_dict[feature_field.input_name]
+            hist_seq_id = self._feature_dict[feature_field.feature_name]
             if "hist_seq_len" not in outputs:
                 hist_seq_len = tf.where(tf.less(hist_seq_id, 0), tf.zeros_like(hist_seq_id), tf.ones_like(hist_seq_id))
                 hist_seq_len = tf.reduce_sum(hist_seq_len, axis=1, keep_dims=False)
@@ -263,7 +263,7 @@ class MatchModel(object):
             feature_field = self._feature_fields_dict[feature_group.feature_name_list[i]]
 
             if feature_field.feature_type == "IdFeature":
-                input_ids = self._feature_dict[feature_field.input_name]
+                input_ids = self._feature_dict[feature_field.feature_name]
                 if feature_field.one_hot == 1:
                     if feature_field.num_buckets > 0:
                         values = tf.one_hot(input_ids, feature_field.num_buckets)
@@ -282,7 +282,7 @@ class MatchModel(object):
                     )
 
             elif feature_field.feature_type == "RawFeature":
-                values = self._feature_dict[feature_field.input_name]
+                values = self._feature_dict[feature_field.feature_name]
                 if feature_field.raw_input_embedding_type == "field_embedding":
                     embedding_weights = embedding_ops.get_embedding_variable(
                         name=feature_field.embedding_name,
@@ -308,14 +308,11 @@ class MatchModel(object):
                     raise NotImplemented
 
             elif feature_field.feature_type == "SequenceFeature":
-                hist_seq = self._feature_dict[feature_field.input_name]
-                if hist_seq.dtype == tf.dtypes.string:
-                    hist_seq_len = tf.where(tf.math.logical_or(tf.equal(hist_seq, ""), tf.equal(hist_seq, "-1")),
-                                            tf.zeros_like(tf.string_to_hash_bucket_fast(hist_seq, 10)),
-                                            tf.ones_like(tf.string_to_hash_bucket_fast(hist_seq, 10)),
-                                            )
-                else:
-                    hist_seq_len = tf.where(tf.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
+                hist_seq = self._feature_dict[feature_field.feature_name]
+                if feature_field.seq_need_reverse:
+                    hist_seq = tf.reverse(hist_seq, [-1])
+                
+                hist_seq_len = tf.where(tf.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
                 hist_seq_len = tf.reduce_sum(hist_seq_len, axis=1, keep_dims=False)
 
                 embedding_weights = embedding_ops.get_embedding_variable(
@@ -330,7 +327,7 @@ class MatchModel(object):
 
                 if feature_field.sequence_pooling_config is not None:
                     values = SequencePooling(
-                        name=feature_field.input_name + "_pooling",
+                        name=feature_field.feature_name + "_pooling",
                         mode=feature_field.sequence_pooling_config.mode,
                         gru_config=feature_field.sequence_pooling_config.gru_config,
                         lstm_config=feature_field.sequence_pooling_config.lstm_config,
@@ -340,9 +337,9 @@ class MatchModel(object):
             else:
                 raise ValueError("build_group_input_dict, feature_type: %s not supported." % feature_field.feature_type)
 
-            outputs[feature_field.input_name] = values
+            outputs[feature_field.feature_name] = values
             logging.info("build_group_input_dict, name:%s, shape:%s" %
-                         (feature_field.input_name, str(values.get_shape().as_list()))
+                         (feature_field.feature_name, str(values.get_shape().as_list()))
                          )
 
         return outputs

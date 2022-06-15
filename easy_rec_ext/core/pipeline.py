@@ -126,7 +126,7 @@ class FeatureField(BaseConfig):
                  embedding_name: str = None, embedding_dim: int = 16,
                  num_buckets: int = 0, hash_bucket_size: int = 0,
                  sequence_pooling_config: SequencePoolingConfig = None,
-                 limit_seq_size: int = None,
+                 limit_seq_size: int = None, seq_need_reverse: bool = False,
                  ):
         self.input_name = input_name
         self.feature_type = feature_type
@@ -147,6 +147,7 @@ class FeatureField(BaseConfig):
 
         self.sequence_pooling_config = sequence_pooling_config
         self.limit_seq_size = limit_seq_size
+        self.seq_need_reverse = seq_need_reverse
 
     @staticmethod
     def handle(data):
@@ -183,6 +184,8 @@ class FeatureField(BaseConfig):
             res.sequence_pooling_config = SequencePoolingConfig.handle(data["sequence_pooling_config"])
         if "limit_seq_size" in data:
             res.limit_seq_size = data["limit_seq_size"]
+        if "seq_need_reverse" in data:
+            res.seq_need_reverse = data["seq_need_reverse"]
         return res
 
 
