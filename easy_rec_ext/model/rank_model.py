@@ -352,6 +352,8 @@ class RankModel(object):
 
             elif feature_field.feature_type == "SequenceFeature":
                 hist_seq = self._feature_dict[feature_field.feature_name]
+                if feature_field.seq_need_reverse:
+                    hist_seq = tf.reverse(hist_seq, [-1])
                 if feature_field.limit_seq_size and feature_field.limit_seq_size > 0:
                     cur_batch_max_seq_len = tf.shape(hist_seq)[1]
                     hist_seq = tf.cond(
@@ -363,8 +365,6 @@ class RankModel(object):
                                        ),
                         lambda: tf.slice(hist_seq, [0, 0], [-1, feature_field.limit_seq_size])
                     )
-                if feature_field.seq_need_reverse:
-                    hist_seq = tf.reverse(hist_seq, [-1])
 
                 # TODO Maybe more elegant
                 hist_seq_len = tf.where(tf.math.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
