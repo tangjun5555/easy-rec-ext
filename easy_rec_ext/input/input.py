@@ -60,7 +60,7 @@ class Input(object):
     def get_type_defaults(self, field_type):
         type_defaults = {
             "int": -1,
-            "string": "",
+            "string": "-1",
             "float": 0.0,
         }
         assert field_type in type_defaults, "invalid type: %s" % field_type
@@ -132,12 +132,7 @@ class Input(object):
         parsed_dict = {}
         for fc in self._feature_config.feature_fields:
             if fc.feature_type == "SequenceFeature":
-                raw_value = tf.where(
-                    tf.math.equal(field_dict[fc.input_name], ""),
-                    tf.constant(value="-1", dtype=tf.dtypes.string, shape=tf.shape(field_dict[fc.input_name])),
-                    field_dict[fc.input_name]
-                )
-                parsed_dict[fc.feature_name] = tf.strings.split(raw_value, fc.separator)
+                parsed_dict[fc.feature_name] = tf.strings.split(field_dict[fc.input_name], fc.separator)
                 if fc.vocab_list:
                     parsed_dict[fc.feature_name] = string_ops.mapping_by_vocab_list(
                         tf.sparse.to_dense(parsed_dict[fc.feature_name]),
