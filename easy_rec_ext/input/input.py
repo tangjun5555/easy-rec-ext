@@ -135,7 +135,7 @@ class Input(object):
                 parsed_dict[fc.feature_name] = tf.strings.split(field_dict[fc.input_name], fc.separator)
                 if fc.vocab_list:
                     parsed_dict[fc.feature_name] = string_ops.mapping_by_vocab_list(
-                        tf.sparse.to_dense(parsed_dict[fc.feature_name], default_value=-1),
+                        tf.sparse.to_dense(parsed_dict[fc.feature_name], default_value="-1"),
                         fc.vocab_list)
                     continue
                 if os.environ["use_dynamic_embedding"] == "0" or (
