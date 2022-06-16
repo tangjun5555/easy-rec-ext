@@ -135,7 +135,7 @@ class Input(object):
                 parsed_dict[fc.feature_name] = tf.strings.split(field_dict[fc.input_name], fc.separator)
                 if fc.vocab_list:
                     parsed_dict[fc.feature_name] = string_ops.mapping_by_vocab_list(
-                        tf.sparse.to_dense(parsed_dict[fc.feature_name]),
+                        tf.sparse.to_dense(parsed_dict[fc.feature_name], default_value=-1),
                         fc.vocab_list)
                     continue
                 if os.environ["use_dynamic_embedding"] == "0" or (
@@ -153,7 +153,7 @@ class Input(object):
                                                 name="seq_str_2_int_%s" % fc.input_name),
                             parsed_dict[fc.feature_name].dense_shape
                         )
-                parsed_dict[fc.feature_name] = tf.sparse.to_dense(parsed_dict[fc.feature_name])
+                parsed_dict[fc.feature_name] = tf.sparse.to_dense(parsed_dict[fc.feature_name], default_value=-1)
 
             elif fc.feature_type == "RawFeature":
                 if field_dict[fc.input_name].dtype == tf.string:
@@ -161,11 +161,11 @@ class Input(object):
                         tmp_fea = tf.string_split(field_dict[fc.input_name], fc.separator)
                         tmp_vals = tf.string_to_number(tmp_fea.values, tf.float32,
                                                        name="multi_raw_fea_to_flt_%s" % fc.input_name)
-                        parsed_dict[fc.feature_name] = tf.sparse_to_dense(
+                        parsed_dict[fc.feature_name] = tf.sparse.to_dense(
                             tmp_fea.indices,
                             [tf.shape(field_dict[fc.input_name])[0], fc.raw_input_dim],
                             tmp_vals,
-                            default_value=0,
+                            default_value=0.0,
                         )
                     else:
                         parsed_dict[fc.feature_name] = tf.string_to_number(field_dict[fc.input_name], tf.float32)
