@@ -1,0 +1,462 @@
+{
+    "model_dir": "deep_v1/ckpt",
+    "train_config": {
+        "optimizer_config": {
+            "optimizer_type": "adagrad_optimizer",
+            "adagrad_optimizer": {
+                "learning_rate": {
+                    "learning_rate_type": "exponential_decay_learning_rate",
+                    "exponential_decay_learning_rate": {
+                        "initial_learning_rate": 0.1,
+                        "decay_steps": 10000,
+                        "decay_factor": 0.95,
+                        "min_learning_rate": 0.001
+                    }
+                }
+            }
+        },
+        "log_step_count_steps": 1000,
+        "save_checkpoints_steps": 10000,
+        "keep_checkpoint_max": 5
+    },
+    "eval_config": {
+        "metric_set": [
+            {
+                "name": "auc"
+            },
+            {
+                "name": "pcopc"
+            },
+            {
+                "name": "gauc",
+                "gid_field": "user.id"
+            }
+        ]
+    },
+    "export_config": {
+        "export_dir": "deep_v1/export"
+    },
+    "input_config": {
+        "input_fields": [
+            {
+                "input_name": "label",
+                "input_type": "int"
+            },
+            {
+                "input_name": "user.id",
+                "input_type": "string"
+            },
+            {
+                "input_name": "user.click_count",
+                "input_type": "float"
+            },
+            {
+                "input_name": "user.click_rate",
+                "input_type": "float"
+            },
+            {
+                "input_name": "user.avg_price",
+                "input_type": "float"
+            },
+            {
+                "input_name": "query.id",
+                "input_type": "string"
+            },
+            {
+                "input_name": "query.type",
+                "input_type": "int"
+            },
+            {
+                "input_name": "query.impression_count",
+                "input_type": "float"
+            },
+            {
+                "input_name": "query.click_count",
+                "input_type": "float"
+            },
+            {
+                "input_name": "item.id",
+                "input_type": "string"
+            },
+            {
+                "input_name": "item.type",
+                "input_type": "int"
+            },
+            {
+                "input_name": "item.sale_count",
+                "input_type": "float"
+            },
+            {
+                "input_name": "item.recall_type",
+                "input_type": "int"
+            },
+            {
+                "input_name": "item.impression_count",
+                "input_type": "float"
+            },
+            {
+                "input_name": "item.click_rate",
+                "input_type": "float"
+            },
+            {
+                "input_name": "context.deliver_time",
+                "input_type": "float"
+            },
+            {
+                "input_name": "context.deliver_distance",
+                "input_type": "float"
+            },
+            {
+                "input_name": "context.deliver_fee",
+                "input_type": "float"
+            },
+            {
+                "input_name": "location.user_geohash5",
+                "input_type": "string"
+            },
+            {
+                "input_name": "location.user_geohash6",
+                "input_type": "string"
+            },
+            {
+                "input_name": "location.item_geohash5",
+                "input_type": "string"
+            },
+            {
+                "input_name": "location.item_geohash6",
+                "input_type": "string"
+            },
+            {
+                "input_name": "location.city_id",
+                "input_type": "int"
+            },
+            {
+                "input_name": "location.user_geohash6_click_count",
+                "input_type": "float"
+            },
+            {
+                "input_name": "location.the_statistics_of_geohash_1",
+                "input_type": "float"
+            },
+            {
+                "input_name": "location.the_statistics_of_geohash_2",
+                "input_type": "float"
+            },
+            {
+                "input_name": "location.the_statistics_of_geohash_3",
+                "input_type": "float"
+            },
+            {
+                "input_name": "other.geohash5_negtive",
+                "input_type": "string"
+            },
+            {
+                "input_name": "user_behavior.user_click_item_id_seq",
+                "input_type": "string"
+            },
+            {
+                "input_name": "user_behavior.user_click_item_type_seq",
+                "input_type": "string"
+            },
+            {
+                "input_name": "user_behavior.user_click_item_geohash6_seq",
+                "input_type": "string"
+            }
+        ],
+        "label_fields": [
+            "label"
+        ],
+        "input_type": "csv",
+        "input_separator": "\t",
+        "num_epochs": 2,
+        "batch_size": 256
+    },
+    "feature_config": {
+        "feature_fields": [
+            {
+                "input_name": "user.id",
+                "feature_type": "IdFeature",
+                "embedding_dim": 16,
+                "hash_bucket_size": 100000
+            },
+            {
+                "input_name": "user.click_count",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1,
+                "raw_input_embedding_type": "field_embedding"
+            },
+            {
+                "input_name": "user.click_rate",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1,
+                "raw_input_embedding_type": "field_embedding",
+                "embedding_dim": 8
+            },
+            {
+                "input_name": "user.avg_price",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1,
+                "raw_input_embedding_type": "field_embedding",
+                "embedding_dim": 8
+            },
+            {
+                "input_name": "query.id",
+                "feature_type": "IdFeature",
+                "embedding_dim": 16,
+                "hash_bucket_size": 100000
+            },
+            {
+                "input_name": "query.type",
+                "feature_type": "IdFeature",
+                "embedding_dim": 16,
+                "num_buckets": 1000
+            },
+            {
+                "input_name": "query.impression_count",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1,
+                "raw_input_embedding_type": "field_embedding",
+                "embedding_dim": 8
+            },
+            {
+                "input_name": "query.click_count",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1,
+                "raw_input_embedding_type": "field_embedding",
+                "embedding_dim": 8
+            },
+            {
+                "input_name": "item.id",
+                "feature_type": "IdFeature",
+                "embedding_dim": 16,
+                "hash_bucket_size": 100000
+            },
+            {
+                "input_name": "item.type",
+                "feature_type": "IdFeature",
+                "embedding_dim": 16,
+                "num_buckets": 1000
+            },
+            {
+                "input_name": "item.sale_count",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1,
+                "raw_input_embedding_type": "field_embedding",
+                "embedding_dim": 8
+            },
+            {
+                "input_name": "item.recall_type",
+                "feature_type": "IdFeature",
+                "embedding_dim": 16,
+                "num_buckets": 100
+            },
+            {
+                "input_name": "item.impression_count",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1,
+                "raw_input_embedding_type": "field_embedding",
+                "embedding_dim": 8
+            },
+            {
+                "input_name": "item.click_rate",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1,
+                "raw_input_embedding_type": "field_embedding",
+                "embedding_dim": 8
+            },
+            {
+                "input_name": "context.deliver_time",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1,
+                "raw_input_embedding_type": "field_embedding",
+                "embedding_dim": 8
+            },
+            {
+                "input_name": "context.deliver_distance",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1,
+                "raw_input_embedding_type": "field_embedding",
+                "embedding_dim": 8
+            },
+            {
+                "input_name": "context.deliver_fee",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1,
+                "raw_input_embedding_type": "field_embedding",
+                "embedding_dim": 8
+            },
+            {
+                "input_name": "location.user_geohash5",
+                "feature_type": "IdFeature",
+                "embedding_dim": 16,
+                "hash_bucket_size": 100000
+            },
+            {
+                "input_name": "location.user_geohash6",
+                "feature_type": "IdFeature",
+                "embedding_dim": 16,
+                "hash_bucket_size": 100000
+            },
+            {
+                "input_name": "location.item_geohash5",
+                "feature_type": "IdFeature",
+                "embedding_dim": 16,
+                "hash_bucket_size": 100000
+            },
+            {
+                "input_name": "location.item_geohash6",
+                "feature_type": "IdFeature",
+                "embedding_dim": 16,
+                "hash_bucket_size": 100000
+            },
+            {
+                "input_name": "location.city_id",
+                "feature_type": "IdFeature",
+                "embedding_dim": 16,
+                "hash_bucket_size": 100000
+            },
+            {
+                "input_name": "location.user_geohash6_click_count",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1,
+                "raw_input_embedding_type": "field_embedding",
+                "embedding_dim": 8
+            },
+            {
+                "input_name": "location.the_statistics_of_geohash_1",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1,
+                "raw_input_embedding_type": "field_embedding",
+                "embedding_dim": 8
+            },
+            {
+                "input_name": "location.the_statistics_of_geohash_2",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1,
+                "raw_input_embedding_type": "field_embedding",
+                "embedding_dim": 8
+            },
+            {
+                "input_name": "location.the_statistics_of_geohash_3",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1,
+                "raw_input_embedding_type": "field_embedding",
+                "embedding_dim": 8
+            },
+            {
+                "input_name": "other.geohash5_negtive",
+                "feature_type": "IdFeature",
+                "embedding_dim": 16,
+                "hash_bucket_size": 100000
+            },
+            {
+                "input_name": "user_behavior.user_click_item_id_seq",
+                "feature_type": "SequenceFeature",
+                "separator": ",",
+                "embedding_dim": 16,
+                "hash_bucket_size": 100000
+            },
+            {
+                "input_name": "user_behavior.user_click_item_type_seq",
+                "feature_type": "SequenceFeature",
+                "separator": ",",
+                "embedding_dim": 16,
+                "num_buckets": 1000
+            },
+            {
+                "input_name": "user_behavior.user_click_item_geohash6_seq",
+                "feature_type": "SequenceFeature",
+                "separator": ",",
+                "embedding_dim": 16,
+                "hash_bucket_size": 100000
+            }
+        ]
+    },
+    "model_config": {
+        "model_class": "multi_tower",
+        "feature_groups": [
+            {
+                "group_name": "deep_1",
+                "feature_names": [
+                    "user.id",
+                    "user.click_count",
+                    "user.click_rate",
+                    "user.avg_price",
+                    "query.id",
+                    "query.type",
+                    "query.impression_count",
+                    "query.click_count",
+                    "item.id",
+                    "item.type",
+                    "item.sale_count",
+                    "item.recall_type",
+                    "item.impression_count",
+                    "item.click_rate",
+                    "context.deliver_time",
+                    "context.deliver_distance",
+                    "context.deliver_fee",
+                    "location.user_geohash5",
+                    "location.user_geohash6",
+                    "location.item_geohash5",
+                    "location.item_geohash6",
+                    "location.city_id",
+                    "location.user_geohash6_click_count",
+                    "location.the_statistics_of_geohash_1",
+                    "location.the_statistics_of_geohash_2",
+                    "location.the_statistics_of_geohash_3",
+                    "other.geohash5_negtive"
+                ]
+            },
+            {
+                "group_name": "seq_1",
+                "seq_att_map_list": [
+                    {
+                        "key": "item.id",
+                        "hist_seq": "user_behavior.user_click_item_id_seq"
+                    },
+                    {
+                        "key": "item.type",
+                        "hist_seq": "user_behavior.user_click_item_type_seq"
+                    },
+                    {
+                        "key": "location.item_geohash6",
+                        "hist_seq": "user_behavior.user_click_item_geohash6_seq"
+                    }
+                ]
+            }
+        ],
+        "dnn_towers": [
+            {
+                "input_group": "deep_1",
+                "dnn_config": {
+                    "hidden_units": [
+                        300,
+                        200,
+                        100
+                    ]
+                }
+            }
+        ],
+        "din_towers": [
+            {
+                "input_group": "seq_1",
+                "din_config": {
+                    "dnn_config": {
+                        "hidden_units": [
+                            64,
+                            32,
+                            1
+                        ]
+                    }
+                }
+            }
+        ],
+        "final_dnn": {
+            "hidden_units": [
+                300,
+                200,
+                100
+            ]
+        }
+    }
+}
