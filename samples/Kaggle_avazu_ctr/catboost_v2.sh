@@ -2,7 +2,7 @@
 
 # logloss:0.4080213942	auc:0.7262751619
 rm -rf catboost_v2
-catboost fit \
+catboost-1.0.6/catboost/app/catboost fit \
   --used-ram-limit=8gb \
   --thread-count=4 \
   --logging-level=Debug \
