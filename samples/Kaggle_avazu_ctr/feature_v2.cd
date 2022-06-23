@@ -3,14 +3,14 @@
 2	Auxiliary
 3	Categ	C1
 4	Categ	banner_pos
-5	Auxiliary	site_id
+5	Categ	site_id
 6	Categ	site_domain
 7	Categ	site_category
-8	Auxiliary	app_id
+8	Categ	app_id
 9	Categ	app_domain
 10	Categ	app_category
-11	Auxiliary	device_id
-12	Auxiliary	device_ip
+11	Categ	device_id
+12	Categ	device_ip
 13	Categ	device_model
 14	Categ	device_type
 15	Categ	device_conn_type
