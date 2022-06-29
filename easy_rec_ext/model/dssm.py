@@ -58,57 +58,11 @@ class DSSMModel(object):
         fea_norm = tf.nn.l2_normalize(fea, axis=1)
         return fea_norm
 
-    def point_wise_sim(self, user_emb, item_emb):
+    def sim(self, user_emb, item_emb):
         user_item_sim = tf.reduce_sum(
             tf.multiply(user_emb, item_emb), axis=1, keep_dims=True
         )
         return user_item_sim
-
-    def list_wise_sim(self, user_emb, item_emb, hard_neg_indices=None):
-        batch_size = tf.shape(user_emb)[0]
-
-        if hard_neg_indices is not None:
-            logging.info("%s list_wise_sim with hard negative examples" % (filename))
-            noclk_size = tf.shape(hard_neg_indices)[0]
-            pos_item_emb, neg_item_emb, hard_neg_item_emb = tf.split(
-                item_emb, [batch_size, -1, noclk_size], axis=0,
-            )
-        else:
-            pos_item_emb = item_emb[:batch_size]
-            neg_item_emb = item_emb[batch_size:]
-
-        pos_user_item_sim = tf.reduce_sum(
-            tf.multiply(user_emb, pos_item_emb), axis=1, keep_dims=True
-        )
-        neg_user_item_sim = tf.matmul(user_emb, tf.transpose(neg_item_emb))
-
-        if hard_neg_indices is not None:
-            user_emb_expand = tf.gather(user_emb, hard_neg_indices[:, 0])
-            hard_neg_user_item_sim = tf.reduce_sum(
-                tf.multiply(user_emb_expand, hard_neg_item_emb), axis=1
-            )
-            # scatter hard negatives sim update neg_user_item_sim
-            neg_sim_shape = tf.shape(neg_user_item_sim, out_type=tf.int64)
-            hard_neg_mask = tf.scatter_nd(
-                hard_neg_indices,
-                tf.ones_like(hard_neg_user_item_sim, dtype=tf.bool),
-                shape=neg_sim_shape
-            )
-            hard_neg_user_item_sim = tf.scatter_nd(
-                hard_neg_indices, hard_neg_user_item_sim, shape=neg_sim_shape
-            )
-            neg_user_item_sim = tf.where(
-                hard_neg_mask, x=hard_neg_user_item_sim, y=neg_user_item_sim
-            )
-
-        user_item_sim = tf.concat([pos_user_item_sim, neg_user_item_sim], axis=1)
-        return user_item_sim
-
-    def sim(self, user_emb, item_emb, is_point_wise=True):
-        if is_point_wise:
-            return self.point_wise_sim(user_emb, item_emb)
-        else:
-            return self.list_wise_sim(user_emb, item_emb)
 
 
 class DSSM(MatchModel, DSSMModel):
@@ -165,7 +119,7 @@ class DSSM(MatchModel, DSSMModel):
                 item_emb_fea_list.append(tower_fea)
             else:
                 print("tower.input_group:%s not in user or item input groups" % tower.input_group)
-            logging.info("DSSM user_emb_fea_list add input_group:%s" % tower.input_group)
+            logging.info("DSSM add input_group:%s" % tower.input_group)
 
         for tower_id in range(self._seq_pooling_tower_num):
             tower = self._model_config.seq_pooling_towers[tower_id]
@@ -176,7 +130,18 @@ class DSSM(MatchModel, DSSMModel):
                 item_emb_fea_list.append(tower_fea)
             else:
                 print("tower.input_group:%s not in user or item input groups" % tower.input_group)
-            logging.info("DSSM user_emb_fea_list add input_group:%s" % tower.input_group)
+            logging.info("DSSM add input_group:%s" % tower.input_group)
+
+        for tower_id in range(self._din_tower_num):
+            tower = self._model_config.din_towers[tower_id]
+            tower_fea = self.build_tower_fea(tower)
+            if tower.input_group in dssm_model_config.user_input_groups:
+                user_emb_fea_list.append(tower_fea)
+            elif tower.input_group in dssm_model_config.item_input_groups:
+                item_emb_fea_list.append(tower_fea)
+            else:
+                print("tower.input_group:%s not in user or item input groups" % tower.input_group)
+            logging.info("DSSM add input_group:%s" % tower.input_group)
 
         user_emb_fea = tf.concat(user_emb_fea_list, axis=1)
         item_emb_fea = tf.concat(item_emb_fea_list, axis=1)
