@@ -246,9 +246,12 @@ class DSSM(MatchModel, DSSMModel):
     def build_tower_fea(self, tower, variable_scope=None):
         variable_scope = variable_scope if variable_scope else "tower"
         tower_name = tower.input_group
-        dnn_tower_names = [x.input_group for x in self._model_config.dnn_towers]
-        seq_pooling_tower_names = [x.input_group for x in self._model_config.seq_pooling_towers]
-        din_tower_names = [x.input_group for x in self._model_config.din_towers]
+        dnn_tower_names = [x.input_group for x in
+                           self._model_config.dnn_towers] if self._model_config.dnn_towers else []
+        seq_pooling_tower_names = [x.input_group for x in
+                                   self._model_config.seq_pooling_towers] if self._model_config.seq_pooling_towers else []
+        din_tower_names = [x.input_group for x in
+                           self._model_config.din_towers] if self._model_config.din_towers else []
         if tower_name in dnn_tower_names:
             tower_id = dnn_tower_names.index(tower_name)
             tower_fea = self._dnn_tower_features[tower_id]
