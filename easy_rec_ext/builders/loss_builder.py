@@ -181,8 +181,8 @@ def build_inbatch_neg_softmax_loss(query_encoder, doc_encoder, loss_config):
         ss = tf.gather(doc_encoder, tf.random.shuffle(tf.range(tf.shape(doc_encoder)[0]), seed=555))
         doc_encoder_fd = tf.concat([doc_encoder_fd, ss], axis=0)
     query_encoder_fd = tf.tile(query_encoder, [loss_config.neg_num + 1, 1])
-    logging.info("%s build_inbatch_neg_softmax_loss, query_encoder_fd.shape:%s, doc_encoder_fd.shape" %
-                 (filename, str(tf.shape(query_encoder_fd), str(tf.shape(doc_encoder_fd))))
+    logging.info("%s build_inbatch_neg_softmax_loss, query_encoder_fd.shape:%s, doc_encoder_fd.shape:%s" %
+                 (filename, str(tf.shape(query_encoder_fd)), str(tf.shape(doc_encoder_fd)))
                  )
 
     similarity = tf.reduce_sum(
