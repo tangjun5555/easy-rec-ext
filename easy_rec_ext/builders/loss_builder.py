@@ -149,3 +149,54 @@ def build_kd_loss(kds, prediction_dict, label_dict):
             assert False, "unsupported loss type for kd: %s" % LossType.Name(
                 kd.loss_type)
     return loss_dict
+
+
+class InBatchNegSoftmaxLossConfig(object):
+    def __init__(self, neg_num=10, temperature=1.0
+                 ):
+        self.neg_num = neg_num
+        self.temperature = temperature
+
+    @staticmethod
+    def handle(data):
+        res = InBatchNegSoftmaxLossConfig
+        if "neg_num" in data:
+            res.neg_num = data["neg_num"]
+        if "temperature" in data:
+            res.temperature = data["temperature"]
+        return res
+
+
+def build_inbatch_neg_softmax_loss(query_encoder, doc_encoder, loss_config):
+    """
+    Args:
+        query_encoder: (batch_size, dim)
+        doc_encoder: (batch_size, dim)
+        loss_config: InBatchNegSoftmaxLossConfig
+    Returns:
+        loss
+    """
+    doc_encoder_fd = doc_encoder
+    for i in range(loss_config.neg_num):
+        ss = tf.gather(doc_encoder, tf.random.shuffle(tf.range(tf.shape(doc_encoder)[0]), seed=555))
+        doc_encoder_fd = tf.concat([doc_encoder_fd, ss], axis=0)
+    query_encoder_fd = tf.tile(query_encoder, [loss_config.neg_num + 1, 1])
+    logging.info("%s build_inbatch_neg_softmax_loss, query_encoder_fd.shape:%s, doc_encoder_fd.shape" %
+                 (filename, str(tf.shape(query_encoder_fd), str(tf.shape(doc_encoder_fd))))
+                 )
+
+    similarity = tf.reduce_sum(
+        tf.multiply(query_encoder_fd, doc_encoder_fd),
+        axis=1,
+        keepdims=True,
+    )
+    similarity = tf.transpose(tf.reshape(tf.transpose(similarity), [loss_config.neg_num + 1, -1]))
+    logging.info("%s build_inbatch_neg_softmax_loss, similarity.shape:%s" %
+                 (filename, str(tf.shape(similarity)))
+                 )
+
+    prob = tf.exp(similarity / loss_config.temperature) / tf.reduce_sum(tf.exp(similarity / loss_config.temperature),
+                                                                        axis=1, keepdims=True)
+    pos_prob = tf.slice(prob, [0, 0], [-1, 1])
+    loss = -tf.reduce_mean(tf.math.log(pos_prob))
+    return loss

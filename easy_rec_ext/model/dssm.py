@@ -8,7 +8,9 @@ import logging
 from typing import List
 import tensorflow as tf
 from easy_rec_ext.core import regularizers
-from easy_rec_ext.builders.loss_builder import KnowledgeDistillation, build_kd_loss, LossType
+from easy_rec_ext.builders.loss_builder import LossType
+from easy_rec_ext.builders.loss_builder import KnowledgeDistillation, build_kd_loss
+from easy_rec_ext.builders.loss_builder import InBatchNegSoftmaxLossConfig, build_inbatch_neg_softmax_loss
 from easy_rec_ext.layers import dnn
 from easy_rec_ext.layers import sequence_pooling
 from easy_rec_ext.model.din import DINLayer
@@ -24,6 +26,7 @@ class DSSMModelConfig(object):
                  user_input_groups: List[str], item_input_groups: List[str],
                  user_field: str = None, item_field: str = None,
                  scale_sim: bool = True,
+                 inbatch_loss_config: InBatchNegSoftmaxLossConfig = None,
                  kd: KnowledgeDistillation = None,
                  ):
         self.user_input_groups = user_input_groups
@@ -33,7 +36,7 @@ class DSSMModelConfig(object):
         self.item_field = item_field
 
         self.scale_sim = scale_sim
-
+        self.inbatch_loss_config = inbatch_loss_config
         self.kd = kd
 
     @staticmethod
@@ -45,6 +48,8 @@ class DSSMModelConfig(object):
             res.item_field = data["item_field"]
         if "scale_sim" in data:
             res.scale_sim = data["scale_sim"]
+        if "inbatch_loss_config" in data:
+            res.inbatch_loss_config = InBatchNegSoftmaxLossConfig.handle(data["inbatch_loss_config"])
         if "kd" in data:
             res.kd = KnowledgeDistillation.handle(data["kd"])
         return res
@@ -99,7 +104,8 @@ class DSSM(MatchModel, DSSMModel):
             regularizers.apply_regularization(self._emb_reg, weights_list=[tower_feature["hist_seq_emb"]])
             self._din_tower_features.append(tower_feature)
 
-        logging.info("%s all tower num:%d" % (filename, self._dnn_tower_num + self._seq_pooling_tower_num + self._din_tower_num))
+        logging.info(
+            "%s all tower num:%d" % (filename, self._dnn_tower_num + self._seq_pooling_tower_num + self._din_tower_num))
         logging.info("%s dnn tower num:%d" % (filename, self._dnn_tower_num))
         logging.info("%s seq_pooling tower num:%d" % (filename, self._seq_pooling_tower_num))
         logging.info("%s din tower num:%d" % (filename, self._din_tower_num))
@@ -172,7 +178,7 @@ class DSSM(MatchModel, DSSMModel):
         item_emb = self.norm(item_emb)
         user_item_sim = self.sim(user_emb, item_emb)
 
-        if dssm_model_config.scale_sim:
+        if dssm_model_config.scale_sim and not dssm_model_config.inbatch_loss_config:
             sim_w = tf.get_variable(
                 "dssm/scale_sim_w",
                 dtype=tf.float32,
@@ -190,6 +196,7 @@ class DSSM(MatchModel, DSSMModel):
             user_item_sim = tf.matmul(user_item_sim, tf.abs(sim_w)) + sim_b
 
         self._prediction_dict["logits"] = tf.reshape(user_item_sim, (-1,), name="logits")
+
         if dssm_model_config.kd:
             tower_fea_list = []
             variable_scope = "kd"
@@ -289,11 +296,18 @@ class DSSM(MatchModel, DSSMModel):
     def build_loss_graph(self):
         dssm_model_config = self._model_config.dssm_model_config
         self.build_reg_loss()
-        self._loss_dict["cross_entropy_loss"] = tf.losses.log_loss(
-            labels=self._labels[self._label_name],
-            predictions=self._prediction_dict["probs"],
-            weights=tf.reshape(self._sample_weight, (-1,)),
-        )
+        if dssm_model_config.inbatch_loss_config:
+            self._loss_dict["cross_entropy_loss"] = build_inbatch_neg_softmax_loss(
+                self._prediction_dict["user_vector"],
+                self._prediction_dict["item_vector"],
+                dssm_model_config.inbatch_loss_config,
+            )
+        else:
+            self._loss_dict["cross_entropy_loss"] = tf.losses.log_loss(
+                labels=self._labels[self._label_name],
+                predictions=self._prediction_dict["probs"],
+                weights=tf.reshape(self._sample_weight, (-1,)),
+            )
         # build kd loss
         if dssm_model_config.kd:
             assert dssm_model_config.kd.pred_name == "logits"
