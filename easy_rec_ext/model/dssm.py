@@ -300,7 +300,7 @@ class DSSM(MatchModel, DSSMModel):
         dssm_model_config = self._model_config.dssm_model_config
         self.build_reg_loss()
         if dssm_model_config.inbatch_loss_config:
-            self._loss_dict["cross_entropy_loss"] = build_inbatch_neg_softmax_loss(
+            self._loss_dict["neg_softmax_loss"] = build_inbatch_neg_softmax_loss(
                 self._prediction_dict["user_vector"],
                 self._prediction_dict["item_vector"],
                 dssm_model_config.inbatch_loss_config,
