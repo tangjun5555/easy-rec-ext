@@ -1,0 +1,222 @@
+{
+    "model_dir": "deep_v1/ckpt",
+    "train_config": {
+        "optimizer_config": {
+            "optimizer_type": "adagrad_optimizer",
+            "adagrad_optimizer": {
+                "learning_rate": {
+                    "learning_rate_type": "exponential_decay_learning_rate",
+                    "exponential_decay_learning_rate": {
+                        "initial_learning_rate": 0.1,
+                        "decay_steps": 10000,
+                        "decay_factor": 0.95,
+                        "min_learning_rate": 0.001
+                    }
+                }
+            }
+        },
+        "log_step_count_steps": 1000,
+        "save_checkpoints_steps": 10000,
+        "keep_checkpoint_max": 5
+    },
+    "eval_config": {
+        "metric_set": [
+            {
+                "name": "auc"
+            },
+            {
+                "name": "pcopc"
+            },
+            {
+                "name": "gauc",
+                "gid_field": "user.id"
+            }
+        ]
+    },
+    "export_config": {
+        "export_dir": "deep_v1/export"
+    },
+    "input_config": {
+        "input_fields": [
+            {
+                "input_name": "label",
+                "input_type": "int"
+            },
+            {
+                "input_name": "user.id",
+                "input_type": "int"
+            },
+            {
+                "input_name": "user.hist_item_ids",
+                "input_type": "string"
+            },
+            {
+                "input_name": "user.hist_item_cate_ids",
+                "input_type": "string"
+            },
+            {
+                "input_name": "user.hist_behavior_type_list",
+                "input_type": "string"
+            },
+            {
+                "input_name": "user.hist_behavior_time_diff_list",
+                "input_type": "string"
+            },
+            {
+                "input_name": "user.hist_behavior_time_rank_list",
+                "input_type": "string"
+            },
+            {
+                "input_name": "item.id",
+                "input_type": "int"
+            },
+            {
+                "input_name": "item.cate_id",
+                "input_type": "string"
+            }
+        ],
+        "label_fields": [
+            "label"
+        ],
+        "input_type": "csv",
+        "input_separator": ",",
+        "num_epochs": 2,
+        "batch_size": 256
+    },
+    "feature_config": {
+        "feature_fields": [
+            {
+                "input_name": "user.id",
+                "feature_type": "IdFeature",
+                "embedding_dim": 16,
+                "num_buckets": 1100000
+            },
+            {
+                "input_name": "user.hist_item_ids",
+                "feature_type": "SequenceFeature",
+                "num_buckets": 6000000,
+                "embedding_dim": 16,
+                "limit_seq_size": 50
+            },
+            {
+                "input_name": "user.hist_item_cate_ids",
+                "feature_type": "SequenceFeature",
+                "hash_bucket_size": 20000,
+                "embedding_dim": 16,
+                "limit_seq_size": 50
+            },
+            {
+                "input_name": "user.hist_behavior_type_list",
+                "feature_type": "SequenceFeature",
+                "num_buckets": 10,
+                "embedding_dim": 16,
+                "limit_seq_size": 50
+            },
+            {
+                "input_name": "user.hist_behavior_time_diff_list",
+                "feature_type": "SequenceFeature",
+                "num_buckets": 20,
+                "embedding_dim": 16,
+                "limit_seq_size": 50
+            },
+            {
+                "input_name": "user.hist_behavior_time_rank_list",
+                "feature_type": "SequenceFeature",
+                "num_buckets": 60,
+                "embedding_dim": 16,
+                "limit_seq_size": 50
+            },
+            {
+                "input_name": "item.id",
+                "feature_type": "IdFeature",
+                "num_buckets": 6000000,
+                "embedding_dim": 16
+            },
+            {
+                "input_name": "item.cate_id",
+                "feature_type": "IdFeature",
+                "hash_bucket_size": 20000,
+                "embedding_dim": 16
+            }
+        ]
+    },
+    "model_config": {
+        "model_class": "dssm",
+        "dssm_model_config": {
+            "user_input_groups": [
+                "user_deep",
+                "seq_1"
+            ],
+            "item_input_groups": [
+                "item_deep"
+            ],
+            "inbatch_loss_config": {
+                "neg_num": 10,
+                "temperature": 0.5
+            }
+        },
+        "feature_groups": [
+            {
+                "group_name": "user_deep",
+                "feature_names": [
+                    "user.id"
+                ]
+            },
+            {
+                "group_name": "seq_1",
+                "feature_names": [
+                    "user.hist_item_ids",
+                    "user.hist_item_cate_ids",
+                    "user.hist_behavior_type_list",
+                    "user.hist_behavior_time_diff_list",
+                    "user.hist_behavior_time_rank_list"
+                ]
+            },
+            {
+                "group_name": "item_deep",
+                "feature_names": [
+                    "item.id",
+                    "item.cate_id"
+                ]
+            }
+        ],
+        "dnn_towers": [
+            {
+                "input_group": "user_deep",
+                "dnn_config": {
+                    "hidden_units": [
+                        100
+                    ]
+                }
+            },
+            {
+                "input_group": "item_deep",
+                "dnn_config": {
+                    "hidden_units": [
+                        100
+                    ]
+                }
+            }
+        ],
+        "seq_pooling_towers": [
+            {
+                "input_group": "seq_1",
+                "sequence_pooling_config": {
+                    "mode": "self_att",
+                    "self_att_config": {
+                        "head_num": 2,
+                        "head_size": 32,
+                        "feature_num": 50,
+                        "use_res": true
+                    }
+                }
+            }
+        ],
+        "final_dnn": {
+            "hidden_units": [
+                200,
+                100
+            ]
+        }
+    }
+}
