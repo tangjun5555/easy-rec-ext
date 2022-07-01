@@ -13,12 +13,14 @@ echo "完成构建全库物品特征"
 python process_raw_data.py --input_path=${easy_rec_ext_data_dir}/UserBehavior.csv --output_dir=${easy_rec_ext_data_dir} --seq_max_length=50
 echo "完成构建训练样本"
 
-head -n 10000 ${easy_rec_ext_data_dir}/sample_20171203.csv > ${easy_rec_ext_data_dir}/sample_20171203_1w.csv
-python -m easy_rec_ext.main --pipeline_config_path=deep_v1.json --task_type=train_and_evaluate \
-  --train_input_path=${easy_rec_ext_data_dir}/sample_20171201.csv \
-  --eval_input_path=${easy_rec_ext_data_dir}/sample_20171203_1w.csv
+tail -n 10000 ${easy_rec_ext_data_dir}/sample_20171203.csv > ${easy_rec_ext_data_dir}/sample_20171203_1w.csv
+tail -n 1000000 ${easy_rec_ext_data_dir}/sample_20171203.csv > ${easy_rec_ext_data_dir}/sample_20171203_eval.csv
+head -n 5837894 ${easy_rec_ext_data_dir}/sample_20171203.csv > ${easy_rec_ext_data_dir}/sample_20171203_train.csv
 python -m easy_rec_ext.main --pipeline_config_path=deep_v1.json --task_type=train_and_evaluate \
   --train_input_path=${easy_rec_ext_data_dir}/sample_20171202.csv \
+  --eval_input_path=${easy_rec_ext_data_dir}/sample_20171203_1w.csv
+python -m easy_rec_ext.main --pipeline_config_path=deep_v1.json --task_type=train_and_evaluate \
+  --train_input_path=${easy_rec_ext_data_dir}/sample_20171203_train.csv \
   --eval_input_path=${easy_rec_ext_data_dir}/sample_20171203_1w.csv
 echo "完成模型训练"
 

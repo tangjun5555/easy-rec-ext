@@ -9,7 +9,7 @@
                     "exponential_decay_learning_rate": {
                         "initial_learning_rate": 0.1,
                         "decay_steps": 10000,
-                        "decay_factor": 0.95,
+                        "decay_factor": 0.90,
                         "min_learning_rate": 0.001
                     }
                 }
@@ -81,7 +81,7 @@
         "input_type": "csv",
         "input_separator": ",",
         "num_epochs": 2,
-        "batch_size": 512
+        "batch_size": 256
     },
     "feature_config": {
         "feature_fields": [

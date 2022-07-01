@@ -88,7 +88,8 @@ def build_item_feature(current_behavior):
 dts = [
     # "20171125", "20171126", "20171127", "20171128",
     # "20171129", "20171130",
-    "20171201", "20171202", "20171203"
+    # "20171201",
+    "20171202", "20171203"
 ]
 if args.output_suffix:
     dt_output_list = [open("%s/sample_%s_%s.csv" % (args.output_dir, args.output_suffix, dt), mode="w") for dt in dts]
