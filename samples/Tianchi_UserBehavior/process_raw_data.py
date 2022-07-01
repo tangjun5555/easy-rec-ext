@@ -17,7 +17,7 @@ print("Run params:" + str(args))
 behavior_type_enum = ["pv", "buy", "cart", "fav"]
 
 
-def build_user_feature(current_behavior, history_behavior_list):
+def build_user_feature(user_id, current_behavior, history_behavior_list):
     hist_item_ids = []
     hist_item_cate_ids = []
     hist_behavior_type_list = []
@@ -65,6 +65,7 @@ def build_user_feature(current_behavior, history_behavior_list):
     #     hist_behavior_time_diff_list.append(str(-1))
     #     hist_behavior_time_rank_list.append(str(len(hist_behavior_time_rank_list) + 1))
     return ",".join([
+        user_id,
         "|".join(hist_item_ids),
         "|".join(hist_item_cate_ids),
         "|".join(hist_behavior_type_list),
@@ -78,7 +79,8 @@ def build_item_feature(current_behavior):
 
 
 dts = [
-    "20171125", "20171126", "20171127", "20171128", "20171129", "20171130",
+    # "20171125", "20171126", "20171127", "20171128",
+    # "20171129", "20171130",
     "20171201", "20171202", "20171203"
 ]
 if args.output_suffix:
@@ -104,7 +106,6 @@ with open(args.input_path, mode="r") as f:
         current_behavior = split[1:]
         if user_seq_list:
             assert int(current_behavior[3]) >= int(user_seq_list[0][3]), str(current_behavior) + str(user_seq_list[0])
-
         try:
             current_dt = time.strftime("%Y%m%d", time.localtime(int(current_behavior[3])))
         except Exception as e:
@@ -119,13 +120,12 @@ with open(args.input_path, mode="r") as f:
         else:
             dt_output_list[dts.index(current_dt)] \
                 .write(
-                ",".join([str(1), user_id,
-                          build_user_feature(current_behavior, user_seq_list),
+                ",".join([str(1),
+                          build_user_feature(user_id, current_behavior, user_seq_list),
                           build_item_feature(current_behavior),
                           ])
                 + "\n"
             )
-
         user_seq_list.insert(0, current_behavior)
 
 for i in range(len(dts)):

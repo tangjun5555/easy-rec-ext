@@ -35,7 +35,7 @@ class Processor(object):
         )
         input_tensor = self.sess.graph.get_tensor_by_name("features:0")
         output_tensor = self.sess.graph.get_tensor_by_name("user_vector:0")
-        return list(self.sess.run(output_tensor, feed_dict={input_tensor: features}))
+        return list(self.sess.run(output_tensor, feed_dict={input_tensor: features}))[0]
 
     def build_item_vectors(self, item_fea_list):
         features = np.array(
@@ -61,6 +61,7 @@ class Processor(object):
                     for vector in batch_item_vectors:
                         annoy_index.add_item(i, vector)
                         i += 1
+                    print(i, vector)
                     batch_fea_input = []
             if batch_fea_input:
                 batch_item_vectors = self.build_item_vectors(batch_fea_input)
@@ -68,7 +69,7 @@ class Processor(object):
                     annoy_index.add_item(i, vector)
                     i += 1
                 batch_fea_input = []
-        annoy_index.build(100)
+        annoy_index.build(20)
         self.all_item_ids = all_item_ids
         self.annoy_index = annoy_index
         print("%s构建索引" % time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
@@ -80,7 +81,7 @@ class Processor(object):
         self.build_annoy_index()
 
     def search_recall_items(self, user_vector, recall_num):
-        ids, scores = self.annoy_index.get_nns_by_vector(user_vector, recall_num)
+        ids, scores = self.annoy_index.get_nns_by_vector(user_vector, recall_num, include_distances=True)
         res = [self.all_item_ids[i] for i in ids]
         return res
 
