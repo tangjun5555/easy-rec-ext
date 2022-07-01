@@ -109,7 +109,7 @@ if __name__ == "__main__":
                 max(topks),
             )
             if sample_num % 1000 == 0:
-                print(line, labels, preds)
+                print(sample_num, line, labels, preds)
             for i in range(len(topks)):
                 recall_rates[i] += recall_at_k(labels, preds[:topks[i]])
     print("评估样本数量:", sample_num)

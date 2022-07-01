@@ -23,6 +23,7 @@ def build_user_feature(user_id, current_behavior, history_behavior_list):
     hist_behavior_type_list = []
     hist_behavior_time_diff_list = []
     hist_behavior_time_rank_list = []
+
     if not history_behavior_list:
         history_behavior_list = []
     history_behavior_list = history_behavior_list[:args.seq_max_length]
@@ -64,6 +65,12 @@ def build_user_feature(user_id, current_behavior, history_behavior_list):
     #     hist_behavior_type_list.append(str(-1))
     #     hist_behavior_time_diff_list.append(str(-1))
     #     hist_behavior_time_rank_list.append(str(len(hist_behavior_time_rank_list) + 1))
+    if not hist_item_ids:
+        hist_item_ids = [str(-1)]
+        hist_item_cate_ids = [str(-1)]
+        hist_behavior_type_list = [str(-1)]
+        hist_behavior_time_diff_list = [str(-1)]
+        hist_behavior_time_rank_list = [str(-1)]
     return ",".join([
         user_id,
         "|".join(hist_item_ids),
