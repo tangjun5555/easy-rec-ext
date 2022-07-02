@@ -104,12 +104,15 @@ if __name__ == "__main__":
             sample_num += 1
             split = line.strip().split(",")
             labels = [split[-2]]
+            user_vector = processor.build_user_vector(",".join(split[1:-2]))
             preds = processor.search_recall_items(
-                processor.build_user_vector(",".join(split[1:-2])),
+                user_vector,
                 max(topks),
             )
             if sample_num % 1000 == 0:
-                print(sample_num, line, labels, preds)
+                print(sample_num, line)
+                print(labels, preds)
+                print(user_vector)
             for i in range(len(topks)):
                 recall_rates[i] += recall_at_k(labels, preds[:topks[i]])
     print("评估样本数量:", sample_num)

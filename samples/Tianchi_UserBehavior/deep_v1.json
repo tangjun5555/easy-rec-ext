@@ -152,7 +152,7 @@
             ],
             "inbatch_loss_config": {
                 "neg_num": 10,
-                "temperature": 0.5
+                "temperature": 0.1
             }
         },
         "feature_groups": [
