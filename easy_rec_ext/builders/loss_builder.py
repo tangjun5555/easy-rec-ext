@@ -152,7 +152,7 @@ def build_kd_loss(kds, prediction_dict, label_dict):
 
 
 class InBatchNegSoftmaxLossConfig(object):
-    def __init__(self, neg_num=10, temperature=1.0
+    def __init__(self, neg_num=10, temperature=0.1,
                  ):
         self.neg_num = neg_num
         self.temperature = temperature

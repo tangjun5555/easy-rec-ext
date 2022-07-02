@@ -25,7 +25,7 @@ class DSSMModelConfig(object):
     def __init__(self,
                  user_input_groups: List[str], item_input_groups: List[str],
                  user_field: str = None, item_field: str = None,
-                 scale_sim: bool = True,
+                 scale_sim: bool = True, temperature: float = 0.0,
                  inbatch_loss_config: InBatchNegSoftmaxLossConfig = None,
                  kd: KnowledgeDistillation = None,
                  ):
@@ -36,6 +36,8 @@ class DSSMModelConfig(object):
         self.item_field = item_field
 
         self.scale_sim = scale_sim
+        self.temperature = temperature
+
         self.inbatch_loss_config = inbatch_loss_config
         self.kd = kd
 
@@ -48,6 +50,8 @@ class DSSMModelConfig(object):
             res.item_field = data["item_field"]
         if "scale_sim" in data:
             res.scale_sim = data["scale_sim"]
+        if "temperature" in data:
+            res.temperature = data["temperature"]
         if "inbatch_loss_config" in data:
             res.inbatch_loss_config = InBatchNegSoftmaxLossConfig.handle(data["inbatch_loss_config"])
         if "kd" in data:
@@ -178,7 +182,7 @@ class DSSM(MatchModel, DSSMModel):
         item_emb = self.norm(item_emb)
         user_item_sim = self.sim(user_emb, item_emb)
 
-        if dssm_model_config.scale_sim and not dssm_model_config.inbatch_loss_config:
+        if dssm_model_config.scale_sim:
             sim_w = tf.get_variable(
                 "dssm/scale_sim_w",
                 dtype=tf.float32,
@@ -194,6 +198,8 @@ class DSSM(MatchModel, DSSMModel):
             tf.summary.histogram("dssm/scale_sim_w", sim_w)
             tf.summary.histogram("dssm/scale_sim_b", sim_b)
             user_item_sim = tf.matmul(user_item_sim, tf.abs(sim_w)) + sim_b
+        elif dssm_model_config.temperature > 0.0:
+            user_item_sim = user_item_sim / dssm_model_config.temperature
 
         self._prediction_dict["logits"] = tf.reshape(user_item_sim, (-1,), name="logits")
 

@@ -26,7 +26,7 @@ class SDMModelConfig(object):
                  hist_short_input_group: str, hist_short_seq_size: int,
                  item_input_groups: List[str],
                  user_field: str = None, item_field: str = None,
-                 scale_sim: bool = True,
+                 scale_sim: bool = True, temperature: float = 0.0,
                  inbatch_loss_config: InBatchNegSoftmaxLossConfig = None,
                  ):
         self.user_input_groups = user_input_groups
@@ -39,6 +39,8 @@ class SDMModelConfig(object):
         self.item_field = item_field
 
         self.scale_sim = scale_sim
+        self.temperature = temperature
+
         self.inbatch_loss_config = inbatch_loss_config
 
     @staticmethod
@@ -52,6 +54,8 @@ class SDMModelConfig(object):
             res.item_field = data["item_field"]
         if "scale_sim" in data:
             res.scale_sim = data["scale_sim"]
+        if "temperature" in data:
+            res.temperature = data["temperature"]
         if "inbatch_loss_config" in data:
             res.inbatch_loss_config = InBatchNegSoftmaxLossConfig.handle(data["inbatch_loss_config"])
         return res
@@ -189,7 +193,7 @@ class SDM(MatchModel, SDMModel):
         item_emb = self.norm(item_emb)
         user_item_sim = self.sim(user_emb, item_emb)
 
-        if sdm_model_config.scale_sim and not sdm_model_config.inbatch_loss_config:
+        if sdm_model_config.scale_sim:
             sim_w = tf.get_variable(
                 "sdm/scale_sim_w",
                 dtype=tf.float32,
@@ -205,6 +209,9 @@ class SDM(MatchModel, SDMModel):
             tf.summary.histogram("sdm/scale_sim_w", sim_w)
             tf.summary.histogram("sdm/scale_sim_b", sim_b)
             user_item_sim = tf.matmul(user_item_sim, tf.abs(sim_w)) + sim_b
+        elif sdm_model_config.temperature > 0.0:
+            user_item_sim = user_item_sim / sdm_model_config.user_item_sim
+
         probs = tf.nn.sigmoid(user_item_sim)
 
         self._prediction_dict["probs"] = tf.reshape(probs, (-1,), name="probs")
