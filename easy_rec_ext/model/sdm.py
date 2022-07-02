@@ -9,6 +9,7 @@ import os
 import logging
 from typing import List
 import tensorflow as tf
+from easy_rec_ext.builders.loss_builder import InBatchNegSoftmaxLossConfig, build_inbatch_neg_softmax_loss
 from easy_rec_ext.layers import dnn
 from easy_rec_ext.layers.target_attention_layer import TargetAttention
 from easy_rec_ext.layers.multihead_attention import MultiHeadSelfAttention
@@ -24,7 +25,9 @@ class SDMModelConfig(object):
     def __init__(self, user_input_groups: List[str], hist_long_input_group: str,
                  hist_short_input_group: str, hist_short_seq_size: int,
                  item_input_groups: List[str],
-                 user_field: str = None, item_field: str = None, scale_sim: bool = True,
+                 user_field: str = None, item_field: str = None,
+                 scale_sim: bool = True,
+                 inbatch_loss_config: InBatchNegSoftmaxLossConfig = None,
                  ):
         self.user_input_groups = user_input_groups
         self.hist_long_input_group = hist_long_input_group
@@ -34,7 +37,9 @@ class SDMModelConfig(object):
 
         self.user_field = user_field
         self.item_field = item_field
+
         self.scale_sim = scale_sim
+        self.inbatch_loss_config = inbatch_loss_config
 
     @staticmethod
     def handle(data):
@@ -47,6 +52,8 @@ class SDMModelConfig(object):
             res.item_field = data["item_field"]
         if "scale_sim" in data:
             res.scale_sim = data["scale_sim"]
+        if "inbatch_loss_config" in data:
+            res.inbatch_loss_config = InBatchNegSoftmaxLossConfig.handle(data["inbatch_loss_config"])
         return res
 
 
@@ -182,7 +189,7 @@ class SDM(MatchModel, SDMModel):
         item_emb = self.norm(item_emb)
         user_item_sim = self.sim(user_emb, item_emb)
 
-        if sdm_model_config.scale_sim:
+        if sdm_model_config.scale_sim and not sdm_model_config.inbatch_loss_config:
             sim_w = tf.get_variable(
                 "sdm/scale_sim_w",
                 dtype=tf.float32,
@@ -212,3 +219,20 @@ class SDM(MatchModel, SDMModel):
             self._prediction_dict["item_id"] = tf.identity(self._feature_dict[sdm_model_config.item_field],
                                                            name="item_id")
         return self._prediction_dict
+
+    def build_loss_graph(self):
+        sdm_model_config = self._model_config.sdm_model_config
+        self.build_reg_loss()
+        if sdm_model_config.inbatch_loss_config:
+            self._loss_dict["neg_softmax_loss"] = build_inbatch_neg_softmax_loss(
+                self._prediction_dict["user_vector"],
+                self._prediction_dict["item_vector"],
+                sdm_model_config.inbatch_loss_config,
+            )
+        else:
+            self._loss_dict["cross_entropy_loss"] = tf.losses.log_loss(
+                labels=self._labels[self._label_name],
+                predictions=self._prediction_dict["probs"],
+                weights=tf.reshape(self._sample_weight, (-1,)),
+            )
+        return self._loss_dict
