@@ -3,17 +3,16 @@
 # time: 2022/6/26 14:50
 # desc:
 
-import time
 import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--input_path", type=str, required=True)
-parser.add_argument("--output_dir", type=str, required=True)
-parser.add_argument("--output_suffix", type=str, required=False, default=None)
+parser.add_argument("--output_path", type=str, required=True)
 parser.add_argument("--seq_max_length", type=int, required=False, default=50)
 args = parser.parse_args()
 print("Run params:" + str(args))
 
+user_train_num = 10
 behavior_type_enum = ["pv", "buy", "cart", "fav"]
 
 
@@ -59,12 +58,6 @@ def build_user_feature(user_id, current_behavior, history_behavior_list):
             value = 10
         hist_behavior_time_diff_list.append(str(value + 1))
         hist_behavior_time_rank_list.append(str(len(hist_behavior_time_rank_list) + 1))
-    # while len(hist_item_ids) < args.seq_max_length:
-    #     hist_item_ids.append(str(-1))
-    #     hist_item_cate_ids.append(str(-1))
-    #     hist_behavior_type_list.append(str(-1))
-    #     hist_behavior_time_diff_list.append(str(-1))
-    #     hist_behavior_time_rank_list.append(str(len(hist_behavior_time_rank_list) + 1))
     if not hist_item_ids:
         hist_item_ids = [str(-1)]
         hist_item_cate_ids = [str(-1)]
@@ -85,56 +78,59 @@ def build_item_feature(current_behavior):
     return current_behavior[0] + "," + current_behavior[1]
 
 
-dts = [
-    # "20171125", "20171126", "20171127", "20171128",
-    # "20171129", "20171130",
-    # "20171201",
-    "20171202", "20171203"
-]
-if args.output_suffix:
-    dt_output_list = [open("%s/sample_%s_%s.csv" % (args.output_dir, args.output_suffix, dt), mode="w") for dt in dts]
-else:
-    dt_output_list = [open("%s/sample_%s.csv" % (args.output_dir, dt), mode="w") for dt in dts]
+train_output = open(args.output_path + "_train.txt", mode="w")
+eval_output = open(args.output_path + "_eval.txt", mode="w")
+
 user_id = None
 user_seq_list = []
+line_num = 0
 with open(args.input_path, mode="r") as f:
-    line_num = 0
     for line in f:
         line_num += 1
+        if line_num % 50000 == 0:
+            print(line_num, line)
+
         split = line.strip().split(",")
-        assert len(split) == 5, split
+        assert len(split) == 5, "错误行:" + str(line_num)
 
         if split[0] != user_id:
-            if user_id and int(user_id) % 1000 == 0:
-                print("line_num:", line_num)
-                print("change user", user_id, user_seq_list)
+            if user_id:
+                if len(user_seq_list) > 1:
+                    history_behavior_list = user_seq_list[1:]
+                else:
+                    history_behavior_list = []
+                eval_output.write(
+                    ",".join([
+                        str(1),
+                        build_user_feature(user_id, user_seq_list[0], history_behavior_list),
+                        build_item_feature(user_seq_list[0]),
+                    ])
+                    + "\n"
+                )
+
+                for i in range(1, 1 + user_train_num):
+                    if len(user_seq_list) <= i:
+                        break
+                    if len(user_seq_list) > (i+1):
+                        history_behavior_list = user_seq_list[(i+1):]
+                    else:
+                        history_behavior_list = []
+                    train_output.write(
+                        ",".join([
+                            str(1),
+                            build_user_feature(user_id, user_seq_list[i], history_behavior_list),
+                            build_item_feature(user_seq_list[i]),
+                        ])
+                        + "\n"
+                    )
+
             user_id = split[0]
             user_seq_list = []
 
         current_behavior = split[1:]
         if user_seq_list:
-            assert int(current_behavior[3]) >= int(user_seq_list[0][3]), str(current_behavior) + str(user_seq_list[0])
-        try:
-            current_dt = time.strftime("%Y%m%d", time.localtime(int(current_behavior[3])))
-        except Exception as e:
-            print("【Error】")
-            print("【Error】", current_behavior)
-            print("【Error】")
-            time.sleep(2)
-            continue
-
-        if current_dt not in dts:
-            print("current_dt is out of range", current_dt, current_behavior)
-        else:
-            dt_output_list[dts.index(current_dt)] \
-                .write(
-                ",".join([str(1),
-                          build_user_feature(user_id, current_behavior, user_seq_list),
-                          build_item_feature(current_behavior),
-                          ])
-                + "\n"
-            )
+            assert int(current_behavior[3]) >= int(user_seq_list[0][3]), "错误行:" + str(line_num)
         user_seq_list.insert(0, current_behavior)
 
-for i in range(len(dts)):
-    dt_output_list[i].close()
+train_output.close()
+eval_output.close()
