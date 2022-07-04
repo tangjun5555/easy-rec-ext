@@ -1,5 +1,5 @@
 {
-    "model_dir": "deep_v2/ckpt",
+    "model_dir": "deep_v2_v2/ckpt",
     "train_config": {
         "optimizer_config": {
             "optimizer_type": "adagrad_optimizer",
@@ -34,7 +34,7 @@
         ]
     },
     "export_config": {
-        "export_dir": "deep_v2/export"
+        "export_dir": "deep_v2_v2/export"
     },
     "input_config": {
         "input_fields": [
@@ -56,6 +56,10 @@
             },
             {
                 "input_name": "user.short_hist_behavior_type_list",
+                "input_type": "string"
+            },
+            {
+                "input_name": "user.short_hist_behavior_time_diff_list",
                 "input_type": "string"
             },
             {
@@ -112,7 +116,7 @@
                 "feature_type": "SequenceFeature",
                 "num_buckets": 6000000,
                 "embedding_dim": 16,
-                "limit_seq_size": 10,
+                "limit_seq_size": 20,
                 "embedding_name": "item_id_embedding"
             },
             {
@@ -120,28 +124,35 @@
                 "feature_type": "SequenceFeature",
                 "hash_bucket_size": 30000,
                 "embedding_dim": 16,
-                "limit_seq_size": 10
+                "limit_seq_size": 20
             },
             {
                 "input_name": "user.short_hist_behavior_type_list",
                 "feature_type": "SequenceFeature",
                 "num_buckets": 10,
                 "embedding_dim": 16,
-                "limit_seq_size": 10
+                "limit_seq_size": 20
+            },
+            {
+                "input_name": "user.short_hist_behavior_time_diff_list",
+                "feature_type": "SequenceFeature",
+                "num_buckets": 20,
+                "embedding_dim": 16,
+                "limit_seq_size": 20
             },
             {
                 "input_name": "user.short_hist_behavior_time_rank_list",
                 "feature_type": "SequenceFeature",
-                "num_buckets": 20,
+                "num_buckets": 30,
                 "embedding_dim": 16,
-                "limit_seq_size": 10
+                "limit_seq_size": 20
             },
             {
                 "input_name": "user.long_hist_item_ids",
                 "feature_type": "SequenceFeature",
                 "num_buckets": 6000000,
                 "embedding_dim": 16,
-                "limit_seq_size": 50,
+                "limit_seq_size": 60,
                 "embedding_name": "item_id_embedding"
             },
             {
@@ -149,28 +160,28 @@
                 "feature_type": "SequenceFeature",
                 "hash_bucket_size": 30000,
                 "embedding_dim": 16,
-                "limit_seq_size": 50
+                "limit_seq_size": 60
             },
             {
                 "input_name": "user.long_hist_behavior_type_list",
                 "feature_type": "SequenceFeature",
                 "num_buckets": 10,
                 "embedding_dim": 16,
-                "limit_seq_size": 50
+                "limit_seq_size": 60
             },
             {
                 "input_name": "user.long_hist_behavior_time_diff_list",
                 "feature_type": "SequenceFeature",
                 "num_buckets": 20,
                 "embedding_dim": 16,
-                "limit_seq_size": 50
+                "limit_seq_size": 60
             },
             {
                 "input_name": "user.long_hist_behavior_time_rank_list",
                 "feature_type": "SequenceFeature",
-                "num_buckets": 60,
+                "num_buckets": 100,
                 "embedding_dim": 16,
-                "limit_seq_size": 50
+                "limit_seq_size": 60
             },
             {
                 "input_name": "item.id",
@@ -188,19 +199,21 @@
         ]
     },
     "model_config": {
-        "model_class": "dssm",
-        "dssm_model_config": {
+        "model_class": "sdm",
+        "sdm_model_config": {
             "user_input_groups": [
-                "user_deep",
-                "seq_1",
-                "seq_2"
+                "user_deep"
             ],
+            "hist_long_input_group": "seq_2",
+            "hist_short_input_group": "seq_1",
+            "hist_short_seq_size": 20,
             "item_input_groups": [
                 "item_deep"
             ],
+            "scale_sim": false,
             "inbatch_loss_config": {
-                "neg_num": 5,
-                "temperature": 0.1
+                "neg_num": 4,
+                "temperature": 0.05
             }
         },
         "feature_groups": [
@@ -216,6 +229,7 @@
                     "user.short_hist_item_ids",
                     "user.short_hist_item_cate_ids",
                     "user.short_hist_behavior_type_list",
+                    "user.short_hist_behavior_time_diff_list",
                     "user.short_hist_behavior_time_rank_list"
                 ]
             },
@@ -262,8 +276,8 @@
                     "mode": "self_att",
                     "self_att_config": {
                         "head_num": 2,
-                        "head_size": 32,
-                        "feature_num": 10,
+                        "head_size": 64,
+                        "feature_num": 20,
                         "use_res": true
                     }
                 }
@@ -274,8 +288,8 @@
                     "mode": "self_att",
                     "self_att_config": {
                         "head_num": 2,
-                        "head_size": 32,
-                        "feature_num": 50,
+                        "head_size": 64,
+                        "feature_num": 60,
                         "use_res": true
                     }
                 }
@@ -286,6 +300,8 @@
                 200,
                 100
             ]
-        }
+        },
+        "l2_regularization": 1e-6,
+        "embedding_regularization": 5e-5
     }
 }

@@ -3,6 +3,7 @@
 # time: 2022/6/27 0:19
 # desc:
 
+import random
 import time
 import argparse
 from annoy import AnnoyIndex
@@ -71,7 +72,7 @@ class Processor(object):
                     annoy_index.add_item(i, vector)
                     i += 1
                 batch_fea_input = []
-        annoy_index.build(20)
+        annoy_index.build(50)
         self.all_item_ids = all_item_ids
         self.annoy_index = annoy_index
         print("%s构建索引" % time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
@@ -83,6 +84,10 @@ class Processor(object):
     def search_recall_items(self, user_vector, recall_num):
         ids, scores = self.annoy_index.get_nns_by_vector(user_vector, recall_num, include_distances=True)
         res = [self.all_item_ids[i] for i in ids]
+        if random.randint(1, 1000) == 5:
+            print("search_recall_items:")
+            print(res)
+            print(scores)
         return res
 
 
