@@ -11,6 +11,7 @@ from typing import List
 import tensorflow as tf
 from easy_rec_ext.builders.loss_builder import InBatchNegSoftmaxLossConfig, build_inbatch_neg_softmax_loss
 from easy_rec_ext.layers import dnn
+from easy_rec_ext.layers import sequence_pooling
 from easy_rec_ext.layers.target_attention_layer import TargetAttention
 from easy_rec_ext.layers.multihead_attention import MultiHeadSelfAttention
 from easy_rec_ext.model.dssm import DSSMModel
@@ -143,6 +144,7 @@ class SDM(MatchModel, SDMModel):
 
         user_emb_fea_list = []
         item_emb_fea_list = []
+
         for tower_id in range(self._dnn_tower_num):
             tower = self._model_config.dnn_towers[tower_id]
             tower_fea = self._dnn_tower_features[tower_id]
@@ -165,9 +167,29 @@ class SDM(MatchModel, SDMModel):
             elif tower.input_group in sdm_model_config.item_input_groups:
                 item_emb_fea_list.append(tower_fea)
             else:
-                raise ValueError(
-                    "%s tower.input_group:%s not in user or item input groups" % (filename, tower.input_group))
-            logging.info("%s user_emb_fea_list add input_group:%s" % (filename, tower.input_group))
+                print("%s tower.input_group:%s not in user or item input groups" % (filename, tower.input_group))
+            logging.info("%s add input_group:%s" % (filename, tower.input_group))
+
+        for tower_id in range(self._seq_pooling_tower_num):
+            tower = self._model_config.seq_pooling_towers[tower_id]
+            tower_fea = self._seq_pooling_tower_features[tower_id]
+            with tf.variable_scope("tower", reuse=tf.AUTO_REUSE):
+                tower_fea = sequence_pooling.SequencePooling(
+                    name=tower.input_group + "_pooling",
+                    mode=tower.sequence_pooling_config.mode,
+                    gru_config=tower.sequence_pooling_config.gru_config,
+                    lstm_config=tower.sequence_pooling_config.lstm_config,
+                    self_att_config=tower.sequence_pooling_config.self_att_config,
+                )(tower_fea["hist_seq_emb"], tower_fea["hist_seq_len"])
+
+            if tower.input_group in sdm_model_config.user_input_groups:
+                user_emb_fea_list.append(tower_fea)
+            elif tower.input_group in sdm_model_config.item_input_groups:
+                item_emb_fea_list.append(tower_fea)
+            else:
+                print("%s tower.input_group:%s not in user or item input groups" % (filename, tower.input_group))
+            logging.info("%s add input_group:%s" % (filename, tower.input_group))
+
         user_emb_fea = tf.concat(user_emb_fea_list, axis=1)
         item_emb_fea = tf.concat(item_emb_fea_list, axis=1)
 
