@@ -10,10 +10,11 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--input_path", type=str, required=True)
 parser.add_argument("--output_path", type=str, required=True)
 parser.add_argument("--all_item_path", type=str, required=True)
-parser.add_argument("--user_train_pos_num", type=int, required=False, default=20)
-parser.add_argument("--user_train_neg_num", type=int, required=False, default=20)
-parser.add_argument("--st_seq_max_length", type=int, required=False, default=10)
+parser.add_argument("--user_train_pos_num", type=int, required=False, default=10)
+parser.add_argument("--user_train_neg_num", type=int, required=False, default=10)
+parser.add_argument("--st_seq_max_length", type=int, required=False, default=20)
 parser.add_argument("--lt_seq_max_length", type=int, required=False, default=50)
+parser.add_argument("--conversion_seq_max_length", type=int, required=False, default=10)
 args = parser.parse_args()
 print("Run params:" + str(args))
 
@@ -32,7 +33,6 @@ dividing_time_point = 24 * 60 * 60
 def build_user_seq_feature(current_behavior, history_behavior_list):
     hist_item_ids = []
     hist_item_cate_ids = []
-    hist_behavior_type_list = []
     hist_behavior_time_diff_list = []
     hist_behavior_time_rank_list = []
 
@@ -42,7 +42,6 @@ def build_user_seq_feature(current_behavior, history_behavior_list):
     for target_behavior in history_behavior_list:
         hist_item_ids.append(target_behavior[0])
         hist_item_cate_ids.append(target_behavior[1])
-        hist_behavior_type_list.append(str(behavior_type_enum.index(target_behavior[2]) + 1))
 
         diff = int(current_behavior[3]) - int(target_behavior[3])
         if diff <= (30 * 60):
@@ -77,13 +76,11 @@ def build_user_seq_feature(current_behavior, history_behavior_list):
     if not hist_item_ids:
         hist_item_ids = [str(-1)]
         hist_item_cate_ids = [str(-1)]
-        hist_behavior_type_list = [str(-1)]
         hist_behavior_time_diff_list = [str(-1)]
         hist_behavior_time_rank_list = [str(-1)]
     return ",".join([
         "|".join(hist_item_ids),
         "|".join(hist_item_cate_ids),
-        "|".join(hist_behavior_type_list),
         "|".join(hist_behavior_time_diff_list),
         "|".join(hist_behavior_time_rank_list),
     ])
@@ -94,19 +91,27 @@ def build_user_feature(user_id, current_behavior, history_behavior_list):
         history_behavior_list = []
 
     target_history_behavior_list = [target_behavior for target_behavior in history_behavior_list
-                                    if (int(current_behavior[3]) - int(target_behavior[3])) <= dividing_time_point]
+                                    if target_behavior[2] == "pv"
+                                    and (int(current_behavior[3]) - int(target_behavior[3])) <= dividing_time_point]
     target_history_behavior_list = target_history_behavior_list[:args.st_seq_max_length]
     user_short_term_seq_feature = build_user_seq_feature(current_behavior, target_history_behavior_list)
 
     target_history_behavior_list = [target_behavior for target_behavior in history_behavior_list
-                                    if (int(current_behavior[3]) - int(target_behavior[3])) > dividing_time_point]
+                                    if target_behavior[2] == "pv"
+                                    and (int(current_behavior[3]) - int(target_behavior[3])) > dividing_time_point]
     target_history_behavior_list = target_history_behavior_list[:args.lt_seq_max_length]
     user_long_term_seq_feature = build_user_seq_feature(current_behavior, target_history_behavior_list)
+
+    target_history_behavior_list = [target_behavior for target_behavior in history_behavior_list
+                                    if target_behavior[2] != "pv"]
+    target_history_behavior_list = target_history_behavior_list[:args.conversion_seq_max_length]
+    user_conversion_seq_feature = build_user_seq_feature(current_behavior, target_history_behavior_list)
 
     return ",".join([
         user_id,
         user_short_term_seq_feature,
         user_long_term_seq_feature,
+        user_conversion_seq_feature,
     ])
 
 
@@ -128,14 +133,15 @@ def global_neg_sample(all_ids, num, remove_ids=None):
         remove_ids = []
     res = []
     try_cnt = 0
-    while try_cnt < (num + 20):
-        cur_id = all_ids[random.randint(0, len(all_ids)-1)]
+    while try_cnt < (num + 10):
+        cur_id = all_ids[random.randint(0, len(all_ids) - 1)]
         if cur_id in res or cur_id in remove_ids:
             continue
         else:
             res.append(cur_id)
         if len(res) >= num:
             break
+        try_cnt += 1
     return res
 
 
@@ -174,13 +180,13 @@ with open(args.input_path, mode="r") as f:
                 for i in range(1, 1 + args.user_train_pos_num):
                     if len(user_seq_list) <= i:
                         break
-                    if len(user_seq_list) > (i+1):
-                        history_behavior_list = user_seq_list[(i+1):]
+                    if len(user_seq_list) > (i + 1):
+                        history_behavior_list = user_seq_list[(i + 1):]
                     else:
                         history_behavior_list = []
                     user_feature = build_user_feature(user_id, user_seq_list[i], history_behavior_list)
 
-                    train_output_files[args.user_train_pos_num-i].write(
+                    train_output_files[args.user_train_pos_num - i].write(
                         ",".join([
                             str(1),
                             user_feature,
