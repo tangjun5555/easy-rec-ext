@@ -45,6 +45,6 @@ with open(args.output_path + "_all.txt", mode="w") as fout:
 with open(args.output_path + "_hot.txt", mode="w") as fout:
     pairs = list(item_cnt.items())
     pairs.sort(key=lambda x: x[1], reverse=True)
-    pairs = [x[0] for x in pairs[:1000000]]
+    pairs = [x[0] for x in pairs[:500000]]
     for k in pairs:
         fout.write(k + "#" + all_item_fea_dict[k] + "\n")
