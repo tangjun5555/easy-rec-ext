@@ -347,8 +347,6 @@ class RankModel(object):
                         feature_field.raw_input_dim,
                         feature_field.embedding_dim,
                     )(values)
-                else:
-                    raise NotImplemented
 
             elif feature_field.feature_type == "SequenceFeature":
                 hist_seq = self._feature_dict[feature_field.feature_name]
