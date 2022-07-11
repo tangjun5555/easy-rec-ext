@@ -10,7 +10,7 @@ from abc import abstractmethod
 from collections import OrderedDict
 from easy_rec_ext.core import embedding_ops
 from easy_rec_ext.core import regularizers
-from easy_rec_ext.utils import constant, variable_util
+from easy_rec_ext.utils import constant, variable_util, string_ops
 import easy_rec_ext.core.metrics as metrics_lib
 from easy_rec_ext.layers.sequence_pooling import SequencePooling
 from easy_rec_ext.layers.senet import SENetLayer
@@ -312,18 +312,32 @@ class MatchModel(object):
                     hist_seq = tf.reverse(hist_seq, [-1])
                 if feature_field.limit_seq_size and feature_field.limit_seq_size > 0:
                     cur_batch_max_seq_len = tf.shape(hist_seq)[1]
-                    hist_seq = tf.cond(
-                        tf.constant(feature_field.limit_seq_size) > cur_batch_max_seq_len,
-                        lambda: tf.pad(hist_seq,
-                                       [[0, 0], [0, feature_field.limit_seq_size - cur_batch_max_seq_len]],
-                                       mode="CONSTANT",
-                                       constant_values=-1,
-                                       ),
-                        lambda: tf.slice(hist_seq, [0, 0], [-1, feature_field.limit_seq_size])
-                    )
+                    if hist_seq.dtype == tf.dtypes.string:
+                        hist_seq = tf.cond(
+                            tf.constant(feature_field.limit_seq_size) > cur_batch_max_seq_len,
+                            lambda: tf.pad(hist_seq,
+                                           [[0, 0], [0, feature_field.limit_seq_size - cur_batch_max_seq_len]],
+                                           mode="CONSTANT",
+                                           constant_values="",
+                                           ),
+                            lambda: tf.slice(hist_seq, [0, 0], [-1, feature_field.limit_seq_size])
+                        )
+                    else:
+                        hist_seq = tf.cond(
+                            tf.constant(feature_field.limit_seq_size) > cur_batch_max_seq_len,
+                            lambda: tf.pad(hist_seq,
+                                           [[0, 0], [0, feature_field.limit_seq_size - cur_batch_max_seq_len]],
+                                           mode="CONSTANT",
+                                           constant_values=-1,
+                                           ),
+                            lambda: tf.slice(hist_seq, [0, 0], [-1, feature_field.limit_seq_size])
+                        )
 
                 # TODO Maybe more elegant
-                hist_seq_len = tf.where(tf.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
+                if hist_seq.dtype == tf.dtypes.string:
+                    hist_seq_len = tf.where(string_ops.compute_invalid_string_id_condition(hist_seq), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
+                else:
+                    hist_seq_len = tf.where(tf.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
                 hist_seq_len = tf.reduce_sum(hist_seq_len, axis=1, keep_dims=False)
 
                 embedding_weights = embedding_ops.get_embedding_variable(

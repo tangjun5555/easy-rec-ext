@@ -10,6 +10,16 @@ if tf.__version__ >= "2.0":
     tf = tf.compat.v1
 
 
+def compute_valid_string_id_condition(input_tensor):
+    assert input_tensor.dtype == tf.dtypes.string
+    return tf.math.logical_and(tf.math.not_equal(input_tensor, ""), tf.not_equal(input_tensor, "-1"))
+
+
+def compute_invalid_string_id_condition(input_tensor):
+    assert input_tensor.dtype == tf.dtypes.string
+    return tf.math.logical_or(tf.math.equal(input_tensor, ""), tf.equal(input_tensor, "-1"))
+
+
 def string_to_hash_bucket(input_tensor, num_buckets: int):
     condition = tf.math.logical_or(tf.math.equal(input_tensor, ""), tf.equal(input_tensor, "-1"))
     t1 = tf.string_to_hash_bucket_fast(input_tensor, num_buckets)

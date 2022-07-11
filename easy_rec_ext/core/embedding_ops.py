@@ -18,7 +18,7 @@ from tensorflow.python.ops import sparse_ops
 from tensorflow.python.ops import init_ops
 
 import tensorflow_recommenders_addons as tfra
-from easy_rec_ext.utils import variable_util
+from easy_rec_ext.utils import variable_util, string_ops
 
 if tf.__version__ >= "2.0":
     gfile = tf.compat.v1.gfile
@@ -148,7 +148,7 @@ def safe_embedding_lookup(params, ids):
     assert ids.get_shape().as_list()[-1] == 1
     if os.environ["use_dynamic_embedding"] == "1":
         if ids.dtype == tf.dtypes.string:
-            condition = tf.math.logical_or(tf.equal(ids, ""), tf.equal(ids, "-1"))
+            condition = string_ops.compute_valid_string_id_condition(ids)
         else:
             condition = tf.math.greater_equal(ids, 0)
             if ids.dtype != dtypes.int64:
@@ -161,11 +161,7 @@ def safe_embedding_lookup(params, ids):
         values = tf.squeeze(values, axis=-2)
         condition = tf.concat([condition] * values.get_shape().as_list()[-1], axis=-1)
         zeros = tf.zeros_like(values)
-        return tf.where(
-            condition,
-            zeros,
-            values
-        )
+        return tf.where(condition, values, zeros)
     else:
         return safe_embedding_lookup_sparse(
             params,
