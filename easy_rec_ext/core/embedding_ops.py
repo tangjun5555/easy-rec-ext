@@ -265,26 +265,15 @@ def safe_embedding_lookup_sparse(embedding_weights,
         sparse_ids = sparse_tensor.SparseTensor(
             indices=indices, values=values, dense_shape=sparse_ids.dense_shape)
 
-        if os.environ["use_dynamic_embedding"] == "1":
-            result = tfra.dynamic_embedding.safe_embedding_lookup_sparse(
-                embedding_weights,
-                sparse_ids,
-                sparse_weights,
-                combiner=combiner,
-                partition_strategy=partition_strategy,
-                # name=None,
-                max_norm=max_norm
-            )
-        else:
-            result = embedding_ops.embedding_lookup_sparse(
-                embedding_weights,
-                sparse_ids,
-                sparse_weights,
-                combiner=combiner,
-                partition_strategy=partition_strategy,
-                # name=None if default_id is None else scope,
-                max_norm=max_norm
-            )
+        result = embedding_ops.embedding_lookup_sparse(
+            embedding_weights,
+            sparse_ids,
+            sparse_weights,
+            combiner=combiner,
+            partition_strategy=partition_strategy,
+            # name=None if default_id is None else scope,
+            max_norm=max_norm
+        )
 
         if default_id is None:
             # Broadcast is_row_empty to the same shape as embedding_lookup_result,
