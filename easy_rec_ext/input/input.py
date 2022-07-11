@@ -153,7 +153,10 @@ class Input(object):
                                                 name="seq_str_2_int_%s" % fc.input_name),
                             parsed_dict[fc.feature_name].dense_shape
                         )
-                parsed_dict[fc.feature_name] = tf.sparse.to_dense(parsed_dict[fc.feature_name], default_value=-1)
+                if parsed_dict[fc.feature_name].dtype == tf.dtypes.string:
+                    parsed_dict[fc.feature_name] = tf.sparse.to_dense(parsed_dict[fc.feature_name], default_value="")
+                else:
+                    parsed_dict[fc.feature_name] = tf.sparse.to_dense(parsed_dict[fc.feature_name], default_value=-1)
 
             elif fc.feature_type == "RawFeature":
                 if field_dict[fc.input_name].dtype == tf.string:
