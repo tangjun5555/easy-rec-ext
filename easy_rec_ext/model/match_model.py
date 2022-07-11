@@ -10,7 +10,7 @@ from abc import abstractmethod
 from collections import OrderedDict
 from easy_rec_ext.core import embedding_ops
 from easy_rec_ext.core import regularizers
-from easy_rec_ext.utils import constant, variable_util, string_ops
+from easy_rec_ext.utils import constant, variable_util, string_ops, feature_util
 import easy_rec_ext.core.metrics as metrics_lib
 from easy_rec_ext.layers.sequence_pooling import SequencePooling
 from easy_rec_ext.layers.senet import SENetLayer
@@ -179,10 +179,7 @@ class MatchModel(object):
 
                     hist_seq = self._feature_dict[seq_feature_field.feature_name]
                     if "hist_seq_len" not in outputs:
-                        # TODO Maybe more elegant
-                        hist_seq_len = tf.where(tf.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
-                        hist_seq_len = tf.reduce_sum(hist_seq_len, axis=1, keep_dims=False)
-                        outputs["hist_seq_len"] = hist_seq_len
+                        outputs["hist_seq_len"] = feature_util.compute_seq_fea_len(hist_seq)
                 elif seq_feature_field.feature_type == "RawFeature":
                     if seq_feature_field.raw_input_embedding_type:
                         hist_seq_emb_outputs.append(
@@ -225,10 +222,7 @@ class MatchModel(object):
 
             hist_seq_id = self._feature_dict[feature_field.feature_name]
             if "hist_seq_len" not in outputs:
-                # TODO Maybe more elegant
-                hist_seq_len = tf.where(tf.less(hist_seq_id, 0), tf.zeros_like(hist_seq_id), tf.ones_like(hist_seq_id))
-                hist_seq_len = tf.reduce_sum(hist_seq_len, axis=1, keep_dims=False)
-                outputs["hist_seq_len"] = hist_seq_len
+                outputs["hist_seq_len"] = feature_util.compute_seq_fea_len(hist_seq_id)
 
         outputs["hist_seq_emb"] = tf.concat(hist_seq_emb_list, axis=-1)
         return outputs
@@ -333,15 +327,7 @@ class MatchModel(object):
                             lambda: tf.slice(hist_seq, [0, 0], [-1, feature_field.limit_seq_size])
                         )
 
-                # TODO Maybe more elegant
-                if hist_seq.dtype == tf.dtypes.string:
-                    hist_seq_len = tf.where(string_ops.compute_invalid_string_id_condition(hist_seq),
-                                            tf.zeros(hist_seq, dtype=tf.dtypes.int32),
-                                            tf.ones(hist_seq, dtype=tf.dtypes.int32)
-                                            )
-                else:
-                    hist_seq_len = tf.where(tf.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
-                hist_seq_len = tf.reduce_sum(hist_seq_len, axis=1, keep_dims=False)
+                hist_seq_len = feature_util.compute_seq_fea_len(hist_seq)
 
                 embedding_weights = embedding_ops.get_embedding_variable(
                     name=feature_field.embedding_name,
