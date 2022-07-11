@@ -74,7 +74,6 @@ def get_embedding_variable(name, dim, vocab_size=None, key_is_string=False):
             if use_pretrain_variable:
                 return tf.get_variable(
                     name=name,
-                    # shape=(vocab_size, dim),
                     dtype=dtypes.float32,
                     initializer=initializer,
                     trainable=True,
@@ -145,23 +144,18 @@ def _prune_invalid_weights(sparse_ids, sparse_weights=None):
     return sparse_ids, sparse_weights
 
 
-def safe_embedding_lookup(params,
-                          ids,
-                          combiner="mean",
-                          default_id=None,
-                          name=None,
-                          partition_strategy="div",
-                          max_norm=None):
+def safe_embedding_lookup(params, ids):
     assert ids.get_shape().as_list()[-1] == 1
-    if ids.dtype == tf.dtypes.string:
-        condition = tf.math.logical_or(tf.equal(ids, ""), tf.equal(ids, "-1"))
-        values = tfra.dynamic_embedding.embedding_lookup_unique(
+    if os.environ["use_dynamic_embedding"] == "1":
+        if ids.dtype == tf.dtypes.string:
+            condition = tf.math.logical_or(tf.equal(ids, ""), tf.equal(ids, "-1"))
+        else:
+            condition = tf.math.greater_equal(ids, 0)
+        values = tfra.dynamic_embedding.embedding_lookup(
             params,
-            ids
+            ids,
+            name="tfra_embedding_lookup",
         )
-        logging.info("%s safe_embedding_lookup, ids.shape:%s, condition:%s, values:%s" % (
-            filename, str(ids.shape), str(condition.shape), str(values.shape)
-        ))
         values = tf.squeeze(values, axis=-2)
         condition = tf.concat([condition] * values.get_shape().as_list()[-1], axis=-1)
         zeros = tf.zeros_like(values)
@@ -174,12 +168,6 @@ def safe_embedding_lookup(params,
         return safe_embedding_lookup_sparse(
             params,
             _to_sparse_ids(ids),
-            None,
-            combiner,
-            default_id,
-            name,
-            partition_strategy,
-            max_norm
         )
 
 
