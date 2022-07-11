@@ -151,6 +151,8 @@ def safe_embedding_lookup(params, ids):
             condition = tf.math.logical_or(tf.equal(ids, ""), tf.equal(ids, "-1"))
         else:
             condition = tf.math.greater_equal(ids, 0)
+            if ids.dtype != dtypes.int64:
+                ids = math_ops.to_int64(ids)
         values = tfra.dynamic_embedding.embedding_lookup(
             params,
             ids,
