@@ -377,7 +377,10 @@ class RankModel(object):
 
                 # TODO Maybe more elegant
                 if hist_seq.dtype == tf.dtypes.string:
-                    hist_seq_len = tf.where(string_ops.compute_invalid_string_id_condition(hist_seq), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
+                    hist_seq_len = tf.where(string_ops.compute_invalid_string_id_condition(hist_seq),
+                                            tf.zeros(hist_seq, dtype=tf.dtypes.int32),
+                                            tf.ones(hist_seq, dtype=tf.dtypes.int32)
+                                            )
                 else:
                     hist_seq_len = tf.where(tf.less(hist_seq, 0), tf.zeros_like(hist_seq), tf.ones_like(hist_seq))
 
