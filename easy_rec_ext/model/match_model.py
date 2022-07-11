@@ -10,7 +10,7 @@ from abc import abstractmethod
 from collections import OrderedDict
 from easy_rec_ext.core import embedding_ops
 from easy_rec_ext.core import regularizers
-from easy_rec_ext.utils import constant
+from easy_rec_ext.utils import constant, variable_util
 import easy_rec_ext.core.metrics as metrics_lib
 from easy_rec_ext.layers.sequence_pooling import SequencePooling
 from easy_rec_ext.layers.senet import SENetLayer
@@ -286,11 +286,10 @@ class MatchModel(object):
             elif feature_field.feature_type == "RawFeature":
                 values = self._feature_dict[feature_field.feature_name]
                 if feature_field.raw_input_embedding_type == "field_embedding":
-                    embedding_weights = embedding_ops.get_embedding_variable(
+                    embedding_weights = variable_util.get_normal_variable(
+                        scope="feature",
                         name=feature_field.embedding_name,
-                        dim=feature_field.embedding_dim,
-                        vocab_size=feature_field.raw_input_dim,
-                        key_is_string=False,
+                        shape=(feature_field.raw_input_dim, feature_field.embedding_dim),
                     )
                     values = tf.multiply(tf.expand_dims(values, axis=-1), embedding_weights)
                     values = tf.reshape(values, [-1, feature_field.raw_input_dim * feature_field.embedding_dim])
