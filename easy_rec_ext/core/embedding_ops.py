@@ -153,10 +153,10 @@ def safe_embedding_lookup(params, ids):
             condition = tf.math.greater_equal(ids, 0)
             if ids.dtype != dtypes.int64:
                 ids = math_ops.to_int64(ids)
-        values = tfra.dynamic_embedding.embedding_lookup(
+        values = tfra.dynamic_embedding.embedding_lookup_unique(
             params,
             ids,
-            name="tfra_embedding_lookup",
+            name="tfra_embedding_lookup_unique",
         )
         values = tf.squeeze(values, axis=-2)
         condition = tf.concat([condition] * values.get_shape().as_list()[-1], axis=-1)
