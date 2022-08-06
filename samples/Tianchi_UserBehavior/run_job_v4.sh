@@ -1,5 +1,6 @@
 #!/bin/bash
 
+easy_rec_ext_data_dir=/Users/jun.tang6/Data/Tianchi_UserBehavior
 if [ -z ${easy_rec_ext_data_dir} ]; then
   echo "easy_rec_ext_data_dir is not exists"
   exit 1
@@ -10,7 +11,7 @@ fi
 python build_candidate_item.py --input_path=${easy_rec_ext_data_dir}/UserBehavior.csv --output_path=${easy_rec_ext_data_dir}/candidate_item
 echo "完成构建候选物品特征"
 
-python build_sample_v4.py --input_path=${easy_rec_ext_data_dir}/UserBehavior.csv --output_path=${easy_rec_ext_data_dir}/sample_v4 --all_item_path=${easy_rec_ext_data_dir}/candidate_item_all.txt --user_train_pos_num=20 --user_train_neg_num=1 --st_seq_max_length=20 --lt_seq_max_length=50 --conversion_seq_max_length=10
+python build_sample_v4.py --input_path=${easy_rec_ext_data_dir}/UserBehavior.csv --output_path=${easy_rec_ext_data_dir}/sample_v4 --all_item_path=${easy_rec_ext_data_dir}/candidate_item_all.txt --user_train_pos_num=20 --user_train_neg_num=2 --st_seq_max_length=20 --lt_seq_max_length=50 --conversion_seq_max_length=10
 tail -n 50000 ${easy_rec_ext_data_dir}/sample_v4_eval.txt > ${easy_rec_ext_data_dir}/sample_v4_eval_5w.txt
 tail -n 100000 ${easy_rec_ext_data_dir}/sample_v4_train_19.txt > ${easy_rec_ext_data_dir}/sample_v4_train_19_10w.txt
 echo "完成构建训练样本"

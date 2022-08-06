@@ -13,10 +13,8 @@ print("Run params:" + str(args))
 
 item_cnt = dict()
 all_item_fea_dict = dict()
-label_item_fea_dict = dict()
 
 user_id = None
-last_behavior = None
 line_num = 0
 with open(args.input_path, mode="r") as f:
     for line in f:
@@ -27,24 +25,13 @@ with open(args.input_path, mode="r") as f:
         split = line.strip().split(",")
         assert len(split) == 5, "错误行:" + str(line_num)
 
-        if split[0] != user_id:
-            if user_id:
-                label_item_fea_dict[last_behavior[1]] = last_behavior[1] + "," + last_behavior[2]
-            user_id = split[0]
-
         all_item_fea_dict[split[1]] = split[1] + "," + split[2]
         item_cnt[split[1]] = item_cnt.get(split[1], 0) + 1
-        last_behavior = split
-    label_item_fea_dict[last_behavior[1]] = last_behavior[1] + "," + last_behavior[2]
 
 with open(args.output_path + "_all.txt", mode="w") as fout:
     for k, v in all_item_fea_dict.items():
         fout.write(k + "#" + v + "\n")
 
-
-with open(args.output_path + "_hot.txt", mode="w") as fout:
-    pairs = list(item_cnt.items())
-    pairs.sort(key=lambda x: x[1], reverse=True)
-    pairs = [x[0] for x in pairs[:500000]]
-    for k in pairs:
-        fout.write(k + "#" + all_item_fea_dict[k] + "\n")
+with open(args.output_path + "_cnt.txt", mode="w") as fout:
+    for k, v in item_cnt.items():
+        fout.write(k + "#" + str(v) + "\n")
