@@ -21,8 +21,9 @@ print("Run params:" + str(args))
 behavior_type_enum = ["pv", "buy", "cart", "fav"]
 dividing_time_point = 24 * 60 * 60
 
-train_dts = ["20171126", "20171127", "20171128", "20171129", "20171130", "20171201", "20171202"]
-eval_dts = ["20171203"]
+# train_dts = ["20171126", "20171127", "20171128", "20171129", "20171130", "20171201", "20171202"]
+train_dts = ["20171130", "20171201", "20171202"]
+eval_dt = "20171203"
 train_output_files = [open(args.output_path + "_train_%s.txt" % dt, mode="w") for dt in train_dts]
 eval_output = open(args.output_path + "_eval.txt", mode="w")
 
@@ -78,7 +79,7 @@ def build_user_seq_feature(current_behavior, history_behavior_list):
     return ",".join([
         "|".join(hist_item_ids),
         "|".join(hist_item_cate_ids),
-        "|".join(hist_behavior_time_diff_list),
+        # "|".join(hist_behavior_time_diff_list),
         "|".join(hist_behavior_time_rank_list),
     ])
 
@@ -159,26 +160,13 @@ with open(args.input_path, mode="r") as f:
 
         if split[0] != user_id or line_num == 100150807:
             if user_id:
-                hist_item_ids = [x[0] for x in user_seq_list]
-
                 for i, target_behavior in enumerate(user_seq_list):
                     current_dt = time.strftime("%Y%m%d", time.localtime(int(target_behavior[3])))
-                    if len(user_seq_list) > (i + 1):
-                        history_behavior_list = user_seq_list[(i + 1):]
-                    else:
-                        history_behavior_list = []
-                    user_feature = build_user_feature(user_id, target_behavior, history_behavior_list)
+                    history_behavior_list = user_seq_list[:i]
+                    hist_item_ids = [x[0] for x in history_behavior_list]
+                    user_feature = build_user_feature(user_id, target_behavior, history_behavior_list[::-1])
 
-                    if current_dt in eval_dts:
-                        eval_output.write(
-                            ",".join([
-                                str(1),
-                                user_feature,
-                                build_item_feature(target_behavior),
-                            ])
-                            + "\n"
-                        )
-                    elif current_dt in train_dts:
+                    if current_dt in train_dts:
                         train_output_files[train_dts.index(current_dt)].write(
                             ",".join([
                                 str(1),
@@ -197,16 +185,24 @@ with open(args.input_path, mode="r") as f:
                                 ])
                                 + "\n"
                             )
-                    else:
-                        break
+                    elif current_dt == eval_dt and int(user_id) % 10 == 5:
+                        # eval_output.write("#".join([
+                        #     user_feature,
+                        #     ",".join(hist_item_ids[i:])
+                        # ]) + "\n")
+                        # break
+                        eval_output.write("#".join([
+                            user_feature,
+                            target_behavior[0]
+                        ]) + "\n")
 
             user_id = split[0]
             user_seq_list = []
 
         current_behavior = split[1:]
         if user_seq_list:
-            assert int(current_behavior[3]) >= int(user_seq_list[0][3]), "错误行:" + str(line_num)
-        user_seq_list.insert(0, current_behavior)
+            assert int(current_behavior[3]) >= int(user_seq_list[-1][3]), "错误行:" + str(line_num)
+        user_seq_list.append(current_behavior)
 
 for train_output in train_output_files:
     train_output.close()
