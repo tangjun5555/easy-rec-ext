@@ -72,7 +72,7 @@ class Processor(object):
                     annoy_index.add_item(i, vector)
                     i += 1
                 batch_fea_input = []
-        annoy_index.build(50)
+        annoy_index.build(100)
         self.all_item_ids = all_item_ids
         self.annoy_index = annoy_index
         print("%s构建索引" % time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
@@ -107,9 +107,9 @@ if __name__ == "__main__":
         sample_num = 0
         for line in f:
             sample_num += 1
-            split = line.strip().split(",")
-            labels = [split[-2]]
-            user_vector = processor.build_user_vector(",".join(split[1:-2]))
+            split = line.strip().split("#")
+            labels = [split[-1]]
+            user_vector = processor.build_user_vector(split[0])
             preds = processor.search_recall_items(
                 user_vector,
                 max(topks),
