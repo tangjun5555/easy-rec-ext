@@ -9,6 +9,7 @@ import argparse
 from annoy import AnnoyIndex
 import numpy as np
 import tensorflow as tf
+import tensorflow_recommenders_addons as tfra
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
