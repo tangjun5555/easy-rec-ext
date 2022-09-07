@@ -24,7 +24,9 @@ class TFRecordInput(Input):
                                             task_index, task_num)
 
     def _build(self, mode):
-        file_paths = tf.gfile.Glob(self._input_path)
+        file_paths = []
+        for x in self._input_path.split(","):
+            file_paths.extend(tf.gfile.Glob(x))
         file_paths = sorted(file_paths)
         assert len(file_paths) > 0, "match no files with %s" % self._input_path
 
@@ -42,15 +44,10 @@ class TFRecordInput(Input):
             )
             dataset = dataset.shard(self._task_num, self._task_index)
 
-            dataset = dataset.shuffle(
-                buffer_size=self._shuffle_buffer_size,
-                seed=555,
-                reshuffle_each_iteration=True
-            )
+            dataset = dataset.shuffle(buffer_size=self._shuffle_buffer_size, seed=555, reshuffle_each_iteration=True)
             dataset = dataset.repeat(self._input_config.num_epochs)
         else:
             logging.info("eval files[%d]: %s" % (len(file_paths), ",".join(file_paths)))
-
             dataset = tf.data.TFRecordDataset(file_paths)
             dataset = dataset.repeat(1)
 
