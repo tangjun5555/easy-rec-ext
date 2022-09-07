@@ -6,6 +6,9 @@
 import argparse
 import tensorflow as tf
 
+if tf.__version__ >= "2.0":
+    tf = tf.compat.v1
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--checkpoint_path", type=str, required=True)
 parser.add_argument("--variable_name", type=str, required=False, default=None)
