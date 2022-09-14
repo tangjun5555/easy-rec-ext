@@ -218,7 +218,20 @@ class MatchModel(object):
         feature_fields_num = len(feature_group.feature_name_list) if feature_group.feature_name_list else 0
         for i in range(feature_fields_num):
             feature_field = self._feature_fields_dict[feature_group.feature_name_list[i]]
-            hist_seq_emb_list.append(group_input_dict[feature_field.feature_name])
+
+            if feature_field.feature_type == "RawFeature":
+                if feature_field.raw_input_embedding_type:
+                    hist_seq_emb_list.append(
+                        tf.reshape(group_input_dict[feature_field.feature_name],
+                                   [-1, feature_field.raw_input_dim, feature_field.embedding_dim])
+                    )
+                else:
+                    hist_seq_emb_list.append(
+                        tf.reshape(group_input_dict[feature_field.feature_name],
+                                   [-1, feature_field.raw_input_dim, 1])
+                    )
+            else:
+                hist_seq_emb_list.append(group_input_dict[feature_field.feature_name])
 
             hist_seq_id = self._feature_dict[feature_field.feature_name]
             if "hist_seq_len" not in outputs:
@@ -279,6 +292,18 @@ class MatchModel(object):
 
             elif feature_field.feature_type == "RawFeature":
                 values = self._feature_dict[feature_field.feature_name]
+
+                cur_batch_max_seq_len = tf.shape(values)[1]
+                values = tf.cond(
+                    tf.constant(feature_field.raw_input_dim) > cur_batch_max_seq_len,
+                    lambda: tf.pad(values,
+                                   [[0, 0], [0, feature_field.raw_input_dim - cur_batch_max_seq_len]],
+                                   mode="CONSTANT",
+                                   constant_values=0.0,
+                                   ),
+                    lambda: tf.slice(values, [0, 0], [-1, feature_field.raw_input_dim])
+                )
+
                 if feature_field.raw_input_embedding_type == "field_embedding":
                     embedding_weights = variable_util.get_normal_variable(
                         scope="feature",
