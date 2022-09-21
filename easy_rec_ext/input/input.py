@@ -165,9 +165,11 @@ class Input(object):
                         tmp_vals = tf.string_to_number(tmp_fea.values, tf.float32,
                                                        name="multi_raw_fea_to_flt_%s" % fc.input_name)
                         parsed_dict[fc.feature_name] = tf.sparse.to_dense(
-                            tmp_fea.indices,
-                            [tf.shape(field_dict[fc.input_name])[0], fc.raw_input_dim],
-                            tmp_vals,
+                            sp_input=tf.sparse.SparseTensor(
+                                tmp_fea.indices,
+                                tmp_vals,
+                                tmp_fea.dense_shape,
+                            ),
                             default_value=0.0,
                         )
                     else:
