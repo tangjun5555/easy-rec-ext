@@ -117,7 +117,7 @@ class NegativeSampler(BaseSampler):
     def __init__(self, input_path: str, sampling_type="W2VSampling"):
         super(NegativeSampler, self).__init__(input_path, sampling_type)
 
-    def get_samples(self, num_sample: int, batch_item_ids: List[str]):
+    def get_samples(self, user_id: str, num_sample: int, batch_item_ids: List[str]):
         res = []
         max_try_num = num_sample + 50
         try_num = 0
@@ -138,7 +138,7 @@ class NegativeSamplerV2(BaseSampler):
         super(NegativeSamplerV2, self).__init__(input_path, sampling_type)
         self.user_pos_items_dict = self.load_user_edge_items(pos_edge_input_path)
 
-    def get_samples(self, user_id, num_sample: int, batch_item_ids: List[str]):
+    def get_samples(self, user_id: str, num_sample: int, batch_item_ids: List[str]):
         res = []
         user_pos_items = self.user_pos_items_dict.get(user_id, [])
         max_try_num = num_sample + 50
@@ -155,11 +155,12 @@ class HardNegativeSampler(BaseSampler):
     """
     加权随机负采样，会排除Mini-Batch内的Item Id，同时HardNegative边表中(一般为曝光未点击)进行负采样作为HardNegative
     """
-    def __init__(self, input_path: str, hard_neg_edge_input_path, sampling_type="W2VSampling"):
+    def __init__(self, input_path: str, hard_neg_edge_input_path: str, num_hard_sample: int, sampling_type="W2VSampling"):
         super(HardNegativeSampler, self).__init__(input_path, sampling_type)
         self.user_hard_neg_items_dict = self.load_user_edge_items(hard_neg_edge_input_path)
+        self.num_hard_sample = num_hard_sample
 
-    def get_samples(self, user_id, num_sample: int, num_hard_sample, batch_item_ids: List[str]):
+    def get_samples(self, user_id: str, num_sample: int, batch_item_ids: List[str]):
         res = []
 
         max_try_num = num_sample + 50
@@ -173,9 +174,9 @@ class HardNegativeSampler(BaseSampler):
         user_hard_neg_items = self.user_hard_neg_items_dict.get(user_id, [])
         if user_hard_neg_items:
             hard_neg_sampling = UniformSampling(user_hard_neg_items)
-            max_try_num = num_hard_sample + 20
+            max_try_num = self.num_hard_sample + 20
             try_num = 0
-            while try_num < max_try_num and len(res) < (num_sample + num_hard_sample):
+            while try_num < max_try_num and len(res) < (num_sample + self.num_hard_sample):
                 tmp = hard_neg_sampling.get()
                 if tmp not in res and tmp not in batch_item_ids:
                     res.append(tmp)
@@ -187,12 +188,15 @@ class HardNegativeSamplerV2(BaseSampler):
     """
     加权随机负采样，会跟排除Mini-Batch内的User有边的Item Id，同时HardNegative边表中(一般为曝光未点击)进行负采样作为HardNegative
     """
-    def __init__(self, input_path: str, pos_edge_input_path, hard_neg_edge_input_path, sampling_type="W2VSampling"):
+    def __init__(self, input_path: str, pos_edge_input_path: str,
+                 hard_neg_edge_input_path: str, num_hard_sample: int,
+                 sampling_type="W2VSampling"):
         super(HardNegativeSamplerV2, self).__init__(input_path, sampling_type)
         self.user_pos_items_dict = self.load_user_edge_items(pos_edge_input_path)
         self.user_hard_neg_items_dict = self.load_user_edge_items(hard_neg_edge_input_path)
+        self.num_hard_sample = num_hard_sample
 
-    def get_samples(self, user_id, num_sample: int, num_hard_sample, batch_item_ids: List[str]):
+    def get_samples(self, user_id: str, num_sample: int, batch_item_ids: List[str]):
         res = []
         user_pos_items = self.user_pos_items_dict.get(user_id, [])
 
@@ -207,9 +211,9 @@ class HardNegativeSamplerV2(BaseSampler):
         user_hard_neg_items = self.user_hard_neg_items_dict.get(user_id, [])
         if user_hard_neg_items:
             hard_neg_sampling = UniformSampling(user_hard_neg_items)
-            max_try_num = num_hard_sample + 20
+            max_try_num = self.num_hard_sample + 20
             try_num = 0
-            while try_num < max_try_num and len(res) < (num_sample + num_hard_sample):
+            while try_num < max_try_num and len(res) < (num_sample + self.num_hard_sample):
                 tmp = hard_neg_sampling.get()
                 if tmp not in res and tmp not in batch_item_ids and tmp not in user_pos_items:
                     res.append(tmp)
