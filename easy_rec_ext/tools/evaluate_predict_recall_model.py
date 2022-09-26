@@ -32,7 +32,7 @@ parser.add_argument("--predict_num", type=int, required=False, default=50,
 parser.add_argument("--item_fea_num", type=int, required=True, help="物品特征数量")
 parser.add_argument("--default_user_fea", type=str, required=True, help="默认用户特征")
 parser.add_argument("--default_item_fea", type=str, required=True, help="默认物品特征")
-parser.add_argument("--vector_dim", type=int, required=True, default=100, help="向量维度")
+parser.add_argument("--vector_dim", type=int, required=True, help="向量维度")
 parser.add_argument("--topks", type=str, required=False, default="5,20,100")
 args = parser.parse_args()
 print("Run params:" + str(args))
