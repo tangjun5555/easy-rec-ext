@@ -33,7 +33,7 @@ class SENetLayer(object):
         """
         field_num = input_value.get_shape().as_list()[1]
         embed_size = input_value.get_shape().as_list()[2]
-        reduction_size = max(1, field_num // self.reduction_ratio)
+        reduction_size = max(1, int(field_num / self.reduction_ratio))
         logging.info("SENetLayer, name:%s, field_num:%d, embed_size:%d, reduction_size:%d"
                      % (self.name, field_num, embed_size, reduction_size))
 
