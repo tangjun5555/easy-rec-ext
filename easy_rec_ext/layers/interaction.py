@@ -209,4 +209,4 @@ class BilinearInteraction(object):
                 )
                 for v, w in zip(itertools.combinations(range(field_num), 2), W_list)
             ]
-        return tf.reshape(p, shape=(-1, field_num * (field_num - 1) / 2 * embed_size))
+        return tf.reshape(p, shape=(-1, field_num * (field_num - 1) // 2 * embed_size))

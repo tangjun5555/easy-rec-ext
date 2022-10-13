@@ -170,12 +170,7 @@ class DIN(RankModel, DINLayer):
         all_fea = tf.concat(tower_fea_arr, axis=1)
         final_dnn_layer = dnn.DNN(self._model_config.final_dnn, self._l2_reg, "final_dnn", self._is_training)
         all_fea = final_dnn_layer(all_fea)
-        logging.info("build_predict_graph, all_fea.shape:%s" % (str(all_fea.shape)))
-
-        if self._model_config.bias_tower:
-            bias_fea = self.build_bias_input_layer(self._model_config.bias_tower.input_group)
-            all_fea = tf.concat([all_fea, bias_fea], axis=1)
-            logging.info("build_predict_graph, all_fea.shape:%s" % (str(all_fea.shape)))
+        logging.info("DIN build_predict_graph, all_fea.shape:%s" % (str(all_fea.shape)))
 
         logits = tf.layers.dense(all_fea, 1, name="logits")
         logits = tf.reshape(logits, (-1,))
