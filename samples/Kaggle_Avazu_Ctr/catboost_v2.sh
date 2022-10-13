@@ -12,7 +12,7 @@ catboost-1.0.6/catboost/app/catboost fit \
   --learn-set=train_27_29.csv \
   --test-set=train_30.csv \
   --delimiter=',' \
-  --column-description=feature_v2.cd  \
+  --column-description=catboost_v2_feature.cd  \
   --loss-function=Logloss \
   --custom-metric="Logloss:hints=skip_train~false,AUC:hints=skip_train~false" \
   --random-seed=555 \
