@@ -16,6 +16,7 @@ from easy_rec_ext.model.dropoutnet import DropoutNetModelConfig
 from easy_rec_ext.model.sdm import SDMModelConfig
 from easy_rec_ext.model.mind import MINDModelConfig
 
+from easy_rec_ext.model.FiBiNet import FiBiNetTower
 from easy_rec_ext.model.din import DINTower
 from easy_rec_ext.model.bst import BSTTower
 from easy_rec_ext.model.dien import DIENTower
@@ -523,6 +524,7 @@ class ModelConfig(BaseConfig):
 
                  wide_towers: List[str] = None,
                  dnn_towers: List[DNNTower] = None,
+                 fibitnet_towers: List[FiBiNetTower] = None,
                  seq_pooling_towers: List[SequencePoolingTower] = None,
                  interaction_towers: List[InteractionTower] = None,
                  din_towers: List[DINTower] = None,
@@ -554,6 +556,7 @@ class ModelConfig(BaseConfig):
 
         self.wide_towers = wide_towers
         self.dnn_towers = dnn_towers
+        self.fibitnet_towers = fibitnet_towers
         self.seq_pooling_towers = seq_pooling_towers
         self.interaction_towers = interaction_towers
         self.din_towers = din_towers
@@ -603,6 +606,11 @@ class ModelConfig(BaseConfig):
             for tower in data["dnn_towers"]:
                 dnn_towers.append(DNNTower.handle(tower))
             res.dnn_towers = dnn_towers
+        if "fibitnet_towers" in data:
+            fibitnet_towers = []
+            for tower in data["fibitnet_towers"]:
+                fibitnet_towers.append(FiBiNetTower.handle(tower))
+            res.fibitnet_towers = fibitnet_towers
         if "seq_pooling_towers" in data:
             seq_pooling_towers = []
             for tower in data["seq_pooling_towers"]:

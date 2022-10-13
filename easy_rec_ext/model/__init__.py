@@ -4,6 +4,7 @@
 # desc:
 
 # Rank Single-Task Model
+from .FiBiNet import FiBiNet
 from .din import DIN
 from .bst import BST
 from .dien import DIEN

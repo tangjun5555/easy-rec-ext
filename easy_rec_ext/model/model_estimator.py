@@ -30,7 +30,11 @@ class ModelEstimator(tf.estimator.Estimator):
 
     @property
     def _real_model(self):
-        if self._pipeline_config.model_config.model_class == "din":
+        if self._pipeline_config.model_config.model_class == "multi_tower":
+            model = MultiTower
+        elif self._pipeline_config.model_config.model_class == "fibinet":
+            model = FiBiNet
+        elif self._pipeline_config.model_config.model_class == "din":
             model = DIN
         elif self._pipeline_config.model_config.model_class == "bst":
             model = BST
@@ -38,8 +42,6 @@ class ModelEstimator(tf.estimator.Estimator):
             model = DIEN
         elif self._pipeline_config.model_config.model_class == "can":
             model = CAN
-        elif self._pipeline_config.model_config.model_class == "multi_tower":
-            model = MultiTower
 
         elif self._pipeline_config.model_config.model_class == "esmm":
             model = ESMM
