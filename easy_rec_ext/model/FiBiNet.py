@@ -80,7 +80,7 @@ class FiBiNet(RankModel, FiBiNetLayer):
         self._fibitnet_tower_features = []
         for tower_id in range(self._fibitnet_tower_num):
             tower = self._model_config.fibitnet_towers[tower_id]
-            tower_feature = self.build_input_layer(tower.input_group)
+            tower_feature = self.build_interaction_input_layer(tower.input_group)
             self._fibitnet_tower_features.append(tower_feature)
 
         logging.info("all tower num: {0}".format(self._dnn_tower_num + self._fibitnet_tower_num))
