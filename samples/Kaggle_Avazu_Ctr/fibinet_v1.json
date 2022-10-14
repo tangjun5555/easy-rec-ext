@@ -1,5 +1,5 @@
 {
-    "model_dir": "deep_v1/ckpt",
+    "model_dir": "fibinet_v1/ckpt",
     "train_config": {
         "optimizer_config": {
             "optimizer_type": "adagrad_optimizer",
@@ -15,8 +15,8 @@
                 }
             }
         },
-        "log_step_count_steps": 1000,
-        "save_checkpoints_steps": 10000,
+        "log_step_count_steps": 500,
+        "save_checkpoints_steps": 5000,
         "keep_checkpoint_max": 2
     },
     "eval_config": {
@@ -34,7 +34,7 @@
         ]
     },
     "export_config": {
-        "export_dir": "deep_v1/export"
+        "export_dir": "fibinet_v1/export"
     },
     "input_config": {
         "input_fields": [
@@ -279,7 +279,6 @@
             {
                 "group_name": "fibinet_1",
                 "feature_names": [
-                    "hour",
                     "c1",
                     "banner_pos",
                     "site_id",
@@ -308,8 +307,8 @@
             {
                 "input_group": "fibinet_1",
                 "fibinet_config": {
-                    "senet_reduction_ratio": 2.0,
-                    "bilinear_type": "Field-Interaction"
+                    "senet_reduction_ratio": 1.2,
+                    "bilinear_type": "Field-All"
                 }
             }
         ],
