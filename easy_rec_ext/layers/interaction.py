@@ -147,6 +147,8 @@ class BilinearInteraction(object):
         """
         field_num = input_value.get_shape().as_list()[1]
         embed_size = input_value.get_shape().as_list()[2]
+        logging.info("BilinearInteraction, name:%s, field_num:%d, embed_size:%d, bilinear_type:%s"
+                     % (self.name, field_num, embed_size, self.bilinear_type))
 
         if self.bilinear_type == "Field-All":
             W = variable_util.get_normal_variable(
@@ -156,11 +158,11 @@ class BilinearInteraction(object):
             )
             vidots = [
                 tf.tensordot(
-                    tf.slice(input_value, [0, i, 0], [-1, 1, -1]),
+                    tf.slice(input_value, begin=[0, i, 0], size=[-1, 1, -1]),
                     W,
                     axes=(-1, 0),
                 )
-                for i in range(field_num - 1)
+                for i in range(field_num)
             ]
             p = [
                 tf.multiply(
@@ -205,8 +207,10 @@ class BilinearInteraction(object):
             p = [
                 tf.multiply(
                     tf.tensordot(tf.slice(input_value, [0, v[0], 0], [-1, 1, -1]), w, axes=(-1, 0)),
-                    tf.slice(input_value, [0, v[1], 0], [-1, 1, -1])
+                    tf.slice(input_value, [0, v[1], 0], [-1, 1, -1]),
                 )
                 for v, w in zip(itertools.combinations(range(field_num), 2), W_list)
             ]
+        p = tf.concat(p, axis=1)
+        logging.info("BilinearInteraction, name:{name}, p.shape:{shape}".format(name=self.name, shape=str(p.shape)))
         return tf.reshape(p, shape=(-1, field_num * (field_num - 1) // 2 * embed_size))

@@ -14,7 +14,7 @@ if tf.__version__ >= "2.0":
 
 
 class FiBiNetConfig(object):
-    def __init__(self, senet_reduction_ratio=2.0, bilinear_type="Field-Interaction"):
+    def __init__(self, senet_reduction_ratio=1.2, bilinear_type="Field-All"):
         self.senet_reduction_ratio = senet_reduction_ratio
         self.bilinear_type = bilinear_type
 

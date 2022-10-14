@@ -17,11 +17,11 @@ class SENetLayer(object):
     """
     Squeeze-and-Excitation Network Layer
     """
-    def __init__(self, name, squeeze_fun="mean", reduction_ratio=2):
+    def __init__(self, name, reduction_ratio=1.2, squeeze_fun="mean"):
         self.name = name
+        self.reduction_ratio = reduction_ratio
         assert squeeze_fun in ["mean", "max"]
         self.squeeze_fun = squeeze_fun
-        self.reduction_ratio = reduction_ratio
 
     def __call__(self, input_value):
         """
