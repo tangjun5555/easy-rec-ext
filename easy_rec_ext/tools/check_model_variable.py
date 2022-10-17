@@ -20,7 +20,7 @@ reader = tf.train.load_checkpoint(checkpoint_path)
 
 var_to_shape_map = reader.get_variable_to_shape_map()
 print("打印变量的shape:")
-for key, value in var_to_shape_map.items():
+for key, value in sorted(var_to_shape_map.items()):
     print(key, value)
 
 if args.variable_name:
