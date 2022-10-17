@@ -9,22 +9,21 @@ fi
 
 rm -rf fibinet_v1
 
-# Saving dict for global step 25196: auc = 0.71428937, gauc = 0.70688045, global_step = 25196, loss = 0.41361886, loss/loss/cross_entropy_loss = 0.41361886, loss/loss/total_loss = 0.41361886, pcopc = 0.94493103
+for part in 21 22 23 24 25 26 27 28 29
+do
 python -m easy_rec_ext.main --pipeline_config_path=fibinet_v1.json --task_type=train_and_evaluate \
-  --train_input_path=${easy_rec_ext_data_dir}/sample_27 \
+  --train_input_path=${easy_rec_ext_data_dir}/sample_${part} \
   --eval_input_path=${easy_rec_ext_data_dir}/sample_30
-echo "训练模型sample_27"
-
-# Saving dict for global step 66503: auc = 0.72979456, gauc = 0.7183288, global_step = 66503, loss = 0.40628868, loss/loss/cross_entropy_loss = 0.40628868, loss/loss/total_loss = 0.40628868, pcopc = 0.931607
-python -m easy_rec_ext.main --pipeline_config_path=fibinet_v1.json --task_type=train_and_evaluate \
-  --train_input_path=${easy_rec_ext_data_dir}/sample_28 \
-  --eval_input_path=${easy_rec_ext_data_dir}/sample_30
-echo "训练模型sample_28"
-
-# Saving dict for global step 96446: auc = 0.7384362, gauc = 0.7252884, global_step = 96446, loss = 0.40130416, loss/loss/cross_entropy_loss = 0.40130416, loss/loss/total_loss = 0.40130416, pcopc = 0.9943365
-python -m easy_rec_ext.main --pipeline_config_path=fibinet_v1.json --task_type=train_and_evaluate \
-  --train_input_path=${easy_rec_ext_data_dir}/sample_29 \
-  --eval_input_path=${easy_rec_ext_data_dir}/sample_30
-echo "训练模型sample_29"
+echo "训练模型sample_${part}"
+done
+# Saving dict for global step 32211: auc = 0.71557295, gauc = 0.7074479, global_step = 32211, loss = 0.412461, loss/loss/cross_entropy_loss = 0.412461, loss/loss/total_loss = 0.412461, pcopc = 0.9992151
+# Saving dict for global step 73908: auc = 0.71057045, gauc = 0.70143414, global_step = 73908, loss = 0.41686013, loss/loss/cross_entropy_loss = 0.41686013, loss/loss/total_loss = 0.41686013, pcopc = 0.9184518
+# Saving dict for global step 104149: auc = 0.71678007, gauc = 0.70681196, global_step = 104149, loss = 0.41246614, loss/loss/cross_entropy_loss = 0.41246614, loss/loss/total_loss = 0.41246614, pcopc = 1.0057559
+# Saving dict for global step 130207: auc = 0.72092324, gauc = 0.7110829, global_step = 130207, loss = 0.42072004, loss/loss/cross_entropy_loss = 0.42072004, loss/loss/total_loss = 0.42072004, pcopc = 0.7245713
+# Saving dict for global step 156482: auc = 0.7272918, gauc = 0.71739185, global_step = 156482, loss = 0.40890497, loss/loss/cross_entropy_loss = 0.40890497, loss/loss/total_loss = 0.40890497, pcopc = 0.93824744
+# Saving dict for global step 186450: auc = 0.7270293, gauc = 0.71805066, global_step = 186450, loss = 0.4083485, loss/loss/cross_entropy_loss = 0.4083485, loss/loss/total_loss = 0.4083485, pcopc = 0.96550184
+# Saving dict for global step 211646: auc = 0.7319008, gauc = 0.7192324, global_step = 211646, loss = 0.40516135, loss/loss/cross_entropy_loss = 0.40516135, loss/loss/total_loss = 0.40516135, pcopc = 0.99258745
+# Saving dict for global step 252953: auc = 0.741235, gauc = 0.72771615, global_step = 252953, loss = 0.40117133, loss/loss/cross_entropy_loss = 0.40117133, loss/loss/total_loss = 0.40117133, pcopc = 0.9232592
+# Saving dict for global step 282896: auc = 0.74598646, gauc = 0.7322617, global_step = 282896, loss = 0.398138, loss/loss/cross_entropy_loss = 0.398138, loss/loss/total_loss = 0.398138, pcopc = 0.9455892
 
 python -m easy_rec_ext.tools.check_mdoel_variable --checkpoint_path=fibinet_v1/ckpt
