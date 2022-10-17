@@ -26,4 +26,4 @@ done
 # Saving dict for global step 252953: auc = 0.741235, gauc = 0.72771615, global_step = 252953, loss = 0.40117133, loss/loss/cross_entropy_loss = 0.40117133, loss/loss/total_loss = 0.40117133, pcopc = 0.9232592
 # Saving dict for global step 282896: auc = 0.74598646, gauc = 0.7322617, global_step = 282896, loss = 0.398138, loss/loss/cross_entropy_loss = 0.398138, loss/loss/total_loss = 0.398138, pcopc = 0.9455892
 
-python -m easy_rec_ext.tools.check_mdoel_variable --checkpoint_path=fibinet_v1/ckpt
+python -m easy_rec_ext.tools.check_model_variable --checkpoint_path=fibinet_v1/ckpt
