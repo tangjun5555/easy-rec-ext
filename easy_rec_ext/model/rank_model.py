@@ -13,7 +13,7 @@ from easy_rec_ext.utils import variable_util, string_ops, feature_util
 import easy_rec_ext.core.metrics as metrics_lib
 from easy_rec_ext.layers.sequence_pooling import SequencePooling
 from easy_rec_ext.layers.senet import SENetLayer
-
+from easy_rec_ext.layers.numerical_conversion import numerical_conversion_fn
 import tensorflow as tf
 
 if tf.__version__ >= "2.0":
@@ -324,6 +324,9 @@ class RankModel(object):
 
             elif feature_field.feature_type == "RawFeature":
                 values = self._feature_dict[feature_field.feature_name]
+                if feature_field.raw_input_transform_fn:
+                    values = numerical_conversion_fn(feature_field.raw_input_transform_fn, values)
+
                 if feature_field.raw_input_embedding_type == "field_embedding":
                     embedding_weights = variable_util.get_normal_variable(
                         scope="feature",
