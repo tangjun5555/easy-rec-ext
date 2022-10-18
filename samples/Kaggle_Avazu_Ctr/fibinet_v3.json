@@ -1,5 +1,5 @@
 {
-    "model_dir": "fibinet_v1/ckpt",
+    "model_dir": "fibinet_v3/ckpt",
     "train_config": {
         "optimizer_config": {
             "optimizer_type": "adagrad_optimizer",
@@ -34,7 +34,7 @@
         ]
     },
     "export_config": {
-        "export_dir": "fibinet_v1/export"
+        "export_dir": "fibinet_v3/export"
     },
     "input_config": {
         "input_fields": [
@@ -308,7 +308,7 @@
                 "input_group": "fibinet_1",
                 "fibinet_config": {
                     "senet_reduction_ratio": 1.1,
-                    "bilinear_type": "Field-All"
+                    "bilinear_type": "Field-Interaction"
                 }
             }
         ],
