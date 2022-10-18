@@ -162,7 +162,7 @@ class BilinearInteraction(object):
                     W,
                     axes=(-1, 0),
                 )
-                for i in range(field_num)
+                for i in range(field_num - 1)
             ]
             p = [
                 tf.multiply(
