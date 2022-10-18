@@ -16,14 +16,14 @@ python -m easy_rec_ext.main --pipeline_config_path=mlp_v1.json --task_type=train
   --eval_input_path=${easy_rec_ext_data_dir}/sample_30
 echo "训练模型sample_${part}"
 done
-# Saving dict for global step 32211: auc = 0.7224633, gauc = 0.71208155, global_step = 32211, loss = 0.40958744, loss/loss/cross_entropy_loss = 0.40958744, loss/loss/total_loss = 0.40958744, pcopc = 1.0090172
-# Saving dict for global step 73908: auc = 0.7201729, gauc = 0.70876056, global_step = 73908, loss = 0.41331875, loss/loss/cross_entropy_loss = 0.41331875, loss/loss/total_loss = 0.41331875, pcopc = 0.8714226
-# Saving dict for global step 104149: auc = 0.73032904, gauc = 0.7183032, global_step = 104149, loss = 0.4060962, loss/loss/cross_entropy_loss = 0.4060962, loss/loss/total_loss = 0.4060962, pcopc = 0.95460725
-# Saving dict for global step 130207: auc = 0.7254425, gauc = 0.71483237, global_step = 130207, loss = 0.4171358, loss/loss/cross_entropy_loss = 0.4171358, loss/loss/total_loss = 0.4171358, pcopc = 0.7330842
-# Saving dict for global step 156482: auc = 0.73521745, gauc = 0.7230974, global_step = 156482, loss = 0.40355298, loss/loss/cross_entropy_loss = 0.40355298, loss/loss/total_loss = 0.40355298, pcopc = 0.95498216
-# Saving dict for global step 186450: auc = 0.73524964, gauc = 0.7228316, global_step = 186450, loss = 0.4038192, loss/loss/cross_entropy_loss = 0.4038192, loss/loss/total_loss = 0.4038192, pcopc = 0.9815651
-# Saving dict for global step 211646: auc = 0.73850733, gauc = 0.7253919, global_step = 211646, loss = 0.4012659, loss/loss/cross_entropy_loss = 0.4012659, loss/loss/total_loss = 0.4012659, pcopc = 1.0020953
-# Saving dict for global step 252953: auc = 0.74210286, gauc = 0.7282094, global_step = 252953, loss = 0.40046012, loss/loss/cross_entropy_loss = 0.40046012, loss/loss/total_loss = 0.40046012, pcopc = 0.92782956
-# Saving dict for global step 282896: auc = 0.74720675, gauc = 0.733077, global_step = 282896, loss = 0.39685553, loss/loss/cross_entropy_loss = 0.39685553, loss/loss/total_loss = 0.39685553, pcopc = 0.9438787
+# Saving dict for global step 32211: auc = 0.7258651, gauc = 0.71619207, global_step = 32211, loss = 0.40864724, loss/loss/cross_entropy_loss = 0.40864724, loss/loss/total_loss = 0.40864724, pcopc = 1.0061632
+# Saving dict for global step 73908: auc = 0.7232687, gauc = 0.7114876, global_step = 73908, loss = 0.41099375, loss/loss/cross_entropy_loss = 0.41099375, loss/loss/total_loss = 0.41099375, pcopc = 0.8842273
+# Saving dict for global step 104149: auc = 0.7300392, gauc = 0.7177111, global_step = 104149, loss = 0.40602404, loss/loss/cross_entropy_loss = 0.40602404, loss/loss/total_loss = 0.40602404, pcopc = 0.98693657
+# Saving dict for global step 130207: auc = 0.7309687, gauc = 0.7200182, global_step = 130207, loss = 0.41395912, loss/loss/cross_entropy_loss = 0.41395912, loss/loss/total_loss = 0.41395912, pcopc = 0.7400584
+# Saving dict for global step 156482: auc = 0.73634446, gauc = 0.7242361, global_step = 156482, loss = 0.40282685, loss/loss/cross_entropy_loss = 0.40282685, loss/loss/total_loss = 0.40282685, pcopc = 0.94964725
+# Saving dict for global step 186450: auc = 0.73754114, gauc = 0.7252248, global_step = 186450, loss = 0.40241668, loss/loss/cross_entropy_loss = 0.40241668, loss/loss/total_loss = 0.40241668, pcopc = 0.95454425
+# Saving dict for global step 211646: auc = 0.7389662, gauc = 0.72583187, global_step = 211646, loss = 0.4012984, loss/loss/cross_entropy_loss = 0.4012984, loss/loss/total_loss = 0.4012984, pcopc = 0.94675076
+# Saving dict for global step 252953: auc = 0.7428109, gauc = 0.72922444, global_step = 252953, loss = 0.39942393, loss/loss/cross_entropy_loss = 0.39942393, loss/loss/total_loss = 0.39942393, pcopc = 0.94714624
+# Saving dict for global step 282896: auc = 0.7452766, gauc = 0.73152685, global_step = 282896, loss = 0.39831087, loss/loss/cross_entropy_loss = 0.39831087, loss/loss/total_loss = 0.39831087, pcopc = 0.9283987
 
 python -m easy_rec_ext.tools.check_model_variable --checkpoint_path=mlp_v1/ckpt
