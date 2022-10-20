@@ -273,7 +273,7 @@ class CIN(object):
 
             curr_out = tf.nn.conv1d(dot_result, filters=filters[idx], stride=1, padding="VALID")
             curr_out = tf.nn.bias_add(curr_out, biases[idx])
-            curr_out = self.activation[idx](curr_out)
+            curr_out = self.activation(curr_out)
             curr_out = tf.transpose(curr_out, perm=[0, 2, 1])
 
             direct_connect = curr_out
