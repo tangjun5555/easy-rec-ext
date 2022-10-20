@@ -4,6 +4,7 @@
 # desc:
 
 # Rank Single-Task Model
+from .xDeepFM import XDeepFM
 from .FiBiNet import FiBiNet
 from .din import DIN
 from .bst import BST

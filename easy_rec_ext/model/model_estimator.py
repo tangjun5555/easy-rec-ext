@@ -32,6 +32,8 @@ class ModelEstimator(tf.estimator.Estimator):
     def _real_model(self):
         if self._pipeline_config.model_config.model_class == "multi_tower":
             model = MultiTower
+        elif self._pipeline_config.model_config.model_class == "xdeepfm":
+            model = XDeepFM
         elif self._pipeline_config.model_config.model_class == "fibinet":
             model = FiBiNet
         elif self._pipeline_config.model_config.model_class == "din":

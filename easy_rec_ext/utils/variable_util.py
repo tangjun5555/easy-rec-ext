@@ -25,7 +25,19 @@ def get_normal_variable(scope, name, shape):
             name=name,
             shape=shape,
             dtype=tf.dtypes.float32,
-            initializer=tf.random_normal_initializer(mean=0.0, stddev=0.1),
+            initializer=tf.glorot_uniform_initializer(seed=555),
+            trainable=True,
+        )
+    return variable
+
+
+def get_zero_init_variable(scope, name, shape):
+    with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
+        variable = tf.get_variable(
+            name=name,
+            shape=shape,
+            dtype=tf.dtypes.float32,
+            initializer=tf.zeros_initializer(),
             trainable=True,
         )
     return variable
