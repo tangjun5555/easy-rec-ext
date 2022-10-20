@@ -91,7 +91,7 @@ class XDeepFM(RankModel, XDeepFMLayer):
 
         for tower_id in range(self._xdeepfm_tower_num):
             tower_fea = self._xdeepfm_tower_features[tower_id]
-            tower = self._model_config.fibitnet_towers[tower_id]
+            tower = self._model_config.xdeepfm_towers[tower_id]
             tower_fea = self.call(
                 name=tower.input_group + "_xdeepfm",
                 xdeepfm_config=tower.xdeepfm_config,

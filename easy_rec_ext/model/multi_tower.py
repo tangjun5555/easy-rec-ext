@@ -10,9 +10,10 @@ from easy_rec_ext.layers import dnn
 from easy_rec_ext.layers.interaction import FM, InnerProduct, OuterProduct, BilinearInteraction
 from easy_rec_ext.core import regularizers
 from easy_rec_ext.model.rank_model import RankModel
+from easy_rec_ext.model.xDeepFM import XDeepFMLayer
+from easy_rec_ext.model.FiBiNet import FiBiNetLayer
 from easy_rec_ext.model.din import DINLayer
 from easy_rec_ext.model.bst import BSTLayer
-from easy_rec_ext.model.FiBiNet import FiBiNetLayer
 from easy_rec_ext.model.star import StarTopologyFCNLayer, AuxiliaryNetworkLayer as STARAuxiliaryNetworkLayer
 
 if tf.__version__ >= "2.0":
@@ -51,6 +52,13 @@ class MultiTower(RankModel):
             tower_feature = self.build_interaction_input_layer(tower.input_group)
             self._interaction_tower_features.append(tower_feature)
 
+        self._xdeepfm_tower_num = len(self._model_config.xdeepfm_towers) if self._model_config.xdeepfm_towers else 0
+        self._xdeepfm_tower_features = []
+        for tower_id in range(self._xdeepfm_tower_num):
+            tower = self._model_config.xdeepfm_towers[tower_id]
+            tower_feature = self.build_interaction_input_layer(tower.input_group)
+            self._xdeepfm_tower_features.append(tower_feature)
+
         self._fibitnet_tower_num = len(self._model_config.fibitnet_towers) if self._model_config.fibitnet_towers else 0
         self._fibitnet_tower_features = []
         for tower_id in range(self._fibitnet_tower_num):
@@ -80,6 +88,7 @@ class MultiTower(RankModel):
             self._wide_tower_num
             + self._dnn_tower_num
             + self._interaction_tower_num
+            + self._xdeepfm_tower_num
             + self._fibitnet_tower_num
             + self._din_tower_num
             + self._bst_tower_num
@@ -87,6 +96,7 @@ class MultiTower(RankModel):
         logging.info("wide tower num: {0}".format(self._wide_tower_num))
         logging.info("dnn tower num: {0}".format(self._dnn_tower_num))
         logging.info("interaction tower num: {0}".format(self._interaction_tower_num))
+        logging.info("xdeepfm tower num: {0}".format(self._xdeepfm_tower_num))
         logging.info("fibinet tower num: {0}".format(self._fibitnet_tower_num))
         logging.info("din tower num: {0}".format(self._din_tower_num))
         logging.info("bst tower num: {0}".format(self._bst_tower_num))
@@ -130,6 +140,32 @@ class MultiTower(RankModel):
                         "%s interaction_config.mode:%s is not supported." % (filename, tower.interaction_config.mode)
                     )
 
+        for tower_id in range(self._xdeepfm_tower_num):
+            tower_fea = self._xdeepfm_tower_features[tower_id]
+            tower = self._model_config.xdeepfm_towers[tower_id]
+
+            with tf.variable_scope(variable_scope, reuse=tf.AUTO_REUSE):
+                xdeepfm_layer = XDeepFMLayer()
+                tower_fea = xdeepfm_layer.call(
+                    name=tower.input_group + "_xdeepfm",
+                    xdeepfm_config=tower.xdeepfm_config,
+                    deep_fea=tower_fea,
+                )
+                tower_fea_arr.append(tower_fea)
+
+        for tower_id in range(self._fibitnet_tower_num):
+            tower_fea = self._fibitnet_tower_features[tower_id]
+            tower = self._model_config.fibitnet_towers[tower_id]
+
+            with tf.variable_scope(variable_scope, reuse=tf.AUTO_REUSE):
+                fibinet_layer = FiBiNetLayer()
+                tower_fea = fibinet_layer.call(
+                    name=tower.input_group + "_fibinet",
+                    fibinet_config=tower.fibinet_config,
+                    deep_fea=tower_fea,
+                )
+                tower_fea_arr.append(tower_fea)
+
         for tower_id in range(self._din_tower_num):
             tower_fea = self._din_tower_features[tower_id]
             tower = self._model_config.din_towers[tower_id]
@@ -158,19 +194,6 @@ class MultiTower(RankModel):
                     seq_size=tower.bst_config.seq_size,
                     multi_head_self_att_config=tower.bst_config.multi_head_self_att_config,
                     return_target=tower.bst_config.return_target,
-                )
-                tower_fea_arr.append(tower_fea)
-
-        for tower_id in range(self._fibitnet_tower_num):
-            tower_fea = self._fibitnet_tower_features[tower_id]
-            tower = self._model_config.fibitnet_towers[tower_id]
-
-            with tf.variable_scope(variable_scope, reuse=tf.AUTO_REUSE):
-                fibinet_layer = FiBiNetLayer()
-                tower_fea = fibinet_layer.call(
-                    name=tower.input_group + "_fibinet",
-                    fibinet_config=tower.fibinet_config,
-                    deep_fea=tower_fea,
                 )
                 tower_fea_arr.append(tower_fea)
 
