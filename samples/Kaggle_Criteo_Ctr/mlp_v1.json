@@ -1,0 +1,496 @@
+{
+    "model_dir": "mlp_v1/ckpt",
+    "train_config": {
+        "optimizer_config": {
+            "optimizer_type": "adagrad_optimizer",
+            "adagrad_optimizer": {
+                "learning_rate": {
+                    "learning_rate_type": "exponential_decay_learning_rate",
+                    "exponential_decay_learning_rate": {
+                        "initial_learning_rate": 0.1,
+                        "decay_steps": 10000,
+                        "decay_factor": 0.90,
+                        "min_learning_rate": 0.001
+                    }
+                }
+            }
+        },
+        "log_step_count_steps": 1000,
+        "save_checkpoints_steps": 10000,
+        "keep_checkpoint_max": 2
+    },
+    "eval_config": {
+        "metric_set": [
+            {
+                "name": "auc"
+            },
+            {
+                "name": "pcopc"
+            }
+        ]
+    },
+    "export_config": {
+        "export_dir": "mlp_v1/export"
+    },
+    "input_config": {
+        "input_fields": [
+            {
+                "input_name": "label",
+                "input_type": "int"
+            },
+            {
+                "input_name": "f01",
+                "input_type": "float"
+            },
+            {
+                "input_name": "f02",
+                "input_type": "float"
+            },
+            {
+                "input_name": "f03",
+                "input_type": "float"
+            },
+            {
+                "input_name": "f04",
+                "input_type": "float"
+            },
+            {
+                "input_name": "f05",
+                "input_type": "float"
+            },
+            {
+                "input_name": "f06",
+                "input_type": "float"
+            },
+            {
+                "input_name": "f07",
+                "input_type": "float"
+            },
+            {
+                "input_name": "f08",
+                "input_type": "float"
+            },
+            {
+                "input_name": "f09",
+                "input_type": "float"
+            },
+            {
+                "input_name": "f10",
+                "input_type": "float"
+            },
+            {
+                "input_name": "f11",
+                "input_type": "float"
+            },
+            {
+                "input_name": "f12",
+                "input_type": "float"
+            },
+            {
+                "input_name": "f13",
+                "input_type": "float"
+            },
+            {
+                "input_name": "c01",
+                "input_type": "string"
+            },
+            {
+                "input_name": "c02",
+                "input_type": "string"
+            },
+            {
+                "input_name": "c03",
+                "input_type": "string"
+            },
+            {
+                "input_name": "c04",
+                "input_type": "string"
+            },
+            {
+                "input_name": "c05",
+                "input_type": "string"
+            },
+            {
+                "input_name": "c06",
+                "input_type": "string"
+            },
+            {
+                "input_name": "c07",
+                "input_type": "string"
+            },
+            {
+                "input_name": "c08",
+                "input_type": "string"
+            },
+            {
+                "input_name": "c09",
+                "input_type": "string"
+            },
+            {
+                "input_name": "c10",
+                "input_type": "string"
+            },
+            {
+                "input_name": "c11",
+                "input_type": "string"
+            },
+            {
+                "input_name": "c12",
+                "input_type": "string"
+            },
+            {
+                "input_name": "c13",
+                "input_type": "string"
+            },
+            {
+                "input_name": "c14",
+                "input_type": "string"
+            },
+            {
+                "input_name": "c15",
+                "input_type": "string"
+            },
+            {
+                "input_name": "c16",
+                "input_type": "string"
+            },
+            {
+                "input_name": "c17",
+                "input_type": "string"
+            },
+            {
+                "input_name": "c18",
+                "input_type": "string"
+            },
+            {
+                "input_name": "c19",
+                "input_type": "string"
+            },
+            {
+                "input_name": "c20",
+                "input_type": "string"
+            },
+            {
+                "input_name": "c21",
+                "input_type": "string"
+            },
+            {
+                "input_name": "c22",
+                "input_type": "string"
+            },
+            {
+                "input_name": "c23",
+                "input_type": "string"
+            },
+            {
+                "input_name": "c24",
+                "input_type": "string"
+            },
+            {
+                "input_name": "c25",
+                "input_type": "string"
+            },
+            {
+                "input_name": "c26",
+                "input_type": "string"
+            }
+        ],
+        "label_fields": [
+            "label"
+        ],
+        "input_type": "csv",
+        "input_separator": "\t",
+        "num_epochs": 2,
+        "batch_size": 256
+    },
+    "feature_config": {
+        "feature_fields": [
+            {
+                "input_name": "f01",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1
+            },
+            {
+                "input_name": "f02",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1
+            },
+            {
+                "input_name": "f03",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1
+            },
+            {
+                "input_name": "f04",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1
+            },
+            {
+                "input_name": "f05",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1
+            },
+            {
+                "input_name": "f06",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1
+            },
+            {
+                "input_name": "f07",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1
+            },
+            {
+                "input_name": "f08",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1
+            },
+            {
+                "input_name": "f09",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1
+            },
+            {
+                "input_name": "f10",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1
+            },
+            {
+                "input_name": "f11",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1
+            },
+            {
+                "input_name": "f12",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1
+            },
+            {
+                "input_name": "f13",
+                "feature_type": "RawFeature",
+                "raw_input_dim": 1
+            },
+            {
+                "input_name": "c01",
+                "feature_type": "IdFeature",
+                "embedding_dim": 32,
+                "hash_bucket_size": 1000000
+            },
+            {
+                "input_name": "c02",
+                "feature_type": "IdFeature",
+                "embedding_dim": 32,
+                "hash_bucket_size": 1000000
+            },
+            {
+                "input_name": "c03",
+                "feature_type": "IdFeature",
+                "embedding_dim": 32,
+                "hash_bucket_size": 1000000
+            },
+            {
+                "input_name": "c04",
+                "feature_type": "IdFeature",
+                "embedding_dim": 32,
+                "hash_bucket_size": 1000000
+            },
+            {
+                "input_name": "c05",
+                "feature_type": "IdFeature",
+                "embedding_dim": 32,
+                "hash_bucket_size": 1000000
+            },
+            {
+                "input_name": "c06",
+                "feature_type": "IdFeature",
+                "embedding_dim": 32,
+                "hash_bucket_size": 1000000
+            },
+            {
+                "input_name": "c07",
+                "feature_type": "IdFeature",
+                "embedding_dim": 32,
+                "hash_bucket_size": 1000000
+            },
+            {
+                "input_name": "c08",
+                "feature_type": "IdFeature",
+                "embedding_dim": 32,
+                "hash_bucket_size": 1000000
+            },
+            {
+                "input_name": "c09",
+                "feature_type": "IdFeature",
+                "embedding_dim": 32,
+                "hash_bucket_size": 1000000
+            },
+            {
+                "input_name": "c10",
+                "feature_type": "IdFeature",
+                "embedding_dim": 32,
+                "hash_bucket_size": 1000000
+            },
+            {
+                "input_name": "c11",
+                "feature_type": "IdFeature",
+                "embedding_dim": 32,
+                "hash_bucket_size": 1000000
+            },
+            {
+                "input_name": "c12",
+                "feature_type": "IdFeature",
+                "embedding_dim": 32,
+                "hash_bucket_size": 1000000
+            },
+            {
+                "input_name": "c13",
+                "feature_type": "IdFeature",
+                "embedding_dim": 32,
+                "hash_bucket_size": 1000000
+            },
+            {
+                "input_name": "c14",
+                "feature_type": "IdFeature",
+                "embedding_dim": 32,
+                "hash_bucket_size": 1000000
+            },
+            {
+                "input_name": "c15",
+                "feature_type": "IdFeature",
+                "embedding_dim": 32,
+                "hash_bucket_size": 1000000
+            },
+            {
+                "input_name": "c16",
+                "feature_type": "IdFeature",
+                "embedding_dim": 32,
+                "hash_bucket_size": 1000000
+            },
+            {
+                "input_name": "c17",
+                "feature_type": "IdFeature",
+                "embedding_dim": 32,
+                "hash_bucket_size": 1000000
+            },
+            {
+                "input_name": "c18",
+                "feature_type": "IdFeature",
+                "embedding_dim": 32,
+                "hash_bucket_size": 1000000
+            },
+            {
+                "input_name": "c19",
+                "feature_type": "IdFeature",
+                "embedding_dim": 32,
+                "hash_bucket_size": 1000000
+            },
+            {
+                "input_name": "c20",
+                "feature_type": "IdFeature",
+                "embedding_dim": 32,
+                "hash_bucket_size": 1000000
+            },
+            {
+                "input_name": "c21",
+                "feature_type": "IdFeature",
+                "embedding_dim": 32,
+                "hash_bucket_size": 1000000
+            },
+            {
+                "input_name": "c22",
+                "feature_type": "IdFeature",
+                "embedding_dim": 32,
+                "hash_bucket_size": 1000000
+            },
+            {
+                "input_name": "c23",
+                "feature_type": "IdFeature",
+                "embedding_dim": 32,
+                "hash_bucket_size": 1000000
+            },
+            {
+                "input_name": "c24",
+                "feature_type": "IdFeature",
+                "embedding_dim": 32,
+                "hash_bucket_size": 1000000
+            },
+            {
+                "input_name": "c25",
+                "feature_type": "IdFeature",
+                "embedding_dim": 32,
+                "hash_bucket_size": 1000000
+            },
+            {
+                "input_name": "c26",
+                "feature_type": "IdFeature",
+                "embedding_dim": 32,
+                "hash_bucket_size": 1000000
+            }
+        ]
+    },
+    "model_config": {
+        "model_class": "multi_tower",
+        "feature_groups": [
+            {
+                "group_name": "deep_1",
+                "feature_names": [
+                    "f01",
+                    "f02",
+                    "f03",
+                    "f04",
+                    "f05",
+                    "f06",
+                    "f07",
+                    "f08",
+                    "f09",
+                    "f10",
+                    "f11",
+                    "f12",
+                    "f13",
+                    "c01",
+                    "c02",
+                    "c03",
+                    "c04",
+                    "c05",
+                    "c06",
+                    "c07",
+                    "c08",
+                    "c09",
+                    "c10",
+                    "c11",
+                    "c12",
+                    "c13",
+                    "c14",
+                    "c15",
+                    "c16",
+                    "c17",
+                    "c18",
+                    "c19",
+                    "c20",
+                    "c21",
+                    "c22",
+                    "c23",
+                    "c24",
+                    "c25",
+                    "c26"
+                ]
+            }
+        ],
+        "dnn_towers": [
+            {
+                "input_group": "deep_1",
+                "dnn_config": {
+                    "hidden_units": [
+                        400
+                    ]
+                }
+            }
+        ],
+        "final_dnn": {
+            "hidden_units": [
+                200,
+                100
+            ]
+        }
+    }
+}
