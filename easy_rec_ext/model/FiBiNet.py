@@ -14,9 +14,14 @@ if tf.__version__ >= "2.0":
 
 
 class FiBiNetConfig(object):
-    def __init__(self, senet_reduction_ratio=1.2, bilinear_type="Field-All"):
+    def __init__(self, senet_reduction_ratio: float = 1.2,
+                 bilinear_type: str = "Field-All", bilinear_product_type: str = "Hadamard",
+                 use_senet_bilinear_out: bool = True,
+                 ):
         self.senet_reduction_ratio = senet_reduction_ratio
         self.bilinear_type = bilinear_type
+        self.bilinear_product_type = bilinear_product_type
+        self.use_senet_bilinear_out = use_senet_bilinear_out
 
     @staticmethod
     def handle(data):
@@ -25,6 +30,10 @@ class FiBiNetConfig(object):
             res.senet_reduction_ratio = data["senet_reduction_ratio"]
         if "bilinear_type" in data:
             res.bilinear_type = data["bilinear_type"]
+        if "bilinear_product_type" in data:
+            res.bilinear_product_type = data["bilinear_product_type"]
+        if "use_senet_bilinear_out" in data:
+            res.use_senet_bilinear_out = data["use_senet_bilinear_out"]
         return res
 
 
@@ -46,13 +55,24 @@ class FiBiNetLayer(object):
             name=name + "_senet",
             reduction_ratio=fibinet_config.senet_reduction_ratio,
         )(deep_fea)
-        senet_bilinear_out = interaction.BilinearInteraction(
-            name=name + "_senet_bilinear",
-            bilinear_type=fibinet_config.bilinear_type,
-        )(senet_embedding)
+        if fibinet_config.use_senet_bilinear_out:
+            senet_bilinear_out = interaction.BilinearInteraction(
+                name=name + "_senet_bilinear",
+                bilinear_type=fibinet_config.bilinear_type,
+                bilinear_product_type=fibinet_config.bilinear_product_type,
+            )(senet_embedding)
+        else:
+            field_num = senet_embedding.get_shape().as_list()[1]
+            embed_size = senet_embedding.get_shape().as_list()[2]
+            senet_bilinear_out = tf.reshape(
+                senet_embedding,
+                [-1, field_num * embed_size]
+            )
+
         bilinear_out = interaction.BilinearInteraction(
             name=name + "_bilinear",
             bilinear_type=fibinet_config.bilinear_type,
+            bilinear_product_type=fibinet_config.bilinear_product_type,
         )(deep_fea)
         output = tf.concat([senet_bilinear_out, bilinear_out], axis=-1)
         logging.info("FiBiNetLayer %s, output.shape:%s" % (name, str(output.shape)))
@@ -114,8 +134,9 @@ class FiBiNet(RankModel, FiBiNetLayer):
             tower_fea_arr.append(tower_fea)
 
         all_fea = tf.concat(tower_fea_arr, axis=1)
-        final_dnn_layer = dnn.DNN(self._model_config.final_dnn, self._l2_reg, "final_dnn", self._is_training)
-        all_fea = final_dnn_layer(all_fea)
+        if self._model_config.final_dnn:
+            final_dnn_layer = dnn.DNN(self._model_config.final_dnn, self._l2_reg, "final_dnn", self._is_training)
+            all_fea = final_dnn_layer(all_fea)
         logging.info("FiBiNet build_predict_graph, all_fea.shape:%s" % (str(all_fea.shape)))
 
         logits = tf.layers.dense(all_fea, 1, name="logits")

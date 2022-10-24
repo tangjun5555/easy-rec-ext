@@ -135,10 +135,12 @@ class BilinearInteraction(object):
     BilinearInteraction Layer used in FiBiNET
     """
 
-    def __init__(self, name, bilinear_type="Field-Interaction"):
+    def __init__(self, name, bilinear_type="Field-Interaction", bilinear_product_type="Hadamard"):
         self.name = name
         assert bilinear_type in ["Field-All", "Field-Each", "Field-Interaction"]
         self.bilinear_type = bilinear_type
+        assert bilinear_product_type in ["Hadamard", "Inner"]
+        self.bilinear_product_type = bilinear_product_type
 
     def __call__(self, input_value):
         """
@@ -211,6 +213,11 @@ class BilinearInteraction(object):
                     tf.slice(input_value, [0, v[1], 0], [-1, 1, -1]),
                 )
                 for v, w in zip(itertools.combinations(range(field_num), 2), W_list)
+            ]
+        if self.bilinear_product_type == "Inner":
+            p = [
+                tf.math.reduce_sum(x, axis=1, keepdims=False)
+                for x in p
             ]
         p = tf.concat(p, axis=1)
         logging.info("BilinearInteraction, name:{name}, p.shape:{shape}".format(name=self.name, shape=str(p.shape)))
