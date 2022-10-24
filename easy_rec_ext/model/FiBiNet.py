@@ -14,12 +14,16 @@ if tf.__version__ >= "2.0":
 
 
 class FiBiNetConfig(object):
-    def __init__(self, senet_reduction_ratio: float = 1.1,
-                 bilinear_type: str = "Field-Each", bilinear_product_type: str = "Hadamard",
+    def __init__(self,
+                 senet_reduction_ratio: float = 1.1,
+                 senet_use_skip_connection: bool = False,
                  use_senet_bilinear_out: bool = True,
+                 bilinear_type: str = "Field-Each",
+                 bilinear_product_type: str = "Hadamard",
                  bilinear_mlp_config: dnn.DNNConfig = None,
                  ):
         self.senet_reduction_ratio = senet_reduction_ratio
+        self.senet_use_skip_connection = senet_use_skip_connection
         self.use_senet_bilinear_out = use_senet_bilinear_out
         self.bilinear_type = bilinear_type
         self.bilinear_product_type = bilinear_product_type
@@ -30,12 +34,14 @@ class FiBiNetConfig(object):
         res = FiBiNetConfig()
         if "senet_reduction_ratio" in data:
             res.senet_reduction_ratio = data["senet_reduction_ratio"]
+        if "senet_use_skip_connection" in data:
+            res.senet_use_skip_connection = data["senet_use_skip_connection"]
+        if "use_senet_bilinear_out" in data:
+            res.use_senet_bilinear_out = data["use_senet_bilinear_out"]
         if "bilinear_type" in data:
             res.bilinear_type = data["bilinear_type"]
         if "bilinear_product_type" in data:
             res.bilinear_product_type = data["bilinear_product_type"]
-        if "use_senet_bilinear_out" in data:
-            res.use_senet_bilinear_out = data["use_senet_bilinear_out"]
         if "bilinear_mlp_config" in data:
             res.bilinear_mlp_config = dnn.DNNConfig.handle(data["bilinear_mlp_config"])
         return res
@@ -58,6 +64,7 @@ class FiBiNetLayer(object):
         senet_embedding = senet.SENetLayer(
             name=name + "_senet",
             reduction_ratio=fibinet_config.senet_reduction_ratio,
+            use_skip_connection=fibinet_config.senet_use_skip_connection,
         )(deep_fea)
         if fibinet_config.use_senet_bilinear_out:
             senet_bilinear_out = interaction.BilinearInteraction(
