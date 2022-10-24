@@ -17,11 +17,13 @@ class FiBiNetConfig(object):
     def __init__(self, senet_reduction_ratio: float = 1.1,
                  bilinear_type: str = "Field-Each", bilinear_product_type: str = "Hadamard",
                  use_senet_bilinear_out: bool = True,
+                 bilinear_mlp_config: dnn.DNNConfig = None,
                  ):
         self.senet_reduction_ratio = senet_reduction_ratio
+        self.use_senet_bilinear_out = use_senet_bilinear_out
         self.bilinear_type = bilinear_type
         self.bilinear_product_type = bilinear_product_type
-        self.use_senet_bilinear_out = use_senet_bilinear_out
+        self.bilinear_mlp_config = bilinear_mlp_config
 
     @staticmethod
     def handle(data):
@@ -34,6 +36,8 @@ class FiBiNetConfig(object):
             res.bilinear_product_type = data["bilinear_product_type"]
         if "use_senet_bilinear_out" in data:
             res.use_senet_bilinear_out = data["use_senet_bilinear_out"]
+        if "bilinear_mlp_config" in data:
+            res.bilinear_mlp_config = dnn.DNNConfig.handle(data["bilinear_mlp_config"])
         return res
 
 
@@ -60,6 +64,7 @@ class FiBiNetLayer(object):
                 name=name + "_senet_bilinear",
                 bilinear_type=fibinet_config.bilinear_type,
                 bilinear_product_type=fibinet_config.bilinear_product_type,
+                bilinear_mlp_config=fibinet_config.bilinear_mlp_config,
             )(senet_embedding)
         else:
             field_num = senet_embedding.get_shape().as_list()[1]
@@ -73,6 +78,7 @@ class FiBiNetLayer(object):
             name=name + "_bilinear",
             bilinear_type=fibinet_config.bilinear_type,
             bilinear_product_type=fibinet_config.bilinear_product_type,
+            bilinear_mlp_config=fibinet_config.bilinear_mlp_config,
         )(deep_fea)
         output = tf.concat([senet_bilinear_out, bilinear_out], axis=-1)
         logging.info("FiBiNetLayer %s, output.shape:%s" % (name, str(output.shape)))

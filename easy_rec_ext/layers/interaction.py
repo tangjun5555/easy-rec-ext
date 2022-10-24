@@ -10,6 +10,7 @@ from typing import List, Tuple
 import tensorflow as tf
 from easy_rec_ext.utils import variable_util
 from easy_rec_ext.utils.load_class import load_by_path
+from easy_rec_ext.layers import dnn
 
 if tf.__version__ >= "2.0":
     tf = tf.compat.v1
@@ -135,12 +136,15 @@ class BilinearInteraction(object):
     BilinearInteraction Layer used in FiBiNET
     """
 
-    def __init__(self, name, bilinear_type="Field-Each", bilinear_product_type="Hadamard"):
+    def __init__(self, name, bilinear_type="Field-Each", bilinear_product_type="Hadamard",
+                 bilinear_mlp_config: dnn.DNNConfig = None,
+                 ):
         self.name = name
         assert bilinear_type in ["Field-All", "Field-Each", "Field-Interaction"]
         self.bilinear_type = bilinear_type
         assert bilinear_product_type in ["Hadamard", "Inner"]
         self.bilinear_product_type = bilinear_product_type
+        self.bilinear_mlp_config = bilinear_mlp_config
 
     def __call__(self, input_value):
         """
@@ -214,14 +218,24 @@ class BilinearInteraction(object):
                 )
                 for v, w in zip(itertools.combinations(range(field_num), 2), W_list)
             ]
+
         if self.bilinear_product_type == "Inner":
             p = [
                 tf.math.reduce_sum(x, axis=1, keepdims=False)
                 for x in p
             ]
+        else:
+            p = [
+                tf.squeeze(x, axis=[1])
+                for x in p
+            ]
         p = tf.concat(p, axis=1)
         logging.info("BilinearInteraction, name:{name}, p.shape:{shape}".format(name=self.name, shape=str(p.shape)))
-        return tf.reshape(p, shape=(-1, field_num * (field_num - 1) // 2 * embed_size))
+
+        if self.bilinear_mlp_config:
+            p = dnn.DNN(self.bilinear_mlp_config, None, name=self.name + "_mlp")(p)
+            logging.info("BilinearInteraction, name:{name}, p.shape:{shape}".format(name=self.name, shape=str(p.shape)))
+        return p
 
 
 class CIN(object):
