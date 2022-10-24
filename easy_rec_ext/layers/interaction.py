@@ -135,7 +135,7 @@ class BilinearInteraction(object):
     BilinearInteraction Layer used in FiBiNET
     """
 
-    def __init__(self, name, bilinear_type="Field-Interaction", bilinear_product_type="Hadamard"):
+    def __init__(self, name, bilinear_type="Field-Each", bilinear_product_type="Hadamard"):
         self.name = name
         assert bilinear_type in ["Field-All", "Field-Each", "Field-Interaction"]
         self.bilinear_type = bilinear_type

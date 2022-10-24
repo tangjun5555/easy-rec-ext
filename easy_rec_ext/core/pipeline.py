@@ -127,6 +127,7 @@ class FeatureField(BaseConfig):
                  one_hot: int = 0,
                  embedding_name: str = None, embedding_dim: int = 16,
                  num_buckets: int = 0, hash_bucket_size: int = 0, vocab_list: List[str] = None,
+                 use_layer_norm: bool = False,
                  sequence_pooling_config: SequencePoolingConfig = None,
                  limit_seq_size: int = None, seq_need_reverse: bool = False,
                  ):
@@ -148,6 +149,8 @@ class FeatureField(BaseConfig):
         self.num_buckets = num_buckets
         self.hash_bucket_size = hash_bucket_size
         self.vocab_list = vocab_list
+
+        self.use_layer_norm = use_layer_norm
 
         self.sequence_pooling_config = sequence_pooling_config
         self.limit_seq_size = limit_seq_size
@@ -189,6 +192,9 @@ class FeatureField(BaseConfig):
             res.vocab_list = data["vocab_list"]
             if res.vocab_list:
                 res.num_buckets = len(res.vocab_list)
+
+        if "use_layer_norm" in data:
+            res.use_layer_norm = data["use_layer_norm"]
 
         if "sequence_pooling_config" in data:
             res.sequence_pooling_config = SequencePoolingConfig.handle(data["sequence_pooling_config"])

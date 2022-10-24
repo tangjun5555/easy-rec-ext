@@ -17,7 +17,7 @@ class SENetLayer(object):
     """
     Squeeze-and-Excitation Network Layer
     """
-    def __init__(self, name, reduction_ratio=1.2, squeeze_fun="mean"):
+    def __init__(self, name, reduction_ratio=1.1, squeeze_fun="mean"):
         self.name = name
         self.reduction_ratio = reduction_ratio
         assert squeeze_fun in ["mean", "max"]

@@ -9,11 +9,12 @@ from abc import abstractmethod
 from collections import OrderedDict
 from easy_rec_ext.core import embedding_ops
 from easy_rec_ext.core import regularizers
-from easy_rec_ext.utils import variable_util, string_ops, feature_util
+from easy_rec_ext.utils import variable_util, feature_util
 import easy_rec_ext.core.metrics as metrics_lib
 from easy_rec_ext.layers.sequence_pooling import SequencePooling
 from easy_rec_ext.layers.senet import SENetLayer
 from easy_rec_ext.layers.numerical_conversion import numerical_conversion_fn
+from easy_rec_ext.layers import layer_norm
 import tensorflow as tf
 
 if tf.__version__ >= "2.0":
@@ -399,6 +400,11 @@ class RankModel(object):
             else:
                 raise ValueError("build_group_input_dict, feature_type: %s not supported." % feature_field.feature_type)
 
+            if feature_field.use_layer_norm:
+                values = layer_norm.LayerNormalization(
+                    values.get_shape().as_list()[-1],
+                    feature_field.feature_name + "_LN",
+                )(values)
             outputs[feature_field.feature_name] = values
             logging.info("build_group_input_dict, name:%s, shape:%s" %
                          (feature_field.feature_name, str(values.get_shape().as_list()))

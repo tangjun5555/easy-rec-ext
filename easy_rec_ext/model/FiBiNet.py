@@ -14,8 +14,8 @@ if tf.__version__ >= "2.0":
 
 
 class FiBiNetConfig(object):
-    def __init__(self, senet_reduction_ratio: float = 1.2,
-                 bilinear_type: str = "Field-All", bilinear_product_type: str = "Hadamard",
+    def __init__(self, senet_reduction_ratio: float = 1.1,
+                 bilinear_type: str = "Field-Each", bilinear_product_type: str = "Hadamard",
                  use_senet_bilinear_out: bool = True,
                  ):
         self.senet_reduction_ratio = senet_reduction_ratio
