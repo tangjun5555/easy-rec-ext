@@ -93,10 +93,10 @@ with open(args.input_path, mode="r") as f:
             if user_id:
                 for i, target_behavior in enumerate(user_seq_list):
                     current_dt = time.strftime("%Y%m%d", time.localtime(int(target_behavior[3])))
-                    if (current_dt in train_dts or current_dt == eval_dt) and int(user_id) % 10 == 5:
+                    if (current_dt in train_dts or current_dt == eval_dt) and int(user_id) % 5 == 2 and target_behavior[2] == "pv":
                         history_behavior_list = user_seq_list[:i]
                         user_feature = build_user_feature(user_id, history_behavior_list[::-1])
-                    if current_dt in train_dts and int(user_id) % 10 == 5:
+                    if current_dt in train_dts and int(user_id)  % 5 == 2 and target_behavior[2] == "pv":
                         train_output_files[train_dts.index(current_dt)].write(
                             ",".join([
                                 str(1),
@@ -105,7 +105,7 @@ with open(args.input_path, mode="r") as f:
                             ])
                             + "\n"
                         )
-                    elif current_dt == eval_dt and int(user_id) % 10 == 5:
+                    elif current_dt == eval_dt and int(user_id) % 5 == 2 and target_behavior[2] == "pv":
                         eval_output.write("\t".join([
                             user_feature,
                             target_behavior[0],
