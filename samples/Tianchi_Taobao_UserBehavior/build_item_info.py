@@ -15,6 +15,10 @@ print("Run params:" + str(args))
 item_feature_dict = dict()
 item_frequency_dict = dict()
 
+max_user_id = 0
+max_item_id = 0
+max_cate_id = 0
+
 
 def build_item_feature(current_behavior):
     return current_behavior[0] + ":" + current_behavior[1]
@@ -30,9 +34,18 @@ with open(args.input_path, mode="r") as fin:
         assert len(split) == 5, "错误行:" + str(line_num)
 
         current_behavior = split[1:]
-        item_id = current_behavior[0]
+        user_id = split[0]
+        item_id = split[1]
+        cate_id = split[2]
         item_feature_dict[item_id] = build_item_feature(current_behavior)
         item_frequency_dict[item_id] = item_frequency_dict.get(item_id, 0) + 1
+        max_user_id = max(max_user_id, int(user_id))
+        max_item_id = max(max_item_id, int(item_id))
+        max_cate_id = max(max_cate_id, int(cate_id))
+
+print("max_user_id:", max_user_id)
+print("max_item_id:", max_item_id)
+print("max_cate_id:", max_cate_id)
 
 
 with open(args.output_path, mode="w") as fout:
